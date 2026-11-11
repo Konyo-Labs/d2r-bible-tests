@@ -167,6 +167,31 @@ def is_post_link(link):
     return u.scheme in ("http", "https") and (host == "d2jsp.org" or host.endswith(".d2jsp.org"))
 
 
+def seller_shared(posts):
+    """v3898 (#180, GrokBot #230 6798004838) - THE SAME SELLER IS ONE VOTE ACROSS READINGS. -> a new list, each post a copy
+    when its weight changed. REG-3554 (v3893) shares one vote between a seller's topics INSIDE one forum read; the stored
+    posts of one item come from many reads, so a seller who relisted on another day kept a full vote per read. A post with
+    a stored author shares its seller's one vote with that seller's other posts of this item: when their read weights sum
+    past 1, each is divided by that sum ("wRead" keeps the read's own weight). An unknown author stays its own vote, as in
+    the parser - nothing here names a seller the forum did not show."""
+    tot = {}
+    for p in posts:
+        a = str(p.get("author") or "").strip().lower()
+        if a:
+            tot[a] = tot.get(a, 0.0) + max(0.0, min(1.0, float(p.get("w", 1))))
+    out = []
+    for p in posts:
+        a = str(p.get("author") or "").strip().lower()
+        if a and tot[a] > 1.0:
+            q = dict(p)
+            q["wRead"] = p.get("w", 1)
+            q["w"] = round(max(0.0, min(1.0, float(p.get("w", 1)))) / tot[a], 3)
+            out.append(q)
+        else:
+            out.append(p)
+    return out
+
+
 def _wmedian(pairs):
     pairs = sorted(pairs)
     tot = sum(w for _, w in pairs)
@@ -219,7 +244,7 @@ def price(db, item, now=None, key=None):
     held, _ra = _held(db, item, key)
     posts = list((held or {}).values())
     stale, why = is_stale(db, item, now, key)
-    priced = [p for p in posts if counts(p)]                     # REG-3327 - a linked post with a price, or nothing
+    priced = seller_shared([p for p in posts if counts(p)])     # REG-3327 + v3898 #180 - one vote per seller
     return {"item": str(item), "normal": _tier([p for p in priced if not p.get("perfect")], now),
             "perfect": _tier([p for p in priced if p.get("perfect")], now), "stale": stale, "why": why,
             "leftOut": len(posts) - len(priced)}
@@ -251,7 +276,7 @@ def explain(db, item, now=None, key=None):
     now = time.time() if now is None else now
     held, _ra = _held(db, item, key)
     every = list((held or {}).values())
-    posts = [p for p in every if counts(p)]                       # REG-3327 - the rows the price weighed, no other
+    posts = seller_shared([p for p in every if counts(p)])       # REG-3327 + v3898 #180 - the weights price() used
     normal = [p for p in posts if not p.get("perfect")]
     perfect = [p for p in posts if p.get("perfect")]
     mid_n = _median_of(normal, now)
@@ -274,6 +299,7 @@ def explain(db, item, now=None, key=None):
             "day": str(p.get("day") or "")[:10],
             "link": p.get("link") or "",
             "w": p.get("w", 1),
+            **({"wRead": p["wRead"], "seller": True} if "wRead" in p else {}),
             "perfect": perfect_row,
             "src": source_name(p.get("src")),
             "seenAt": seen_n,

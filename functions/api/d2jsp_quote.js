@@ -494,6 +494,11 @@ function d2jspPosts(text, itemName, nowMs) {
     .replace(/<[^>]+>/g, ' ');
   plain = d2jspDecodeEntities(plain);   /* v3847 - &#39; / &rsquo; / &amp; arrive raw: Guardian&#39;s matched nothing */
   var rows = [], when = null, link = '', explicit = false, used = false, pending = '', seen = {}, authors = [];
+  /* v3898 (#180, GrokBot 11-11: no stored Enigma row had a seller) - THE PAGE SAYS WHICH COMES FIRST. His signed-in
+     results page puts each post's header (topic link "by" seller) on the line BEFORE its date; the signed-out card
+     puts the date first. 'link' = header first: a link line opens the NEXT post and its date keeps that link and
+     seller. MEASURED on his 5 kept pages: 0 of 42 rows carried a seller and 5 lost their link. */
+  var order = '';
   function rememberUndated() {
     pending = '';
   }
@@ -506,6 +511,11 @@ function d2jspPosts(text, itemName, nowMs) {
     var line = raw.replace(new RegExp(D2JSP_LINK_MARK.source, 'g'), ' ')
       .replace(/\u27e6A:[^\u27e7]*\u27e7/g, ' ');
     var d = d2jspLineDate(line, nowMs);
+    if (!order && here && d == null && hereWho.length === 1) order = 'link';
+    else if (!order && d != null) order = 'date';
+    /* v3898 - on a header-first page only a header ("<topic> by <seller>") opens a post; a topic link written in a
+       post's body (a shop's "see t=...") is a reference, not the post: it took the Shako row's link before */
+    if (order === 'link' && here && !hereWho.length) here = '';
     /* v3845 (second eye on v3844) - a new post's date line starts a new post: the last post's link does not carry over */
     /* v3845 - a post's own written date beats a relative "Today" / "Yesterday" (the search page's last-activity
        stamp): Simsalara's Oct 7 post read as the reading's day. A relative stamp dates a post only when that post has
@@ -520,10 +530,10 @@ function d2jspPosts(text, itemName, nowMs) {
       when = d; explicit = true; used = false;
       link = here || kept || '';
       pending = '';
-      authors = [];
+      if (!kept) authors = [];   /* v3898 - a header-first post's seller came on its link line */
     } else if (here && here !== link) {
       /* v3894 - reset authors whenever the topic link changes: a new undated topic must not inherit the last seller */
-      if (when != null && !used) { link = here; pending = ''; authors = []; }
+      if (when != null && !used && order !== 'link') { link = here; pending = ''; authors = []; }
       else { rememberUndated(); link = here; pending = here; when = rel ? d : null; explicit = false; used = false; authors = []; }
     } else if (rel && !explicit) when = d;
     else if (here) link = here;
@@ -534,7 +544,8 @@ function d2jspPosts(text, itemName, nowMs) {
     var named = d2jspNamed(line, forms) && !d2jspOtherReading(line, d2jspResolveItem(itemName).item || itemName);
     /* v3894 - a user.php mention in a post body is not the seller (the seller's name may be plain text).
        Collect authors from header-ish lines only: not a line that names the item or carries a price. */
-    if (!named && !/\bfg\b/i.test(line)) {
+    /* v3898 - on a header-first page the seller is read from the header line only; a body mention stays out */
+    if (order === 'link' ? !!here : (!named && !/\bfg\b/i.test(line))) {
       hereWho.forEach(function (n) { authors.push(n); });
     }
     if (!d2jspRecent(when, nowMs) || when < D2JSP_QUOTE_SINCE_MS) {

@@ -118,6 +118,83 @@ class TheSameSellerIsOneVote(unittest.TestCase):
             self.assertTrue(row["link"].startswith("https://forums.d2jsp.org/topic.php?t="))
 
 
+def _signed_in(topic, seller, when, body):
+    """his signed-in results page, by shape (MEASURED 11-11 on his 5 kept pages): the header line carries the topic link "by"
+    the seller (an icon <div> INSIDE the seller's anchor), the date sits on the NEXT line, then the body"""
+    return ('<dl><dd><label class="srL"><input type="checkbox">'
+            '<div class="p3 srH"><div><div class="sX s0b"></div> <a href="topic.php?t=%s&amp;f=268&amp;p=1">Selling stuff</a>'
+            ' by <a href="user.php?i=7">%s<div class="sX s4"></div></a> in <a href="forum.php?f=268">D2:R Trading</a></div>'
+            '<div class="desc"><div class="desc p3">\n\t%s\n</div></div></div>'
+            '<div class="p3 bc1 bts srB">%s</div></label></dd></dl>' % (topic, seller, when, body))
+
+
+class AHeaderFirstPageKeepsItsSeller(unittest.TestCase):
+    """v3898 (#180, GrokBot #230 6798004838: no stored Enigma row had a seller). The signed-in page puts the seller on the line
+    ABOVE the date and the date line wiped it: 0 of 42 rows on his 5 kept pages carried a seller, 5 lost their link."""
+
+    def test_the_seller_on_the_header_line_reaches_the_row(self):
+        html = (_signed_in("333333333", "SellerA", "Nov 8 2026 02:22am", "shako 400 fg<br>")
+                + _signed_in("444444444", "SellerA", "Nov 9 2026 02:22am", "shako 410 fg<br>")
+                + _signed_in("555555555", "SellerB", "Nov 9 2026 05:22am", "shako 380 fg<br>"))
+        posts = D.parse_public_quote(html, ITEM, "2026-11-10T07:00:00Z")["posts"]
+        got = sorted((p["link"].split("t=")[1].split("&")[0], p.get("author"), p["w"]) for p in posts)
+        self.assertEqual(got, [("333333333", "SellerA", 0.5), ("444444444", "SellerA", 0.5), ("555555555", "SellerB", 1)],
+                         "a header-first post lost its seller or its link: %s" % posts)
+
+    def test_a_post_after_an_unpriced_post_keeps_its_own_link(self):
+        """the 5 lost links: a header that follows a post with no priced row was folded into that post, then its own date
+        line found no link left"""
+        html = (_signed_in("333333333", "SellerA", "Nov 8 2026 02:22am", "wts lots of runes<br>")
+                + _signed_in("444444444", "SellerB", "Nov 9 2026 02:22am", "shako 410 fg<br>"))
+        posts = D.parse_public_quote(html, ITEM, "2026-11-10T07:00:00Z")["posts"]
+        self.assertEqual([(p["link"].split("t=")[1].split("&")[0], p.get("author")) for p in posts], [("444444444", "SellerB")])
+
+    def test_a_topic_link_in_a_shop_body_is_not_the_post(self):
+        """MEASURED on his shako page: a shop post's "see topic.php?t=..." gave the Shako row that OTHER topic's link"""
+        body = ('Protector Stone - BIN 2.5K <a href="https://forums.d2jsp.org/topic.php?t=999999999&amp;f=268">'
+                'https://forums.d2jsp.org/topic.php?t=999999999&amp;f=268</a><br>Silkweave - 5fg<br>shako 138def - 20fg<br>')
+        posts = D.parse_public_quote(_signed_in("333333333", "SellerA", "Nov 8 2026 02:22am", body), ITEM,
+                                     "2026-11-10T07:00:00Z")["posts"]
+        self.assertEqual([(p["fg"], p["link"].split("t=")[1].split("&")[0], p.get("author")) for p in posts],
+                         [(20, "333333333", "SellerA")], posts)
+
+    def test_a_body_mention_does_not_unname_the_seller(self):
+        body = 'ask <a href="user.php?i=9">Mentioned</a> too<br>shako 400 fg<br>'
+        posts = D.parse_public_quote(_signed_in("333333333", "SellerA", "Nov 8 2026 02:22am", body), ITEM,
+                                     "2026-11-10T07:00:00Z")["posts"]
+        self.assertEqual([p.get("author") for p in posts], ["SellerA"], posts)
+
+
+class TheSameSellerIsOneVoteAcrossReadings(unittest.TestCase):
+    """v3898 (#180) - the parser shares a seller's vote inside ONE read; the DB holds many reads. A seller's two topics
+    stored from two reads (each w=1 at its read) share one vote in price() and in explain()."""
+
+    def _db(self, rows):
+        import time as _t
+        now = _t.time()
+        day = _t.strftime("%Y-%m-%d", _t.localtime(now))
+        posts = {}
+        for t, fg, who in rows:
+            link = "https://forums.d2jsp.org/topic.php?t=%s&f=268" % t
+            posts[link] = {"fg": fg, "day": day, "link": link, "w": 1.0, "perfect": True, "src": "t", "seenAt": now}
+            if who:
+                posts[link]["author"] = who
+        return {"schema": DB.SCHEMA, "items": {"enigma": {"item": "Enigma", "readAt": now, "posts": posts}}}, now
+
+    def test_one_sellers_relist_from_another_read_shares_one_vote(self):
+        db, now = self._db([(1, 1850, "SellerA"), (2, 1850, "sellera"), (3, 1400, "SellerB")])
+        pr = DB.price(db, "Enigma", now=now)["perfect"]
+        self.assertEqual(pr["fg"], 1400, "one seller's relist out-voted another seller: %s" % pr)
+        ws = sorted((r["fg"], r["w"]) for r in DB.explain(db, "Enigma", now=now)["posts"])
+        self.assertEqual(ws, [(1400, 1.0), (1850, 0.5), (1850, 0.5)], "the proof does not show the weights the price used")
+
+    def test_unknown_or_different_sellers_keep_a_full_vote_each(self):
+        """BASELINE - no stored author (every row before v3898) stays one vote per link; nothing is invented"""
+        db, now = self._db([(1, 1850, None), (2, 1850, None), (3, 1400, "SellerB")])
+        self.assertEqual(DB.price(db, "Enigma", now=now)["perfect"]["fg"], 1850)
+        self.assertEqual(sorted(r["w"] for r in DB.explain(db, "Enigma", now=now)["posts"]), [1.0, 1.0, 1.0])
+
+
 RED_PROOF = [
     {"why": "v3893 (#180, REG-3554) - two topics from the same readable seller each keep a full vote",
      "file": "functions/api/d2jsp_quote.js",
@@ -126,13 +203,38 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3894 - a new undated topic inherits the last seller (authors not reset when the link changes)",
      "file": "functions/api/d2jsp_quote.js",
-     "find": "      if (when != null && !used) { link = here; pending = ''; authors = []; }\n",
-     "replace": "      if (when != null && !used) { link = here; pending = ''; }\n",
+     "find": "      if (when != null && !used && order !== 'link') { link = here; pending = ''; authors = []; }\n",
+     "replace": "      if (when != null && !used && order !== 'link') { link = here; pending = ''; }\n",
      "matches": 1},
     {"why": "v3894 - a user.php mention in a post body becomes the seller again",
      "file": "functions/api/d2jsp_quote.js",
-     "find": "    if (!named && !/\\bfg\\b/i.test(line)) {\n      hereWho.forEach(function (n) { authors.push(n); });\n    }\n",
+     "find": "    if (order === 'link' ? !!here : (!named && !/\\bfg\\b/i.test(line))) {\n      hereWho.forEach(function (n) { authors.push(n); });\n    }\n",
      "replace": "    hereWho.forEach(function (n) { authors.push(n); });\n",
+     "matches": 1},
+    {"why": "v3898 (#180) - the date line wipes the seller its header line just read (0 of 42 rows carried a seller)",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "      if (!kept) authors = [];   /* v3898 - a header-first post's seller came on its link line */\n",
+     "replace": "      authors = [];\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3898 (#180) - a header-first page is read as date-first again: a post after an unpriced one loses its link",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "    if (!order && here && d == null && hereWho.length === 1) order = 'link';\n",
+     "replace": "    if (false) order = 'link';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3898 (#180) - a topic link in a shop's body takes the row's link again",
+     "file": "functions/api/d2jsp_quote.js",
+     "find": "    if (order === 'link' && here && !hereWho.length) here = '';\n",
+     "replace": "    if (false) here = '';\n",
+     "matches": 1, "needs": "node"},
+    {"why": "v3898 (#180) - one seller's relist stored from another read keeps a full vote again",
+     "file": "tv/d2jsp_price_db.py",
+     "find": "        if a and tot[a] > 1.0:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3898 (#180) - the price stops sharing the seller's vote while the proof still shows it shared",
+     "file": "tv/d2jsp_price_db.py",
+     "find": "    priced = seller_shared([p for p in posts if counts(p)])     # REG-3327 + v3898 #180 - one vote per seller\n",
+     "replace": "    priced = [p for p in posts if counts(p)]\n",
      "matches": 1},
 ]
 
