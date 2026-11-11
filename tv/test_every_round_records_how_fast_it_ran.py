@@ -54,6 +54,10 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
         line = S.trend([row], past)[0]
         self.assertIn("FASTER 8.0 min than the last 2 rounds' 28.0", line)
         self.assertIn("the first round measured", S.trend([row], [])[0])
+        # v3896 (REG-3675) - a tie reads "the same as", never "the same than"
+        same = S.trend([row], [{"workflow": "Routine I", "sha": "old3", "slowestMin": 20.2}])[0]
+        self.assertIn("(the same as the last 1 rounds' 20.2)", same)
+        self.assertNotIn(" than the last", same)
 
     def test_a_round_is_recorded_once_per_workflow_and_read_back(self):
         tmp = tempfile.mkdtemp(prefix="ci_speed_")
@@ -123,6 +127,11 @@ RED_PROOF = [
      "find": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe, timings=merge_timings_after_green)",
      "replace": "mac_rehearse=not a.no_mac_rehearse, timings=merge_timings_after_green)",
      "matches": 1},
+    {"why": "v3896 (REG-3675) - a tie reads 'the same than the last N rounds' again",
+     "file": "tv/ci_speed.py",
+     "find": "        cmp = (\"the same as\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
+     "replace": "        cmp = (\"the same than\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
+     "matches": 1}
 ]
 
 

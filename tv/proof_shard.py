@@ -920,8 +920,11 @@ def choose_n(have, n_min=MIN_SHARDS, n_max=MAX_SHARDS, target_s=TARGET_PROVE_S, 
             lo = mid
     rep = cache[hi][1]
     if floor > target_s:
-        why = ("the slowest proof chunk alone models %d s, over the %d-s target, so %d shard(s) are the fewest that reach "
-               "that floor (%d s) - more would only spend workers" % (floor, target_s, hi, cache[hi][0]))
+        # v3896 (REG-3675) - THE FLOOR IS THE SLOWEST SHARD AT THE MOST SHARDS, not "one chunk": MEASURED 11-11 on v3895's seed,
+        # "the slowest proof chunk alone models 6343 s" read as one law to split, while the model's 22 shards were balanced
+        # (every top shard the same wall) - the owed work spread as thin as the bound allows. Said as what it is.
+        why = ("even at %d shards the slowest shard models %d s, over the %d-s target, so %d shard(s) are the fewest that "
+               "reach that floor (%d s) - more would only spend workers" % (n_max, floor, target_s, hi, cache[hi][0]))
     else:
         why = "%d shard(s) are the fewest whose slowest models %d s, inside the %d-s target" % (hi, cache[hi][0], target_s)
     return hi, {"n": hi, "slowestModelS": round(cache[hi][0], 1), "targetS": target_s, "floorS": round(floor, 1),

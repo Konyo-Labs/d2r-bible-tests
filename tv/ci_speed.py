@@ -140,9 +140,10 @@ def trend(rows, past, n=TREND_ROUNDS):
         base = sum(p["slowestMin"] for p in prev) / len(prev)
         delta = r["slowestMin"] - base
         word = "FASTER" if delta < -0.5 else ("SLOWER" if delta > 0.5 else "the same")
-        out.append("%s: slowest job %.1f min (%s than the last %d rounds' %.1f), wall %.1f, waited up to %.1f"
-                   % (r["workflow"], r["slowestMin"], word if word == "the same" else "%s %.1f min" % (word, abs(delta)),
-                      len(prev), base, r["wallMin"], r["queueMaxMin"]))
+        # v3896 (REG-3675) - "the same THAN the last 5 rounds'" was the line he read on every ship; a tie is "the same as"
+        cmp = ("the same as" if word == "the same" else "%s %.1f min than" % (word, abs(delta)))
+        out.append("%s: slowest job %.1f min (%s the last %d rounds' %.1f), wall %.1f, waited up to %.1f"
+                   % (r["workflow"], r["slowestMin"], cmp, len(prev), base, r["wallMin"], r["queueMaxMin"]))
     return out
 
 

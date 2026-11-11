@@ -96,6 +96,8 @@ class TheCountIsTheFewestThatFits(unittest.TestCase):
         self.assertLess(n, 64, "past the floor the round still asked for every shard: %r" % info)
         self.assertLessEqual(_slowest(have, n, kw), floor * PS.FLOOR_SLACK, info)
         self.assertIn("floor", info["why"])
+        # v3896 (REG-3675) - the floor is said as the slowest SHARD at the most shards, never as one chunk to split
+        self.assertIn("even at 64 shards the slowest shard models", info["why"])
 
     def test_the_plan_mode_prints_one_count_and_its_list_and_falls_back_when_it_cannot_cut(self):
         import heart2 as H
@@ -621,6 +623,11 @@ RED_PROOF = [
      "find": "        if: ${{ steps.measure.outputs.wrote == 'true' }}\n",
      "replace": "        if: ${{ hashFiles(format('{0}/gate-costs/gate_costs.json', runner.temp)) != '' }}\n",
      "matches": 1},
+    {"why": "v3896 (REG-3675) - the floor is said as one chunk to split again, while the shards are balanced",
+     "file": "tv/proof_shard.py",
+     "find": "        why = (\"even at %d shards the slowest shard models %d s, over the %d-s target, so %d shard(s) are the fewest that \"\n",
+     "replace": "        why = (\"the slowest proof chunk alone at %d models %d s, over the %d-s target, so %d shard(s) are the fewest that \"\n",
+     "matches": 1}
 ]
 
 

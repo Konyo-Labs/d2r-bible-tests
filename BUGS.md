@@ -27,6 +27,13 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3675 - TWO SHIP LINES SAID THE WRONG THING IN PLAIN WORDS (v3896)
+Read on every ship, 11-11: the speed ledger's tie read "slowest job 0.5 min (the same than the last 5 rounds' 0.6)" - now
+"the same as"; and the seed's shard count read "the slowest proof chunk alone models 6343 s" while the model's 22 shards were
+balanced (every top shard the same wall) - it was the owed work spread as thin as the bound allows, not one law to split.
+Now "even at 22 shards the slowest shard models ...". Laws: test_every_round_records_how_fast_it_ran,
+test_a_round_chooses_its_own_shard_count. Seen RED (the speed line; the shard line's proof is owed until the Mac is quiet).
+
 ### REG-3674 - A REFUSED REHEARSAL WROTE THE TRACKED LESSONS FILE OF THE TREE IT GRADED (v3896, card #200 guard 9)
 MEASURED 11-11 05:25: v3895's main hook refused on its readiness step (tv/preship.py --mac-ready, REG-3666/3672) and the
 CLI's "remember the first red" appended two lessons to the TRACKED tv/preship_lessons.json of that worktree - the hook's
