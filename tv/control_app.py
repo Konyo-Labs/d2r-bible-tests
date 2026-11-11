@@ -5643,7 +5643,8 @@ def _frames_publish_once(boot):
     # v3859 (b) item 18 - the frames the owner's vault witnessed ride this upload, so a shadow opens the picture itself
     d = _ss.digest(_rpj.load_journal(), HIST_DIR, _is_a_live_read, now_ms, witness_ids=_profile_picture_ids(stores),
                    chron_count=_chronicle_count,   # v3890 (#184) - this PC's own sessions, this PC's own reels
-                   is_game=_session_is_the_game)   # v3890 (#188) - and only the ones that were the game
+                   is_game=_session_is_the_game,   # v3890 (#188) - and only the ones that were the game
+                   game_of=_shelf_games().get)     # v3898 (#188, REG-3713) - and which part of one game each is
     try:
         if isinstance(d, dict) and d.get("sessions"):
             _sy = sync_status(now_ms)

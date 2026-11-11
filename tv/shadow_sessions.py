@@ -453,7 +453,8 @@ def witness_frames(ids, hist_dir, make=_make_thumb):
     return got, whys
 
 
-def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None):
+def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None,
+           game_of=None):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
     ⚠ REG-2772 - NO BUILD TIME IN IT. The first cut carried `at`, so its hash moved on every build and the publish lane's
@@ -500,6 +501,14 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, 
                 games.append(n)
         s["games"] = games
         s["gamesSay"] = say_games(games) if games else None
+        # v3898 (#188, REG-3713) - the part of ONE game this session is (control_app._shelf_games, the equipped ledger's
+        # chain), so a shadow draws the same "part k of m" the owner's Shelf draws; nothing when the game has one part
+        try:
+            _gp = game_of(str(sid)) if (game_of is not None and sid) else None
+        except Exception:
+            _gp = None
+        if isinstance(_gp, dict) and _gp.get("parts", 0) > 1:
+            s["game"] = {"part": _gp.get("part"), "parts": _gp.get("parts"), "character": _gp.get("character")}
         s["scenario"] = scenario_of(games)
         s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
                                     if any(x in runs[k]["names"] for x in games)] or [0]) or None

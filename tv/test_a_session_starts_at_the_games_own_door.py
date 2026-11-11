@@ -284,7 +284,7 @@ class ASessionThatNeverShowedTheGameIsNone(unittest.TestCase):
                                         r"sessions, _not_game = _game_sessions\(sessions\)", app)), 1)
         self.assertEqual(len(re.findall(r"sessions = _rp\.split_sessions\(self\._load_journal_cached\(\)\)\n(?:[ ]*\n)*[ ]*"
                                         r"sessions, _ng = _game_sessions\(sessions\)", app)), 1)
-        self.assertIn("                   is_game=_session_is_the_game)", app)
+        self.assertIn("                   is_game=_session_is_the_game,", app)   # v3898 - game_of= follows it now
         with io.open(os.path.join(HERE, "shadow_sessions.py"), encoding="utf-8") as fh:
             ss = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
         self.assertIn("_game = [g for g in _kept if is_game(g) is not False]", ss)

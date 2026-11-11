@@ -131,6 +131,26 @@ class OneGameInHourlyParts(unittest.TestCase):
         self.assertEqual(ui.count("_shcWhen += shGamePart(sm.game, !!_shcWhen);"), 1, "the card no longer draws the link")
 
 
+    def test_a_shadow_draws_the_same_part_of_one_game(self):
+        """his shadow view of the ALT is where he sees its AFK night: the published digest carries `game`, the shadow row draws it"""
+        import shadow_sessions as SS
+        rows = [{"sessionId": "s_0", "ts": T0, "captureTs": T0, "frameId": "f_1", "scene": "town"},
+                {"sessionId": "s_0", "ts": T0 + 1000, "captureTs": T0 + 1000, "scene": "session_end"}]
+        d = SS.digest(rows, tempfile.gettempdir(), lambda r: False, T0, make=lambda *a, **k: None,
+                      game_of={"s_0": {"part": 2, "parts": 3, "character": None}}.get)
+        self.assertEqual([x.get("game") for x in d["sessions"]], [{"part": 2, "parts": 3, "character": None}], d["sessions"])
+        d1 = SS.digest(rows, tempfile.gettempdir(), lambda r: False, T0, make=lambda *a, **k: None,
+                       game_of={"s_0": {"part": 1, "parts": 1}}.get)
+        self.assertNotIn("game", d1["sessions"][0], "a one-part game is published as a link")
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            ui = fh.read()
+        self.assertEqual(ui.count("+ (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '') + '</div>'"), 1,
+                         "the shadow row no longer draws the link")
+        self.assertEqual(ui.count("  function shGamePart(g, after){"), 1, "the helper the shadow row asks for is gone")
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            ca = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
+        self.assertEqual(ca.count("game_of=_shelf_games().get)"), 1, "the published digest no longer carries the game link")
+
 RED_PROOF = [
     {"why": "v3898 (#188, REG-3713) - a part that filmed no D2R chains the game before it to the game after it again",
      "file": "tv/equipped_ledger.py",
@@ -157,6 +177,11 @@ RED_PROOF = [
      "find": "    if (!g || !(g.parts > 1) || !(g.part >= 1)) return '';\n",
      "replace": "    return '';\n",
      "matches": 1, "needs": "node"},
+    {"why": "v3898 (#188, REG-3713) - the published digest stops carrying the part of one game, so a shadow never sees it",
+     "file": "tv/shadow_sessions.py",
+     "find": "        if isinstance(_gp, dict) and _gp.get(\"parts\", 0) > 1:\n",
+     "replace": "        if False:\n",
+     "matches": 1},
 ]
 
 
