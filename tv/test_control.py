@@ -46945,11 +46945,16 @@ class TheSelfProveYieldsToASweep(unittest.TestCase):
         self._pl = ca._sp_playing_here
         self._ppl = ca._sp_proof_playing_here           # v3862 - the proof lane's own judge (the local game only)
         ca._sp_proof_playing_here = lambda: False       # never this machine's real game in a law
+        # v3898 - nor this machine's real ship: MEASURED 11-11 16:50, v3897's ship was grading on his Mac and both idle
+        # cases read 'yield' (the judge was right, the law read the host)
+        self._pg = ca._a_push_is_grading
+        ca._a_push_is_grading = lambda: False
 
     def tearDown(self):
         ca.chronicle_sweep_state = self._cs
         ca._sp_playing_here = self._pl
         ca._sp_proof_playing_here = self._ppl
+        ca._a_push_is_grading = self._pg
 
     def test_a_running_sweep_makes_the_proof_stand_aside(self):
         ca._sp_playing_here = lambda: False
