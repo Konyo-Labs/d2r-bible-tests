@@ -192,12 +192,21 @@ def main(argv):
     out = base = None
     # v3891 (#194) - CI writes the round's table beside its cache (--out), over the table it dealt from (--base): a gate
     # this round did not run keeps its last measured cost
-    if "--out" in rest:
-        i = rest.index("--out")
-        out, rest = rest[i + 1], rest[:i] + rest[i + 2:]
-    if "--base" in rest:
-        i = rest.index("--base")
-        base, rest = rest[i + 1], rest[:i] + rest[i + 2:]
+    # v3897 (REG-3691, the Grok CLI's look on v3891) - a flag with no path after it is refused, never read: "--out" as the last
+    # word raised IndexError before any table, and "--out --base t.json" wrote a file named "--base" while t.json was read
+    # as a CI log
+    for flag in ("--out", "--base"):
+        if flag in rest:
+            i = rest.index(flag)
+            val = rest[i + 1] if i + 1 < len(rest) else None
+            if not val or val.startswith("--"):
+                print("usage: %s needs a path after it (got %s) - nothing written" % (flag, repr(val) if val else "nothing"))
+                return 2
+            if flag == "--out":
+                out = val
+            else:
+                base = val
+            rest = rest[:i] + rest[i + 2:]
     costs = from_logs(rest)
     if not costs:
         print("no per-gate rows found in %s — nothing written (a table of nothing is not a table)" % rest)

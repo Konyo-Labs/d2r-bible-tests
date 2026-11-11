@@ -50,6 +50,19 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3692 - THE MAC TOOK A SHARD SET CUT AT TWO SIZES AS ONE WHOLE ROUND (v3897, the Grok CLI's look on v3891)
+proof_keys_mac.shard_count_of answers None both when no manifest reads and when the manifests DISAGREE on n, and the import
+then sized the set by the workflow's fallback count - so caches cut as n=3, 3 and 30 passed whole_set as one 3-shard round.
+set_gap() now refuses a set whose manifests disagree ("two rounds' caches, not one set"), sizes it by the one n they share,
+and takes the workflow's count only when no manifest reads; the import asks it. Law: test_a_round_chooses_its_own_shard_count
+(TheMacReadsTheSetsOwnSize). Seen RED.
+### REG-3691 - gate_costs.py READ A FLAG WITH NO PATH AFTER IT (v3897, the Grok CLI's look on v3891)
+"--out" as the last word raised IndexError before any table, and "--out --base t.json" wrote the table to a file named
+"--base" while t.json was read as a CI log. A flag whose next word is missing or another flag is now refused (exit 2,
+nothing written). Law: test_a_round_chooses_its_own_shard_count (a refused call writes no file). Seen RED.
+The look's third finding was checked and rejected: proof_seed.carry_prices cannot be stopped by wall_factor (it catches its
+own read errors and answers the committed constant), and keeping only a factor ABOVE the committed one is the designed rule
+(REG-3521: the wall factor is re-fitted upward only).
 ### REG-3690 - THE SHIP'S POST-GREEN "TIMINGS MERGE" WAS NO MEASUREMENT, WRITTEN INTO A TREE NOTHING COMMITS (v3897, card #200)
 MEASURED 11-11 on v3895's merge (carried by hand into v3896 as d9c6f6da6): it read proof_shard.proof_costs() on the Mac,
 which is the COMMITTED price table plus the timings file's own median rows - no GitHub round is on this machine - so it

@@ -436,6 +436,30 @@ class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def test_a_flag_with_no_path_after_it_is_refused(self):
+        """v3897 (REG-3691, the Grok CLI's look on v3891): "--out" as the last word raised IndexError before any table, and
+        "--out --base t.json" wrote a table to a file named "--base" while t.json was read as a CI log"""
+        import gate_costs as GC
+        import contextlib
+        tmp, here = tempfile.mkdtemp(prefix="ag_flags_"), os.getcwd()
+        try:
+            log = os.path.join(tmp, "shard.log")
+            with io.open(log, "w", encoding="utf-8") as fh:
+                fh.write("\u2705 a 20.0s done\n")
+            base = os.path.join(tmp, "base.json")
+            with io.open(base, "w", encoding="utf-8") as fh:
+                json.dump({"costs": {"old": 50.0}}, fh)
+            os.chdir(tmp)
+            with contextlib.redirect_stdout(io.StringIO()):
+                for argv in (["gate_costs.py", log, "--out"], ["gate_costs.py", "--out", "--base", base, log],
+                             ["gate_costs.py", log, "--base"]):
+                    with self.subTest(argv=argv[1:]):
+                        self.assertEqual(GC.main(argv), 2, "a flag with no path after it was read")
+            self.assertEqual(sorted(os.listdir(tmp)), ["base.json", "shard.log"], "a refused call still wrote a table")
+        finally:
+            os.chdir(here)
+            shutil.rmtree(tmp, ignore_errors=True)
+
     def test_the_workflow_plans_hands_one_table_and_the_verdict_remeasures(self):
         with io.open(TV_WF, encoding="utf-8") as fh:
             wf = fh.read()
@@ -474,6 +498,37 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def test_a_set_whose_manifests_disagree_is_refused_never_sized_by_the_fallback(self):
+        """v3897 (REG-3692, the Grok CLI's look on v3891): shard_count_of answers None for manifests that DISAGREE as it does for
+        none readable, and the caller then took the workflow's count - so three caches cut as n=3, 3 and 30 passed as one
+        whole 3-shard set"""
+        tmp = tempfile.mkdtemp(prefix="pkm_mixed_")
+        try:
+            files = []
+            for k, n in ((1, 3), (2, 3), (3, 30)):
+                p = os.path.join(tmp, "proof-shard-%d" % k, ".heart2_cache.json")
+                os.makedirs(os.path.dirname(p))
+                with io.open(p, "w", encoding="utf-8") as fh:
+                    json.dump({"entries": {}, "shard": {"k": k, "n": n}}, fh)
+                files.append(p)
+            self.assertIsNone(PKM.whole_set(files, 3), "PREMISE: the three names alone read as a whole 3-shard set")
+            gap = PKM.set_gap(files, 3)
+            self.assertIn("disagree on the set's size (n = 3, 30)", gap or "", "a mixed set was taken as one round's")
+            with io.open(files[2], "w", encoding="utf-8") as fh:
+                json.dump({"entries": {}, "shard": {"k": 3, "n": 3}}, fh)
+            self.assertIsNone(PKM.set_gap(files, 22), "a set whose manifests agree was refused, or sized by the fallback")
+            for f in files:
+                with io.open(f, "w", encoding="utf-8") as fh:
+                    fh.write("{")
+            self.assertIsNone(PKM.set_gap(files, 3), "with no readable manifest the workflow's count no longer sizes the set")
+            self.assertIn("3 of 22", PKM.set_gap(files, 22) or "")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        with io.open(PKM.__file__, encoding="utf-8") as fh:
+            code = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
+        self.assertEqual(code.count("gap = set_gap(files, shard_count(io.open(WORKFLOW_FILE"), 1,
+                         "the Mac's import no longer asks whether the downloaded set is one round's")
+
 
 
 class TheProofKeyFormatIsDeclaredAndCarried(unittest.TestCase):
@@ -503,6 +558,21 @@ class TheProofKeyFormatIsDeclaredAndCarried(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3691) - a flag with no path after it is read again (IndexError, or a table written to '--base')",
+     "file": "tv/gate_costs.py",
+     "find": "            if not val or val.startswith(\"--\"):\n",
+     "replace": "            if False:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3692) - a set whose manifests disagree is sized by the workflow's fallback again",
+     "file": "tv/proof_keys_mac.py",
+     "find": "    if len(sizes) > 1:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3692) - the Mac's import stops asking whether the set is one round's",
+     "file": "tv/proof_keys_mac.py",
+     "find": "            gap = set_gap(files, shard_count(io.open(WORKFLOW_FILE, encoding=\"utf-8\").read()))   # v3897 (REG-3692)\n",
+     "replace": "            gap = whole_set(files, shard_count(io.open(WORKFLOW_FILE, encoding=\"utf-8\").read()))\n",
+     "matches": 1},
     {"why": "card #200 guard 3 - a cache key loses its format and a seed can restore another format's entries",
      "file": ".github/workflows/proof-keys-shards.yml",
      "find": "          key: heart2-proofs-k3-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}\n",

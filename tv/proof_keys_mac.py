@@ -93,6 +93,31 @@ def shard_count_of(files):
     return ns.pop() if len(ns) == 1 else None
 
 
+def shard_sizes(files):
+    """v3897 (REG-3692, the Grok CLI's look on v3891) - every set size the readable manifests name. -> sorted [n]. A set whose
+    manifests DISAGREE is two rounds' caches in one artifact - refused, never sized by the workflow's fallback count."""
+    ns = set()
+    for f in files or []:
+        try:
+            with io.open(f, encoding="utf-8") as fh:
+                n = ((json.load(fh) or {}).get("shard") or {}).get("n")
+            if isinstance(n, int) and not isinstance(n, bool) and n > 0:
+                ns.add(n)
+        except (OSError, ValueError, AttributeError):
+            continue
+    return sorted(ns)
+
+
+def set_gap(files, fallback_n):
+    """v3897 (REG-3692) - is this downloaded artifact ONE whole set? Its size is the one n its manifests name, the workflow's
+    count (fallback_n) only when no manifest says; manifests that disagree are refused. -> None when whole, else why"""
+    sizes = shard_sizes(files)
+    if len(sizes) > 1:
+        return ("the shard manifests disagree on the set's size (n = %s) - two rounds' caches, not one set"
+                % ", ".join(str(x) for x in sizes))
+    return whole_set(files, (sizes[0] if sizes else None) or fallback_n)
+
+
 def whole_set(files, n):
     """The artifact must be exactly proof-shard-1 .. proof-shard-N, each with its cache - no short, extra or empty set.
     -> None when whole, else the reason"""
@@ -521,7 +546,7 @@ def main(argv=None):
             files = download_artifact(slug, run["id"], "proof-shards-%s" % sha, token, tmp)
             # v3891 (#194) - the set's size is the count its shards were cut with (their manifests), the workflow's only
             # the fallback when no manifest says
-            gap = whole_set(files, shard_count_of(files) or shard_count(io.open(WORKFLOW_FILE, encoding="utf-8").read()))
+            gap = set_gap(files, shard_count(io.open(WORKFLOW_FILE, encoding="utf-8").read()))   # v3897 (REG-3692)
             if gap:
                 raise RuntimeError(gap)
             r = subprocess.run([sys.executable, os.path.join(HERE, "heart2.py"), "--import-shards"] + files, cwd=HERE,
