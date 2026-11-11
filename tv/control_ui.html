@@ -2409,7 +2409,7 @@
   /* body */
   .shc-body { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px 13px; }
   .shc-when { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); color: #b9c9be; }
-  .shc-game { color: #d8c27a; white-space: nowrap; }   /* v3898 (#188) - "part k of m · one game" */
+  .shc-game { display: block; margin-top: 3px; color: #d8c27a; white-space: nowrap; }   /* v3898 (#188) - "part k of m · one game", its own line */
   .shc-when .shc-dur { color: #8a7e68; }
   /* ══ v2987 — THE RIVER AS FOUR LANES, named the way he names them ═══════════════════════
      Konyo, 2026-09-12: "i want it down a river lane. from top to bottom intake/WHATEVER IS REALLY
@@ -2470,7 +2470,12 @@
     color: rgba(217,201,160,.34); letter-spacing: var(--ls-tight); }
   .shc-area { font: var(--fw-semibold) var(--fs-xs)/var(--lh-tight) var(--mono); letter-spacing: var(--ls-tight); color: #d9c9a0;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .shc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 1px 0 2px; }
+  .shc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 1px 0 2px; }
+  /* v3898 (#184's four boxes) - MEASURED 11-11 on a scratch console in his own font (SF Mono): a bare 1fr track keeps its
+     min-content, so CHRONICLES held its column at ~98 px and the row needed 290 px in a 237 px card at 1440 (267 in 226 at
+     1120): SETS sat 39 px past the card's edge and was cut off. The label floor (--fs-2xs, 13 px+) cannot shrink it to fit
+     four across (~260 px at best), so a Shelf CARD lays its four boxes 2 x 2; the wide shadow row keeps four in a row. */
+  .sh-card .shc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .shc-stat { text-align: center; padding: 7px 3px; border: 1px solid rgba(240,192,96,.12); border-radius: 8px; background: rgba(255,255,255,.02); }
   .sh-card.chronicle .shc-stat { border-color: rgba(240,192,96,.2); }
   .shc-sv { font: var(--fw-bold) var(--fs-sm)/1 var(--mono); color: #e8dcc0; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -19573,8 +19578,8 @@ window._lockMark = function(isOpen, px, label){
     var who = g.character ? ' as ' + esc(String(g.character)) : '';
     var tip = 'One game in hourly parts' + who + ': no character select between these parts, and each starts within the '
       + 'hourly hand-off of the last one\'s seal. A part that never showed the game, or a new character select, starts a new game.';
-    return (after ? ' ' : '') + '<span class="shc-game" title="' + esc(tip) + '">' + (after ? '· ' : '') + 'part '
-      + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
+    /* its own line, never a dangling '·' when it wraps (seen on the 1440 / 901 render: the span broke after the duration) */
+    return '<span class="shc-game" title="' + esc(tip) + '">part ' + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
   }
   function thShelf(force){
     var ov = $('th-shelfov'); if (!ov) return;

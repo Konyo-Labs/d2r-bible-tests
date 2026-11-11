@@ -13907,6 +13907,11 @@ GATES = [
          why="v3898 (card #200, REG-3712) - the ship's Mac rehearsal killed render_check at a fixed 360 s while the push hook "
              "scales the same render by load (REG-1993); v3897's ship lost a whole relaunch to it. preship.check_render now "
              "scales its kill by render_bound and hands TV_RENDER_SCALE / GATE_SCALE down; a quiet Mac keeps 360 s"),
+    Gate("test_the_shelf_card_boxes_fit_the_card",
+         [sys.executable, os.path.join(HERE, "test_the_shelf_card_boxes_fit_the_card.py")], 60,
+         needs_app=False,
+         why="v3898 (#184's four boxes) - repeat(4, 1fr) kept CHRONICLES' min-content: the row needed 290 px in a 237 px card "
+             "and SETS was cut off at the card's edge (his font, measured); a card lays the boxes 2 x 2, no bare 1fr track"),
     Gate("test_one_game_in_hourly_parts",
          [sys.executable, os.path.join(HERE, "test_one_game_in_hourly_parts.py")], 120,
          why="v3898 (#188, REG-3713, his 11-11 ruling) - the hourly parts stay and the parts of one game are linked: a part "

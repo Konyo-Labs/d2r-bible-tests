@@ -123,7 +123,7 @@ class OneGameInHourlyParts(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr.decode("utf-8", "replace")[-600:])
         a, one, none, who = json.loads(r.stdout.decode("utf-8").strip().splitlines()[-1])
         self.assertIn("part 2 of 7 · one game", a)
-        self.assertTrue(a.startswith(" "), "after a duration the label is set apart")
+        self.assertFalse(a.lstrip().startswith("·") or ">·" in a, "the label opens with a separator that dangles when it wraps")
         self.assertEqual(one, "", "a one-part game claims a link")
         self.assertEqual(none, "")
         self.assertIn("as Konyomancer", who)
