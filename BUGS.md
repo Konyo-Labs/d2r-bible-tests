@@ -50,6 +50,11 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3710 - THE THEATRE COUNTED, TILED AND STEPPED THROUGH FRAMES THE RECORDER HAD MARKED BLANK (v3898, card #209)
+GrokBot (#230 6795677353) on his Mac's 3 Nov reel s_1793705809306_17617: the recorder's index.json marks 65 of 290 film frames
+`blank: true` (a pixel recount: 64 near-black), and the session record has frameMissing 22 of 97. The film beat builder never
+carried the mark, so every black frame was a photo, a filmstrip tile and a ← → stop. The beat now carries it; the Theatre skips
+blank beats and its hover names the blank and missing counts. Law: test_a_blank_frame_is_never_a_theatre_photo.
 ### REG-3709 - A LAW READ THE PROVER'S DEADLINE ALLOWANCE AND SHUT HIS MAC'S CHRONICLE ROUTES (v3898, 11-11)
 MEASURED from the Fleet 11-11 14:20: his Mac's safety net filed test_a_parallel_proof_is_the_same_proof RED 10 times from
 10:33 and shut the chronicle / fleet / roster routes for runewords, sets and uniques, while a plain run passed. self_prove

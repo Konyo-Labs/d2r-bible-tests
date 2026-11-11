@@ -12421,18 +12421,33 @@ window._lockMark = function(isOpen, px, label){
   var SCENE_IC = { town:'🏘', loot:'⚔️', inventory:'🎒', stash:'🏦', gameplay:'🌫', transition:'⏳' };
   function thFmtT(ts){ try { return new Date(ts).toLocaleTimeString(); } catch(e){ return ''; } }
   // v948.6 — mode pill shows THIS MODE's photo count vs full-session film (never lie)
+  /* v3898 (card #209, GrokBot #230 6795677353: his Mac's 3 Nov reel, the recorder's index.json marks 65 of 290 film frames
+     blank) - A FRAME THE RECORDER MARKED BLANK IS NOT A PHOTO. The film beat carries the recorder's own `blank` mark; it is
+     left out of every photo count, the filmstrip and photo stepping, and the pill's hover says how many were left out. */
+  function thBeatIsPhoto(b){ return !!(b && b.frame && !b.blank); }
   function thSessionPhotoStats(){
     var all = TH.allBeats || [], cur = TH.beats || [];
-    var allFoot = 0, allPhoto = 0, curFoot = 0, curPhoto = 0;
+    var allFoot = 0, allPhoto = 0, curFoot = 0, curPhoto = 0, allBlank = 0;
     for (var i = 0; i < all.length; i++){
       if (all[i].footage) allFoot++;
-      if (all[i].frame) allPhoto++;
+      if (thBeatIsPhoto(all[i])) allPhoto++;
+      if (all[i].blank) allBlank++;
     }
     for (var j = 0; j < cur.length; j++){
       if (cur[j].footage) curFoot++;
-      if (cur[j].frame) curPhoto++;
+      if (thBeatIsPhoto(cur[j])) curPhoto++;
     }
-    return { allFoot: allFoot, allPhoto: allPhoto, curFoot: curFoot, curPhoto: curPhoto };
+    return { allFoot: allFoot, allPhoto: allPhoto, curFoot: curFoot, curPhoto: curPhoto, allBlank: allBlank };
+  }
+  /* v3898 (#209) - what the photo count leaves out, in his words: the recorder's blank frames, and the read photos the
+     session record says are missing on disk (frameMissing). Unknown says nothing rather than a confident zero. */
+  function thLeftOutSay(st){
+    var parts = [], meta = {};
+    try { meta = (TH.sessions || [])[TH.sn - 1] || {}; } catch (e) {}
+    if (st && st.allBlank > 0) parts.push(st.allBlank + ' blank frame' + (st.allBlank === 1 ? '' : 's') + ' the recorder marked (skipped)');
+    var miss = meta.frameMissing;
+    if (typeof miss === 'number' && miss > 0) parts.push(miss + ' read photo' + (miss === 1 ? '' : 's') + ' missing on disk');
+    return parts.length ? ' · ' + parts.join(' · ') : '';
   }
   function thModeLabel(m){
     var st = thSessionPhotoStats();
@@ -12460,7 +12475,7 @@ window._lockMark = function(isOpen, px, label){
   // v946.9 — photo index among framed beats (what L/R actually steps)
   function thFramedIndices(beats){
     var out = []; beats = beats || TH.beats || [];
-    for (var i = 0; i < beats.length; i++){ if (beats[i] && beats[i].frame) out.push(i); }
+    for (var i = 0; i < beats.length; i++){ if (thBeatIsPhoto(beats[i])) out.push(i); }   /* v3898 (#209) - never a blank frame */
     return out;
   }
   function thPhotoPos(i){
@@ -12501,7 +12516,8 @@ window._lockMark = function(isOpen, px, label){
     el.classList.add(m === 'highlight' ? 'md-highlight' : (m === 'full' ? 'md-full' : 'md-real'));
     el.textContent = thModeLabel(m);
     try { var st = thSessionPhotoStats();   /* #92 - the whole sentence rides in the hover */
-          el.title = _thModeSay(m) + ((st.allFoot !== st.allPhoto) ? (' · film and photos differ' + _filmPhotoSay(st.allFoot, st.allPhoto)) : ''); } catch (eTt) {}
+          el.title = _thModeSay(m) + ((st.allFoot !== st.allPhoto) ? (' · film and photos differ' + _filmPhotoSay(st.allFoot, st.allPhoto)) : '')
+                     + thLeftOutSay(st); } catch (eTt) {}   /* v3898 (#209) - what the count left out, in plain words */
     // v948.8 — STORY is the AI-reader cut: pin the read's dossier/verdict prominently while it plays
     try { $('theatre').classList.toggle('story-mode', m === 'highlight'); } catch (e) {}
   }
@@ -18466,7 +18482,7 @@ window._lockMark = function(isOpen, px, label){
     if (!TH.filmstrip){ strip.innerHTML = ''; return; }
     // every FRAMED beat gets a thumb; cap DOM at ~400 via stride-sampling on longer sessions
     var framed = [];
-    for (var i = 0; i < TH.beats.length; i++){ if (TH.beats[i].frame) framed.push(i); }
+    for (var i = 0; i < TH.beats.length; i++){ if (thBeatIsPhoto(TH.beats[i])) framed.push(i); }   /* v3898 (#209) - no blank tiles */
     var sampled = false, list = framed;
     if (framed.length > 400){
       sampled = true;

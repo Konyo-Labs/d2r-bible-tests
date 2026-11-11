@@ -51404,6 +51404,10 @@ class Handler(BaseHTTPRequestHandler):
                             "stashTab": _stab or "",
                             "kaiMissTexts": _kai_miss.get(fn) or [],
                             **({"engineFrame": _engine_frame} if _engine_frame else {}),
+                            # v3898 (card #209, GrokBot #230 6795677353 on his Mac's 3 Nov reel: index.json blank 65 of 290)
+                            # - the recorder's OWN blank mark rides the film beat, so the Theatre stops counting, showing
+                            # and stepping through black frames as photos. Absent stays absent: no mark, no claim.
+                            **({"blank": True} if it.get("blank") is True else {}),
                         })
                 elif os.path.isdir(hist_dir):
                     # live/unsealed fallback only

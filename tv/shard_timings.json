@@ -6631,6 +6631,10 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_a_blank_frame_is_never_a_theatre_photo": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_game_names_wear_the_game_face": {
       "s": 1.437,
       "src": "measured"

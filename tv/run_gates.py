@@ -13914,6 +13914,12 @@ GATES = [
          why="v3898 (card #214, his 11-11 design brief via GrokBot) - 'if it is not for him to act on and it is just data, it "
              "stays off the main view': the shelf's river strip and pipeline board live in one collapsed drawer at its foot, "
              "the Vault backdoor's format; ids kept, below the reel list, open state for the page's life only."),
+    Gate("test_a_blank_frame_is_never_a_theatre_photo",
+         [sys.executable, os.path.join(HERE, "test_a_blank_frame_is_never_a_theatre_photo.py")], 60,
+         needs_app=False,
+         why="v3898 (card #209, REG-3710, GrokBot's look at his Mac's 3 Nov reel: index.json marks 65 of 290 film frames blank) - "
+             "the film beat carries the recorder's own blank mark; the Theatre leaves blank frames out of the photo count, the "
+             "filmstrip and photo stepping, and its hover says what was left out (blank frames, read photos missing on disk)."),
     Gate("test_game_names_wear_the_game_face",
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,
