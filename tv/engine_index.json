@@ -572,10 +572,24 @@
       "empty_progress",
       "progress_load",
       "progress_save",
-      "run_once"
+      "run_once",
+      "topic_authors",
+      "fill_authors",
+      "queue_monthly_refresh"
     ],
     "gotcha": "It does not fetch the forum unless a fetch callback is handed in. Importing it, constructing progress, or running its tests never opens a network socket to d2jsp. The live 1-search/min lane is started only by the console after he says so.",
     "purpose": "#151 — a resumable, read-only d2jsp price backfill: walks &o= from scrubbed results pages, folds priced posts through the price DB, and a killed run picks up at the saved offset.",
+    "territory": "d2jsp"
+  },
+  "d2jsp_backfill_run.py": {
+    "entryPoints": [
+      "main",
+      "run_loop",
+      "import_into",
+      "check_authors"
+    ],
+    "gotcha": "Asks d2jsp only from run_loop with a signed-in chrome: 1 search/min, a CHALLENGE file stops it and nothing is asked while that file stands. --import-into and --check-authors are offline. The run folder holds data only and is never put on sys.path.",
+    "purpose": "#151 — the read-only d2jsp backfill runner: the paced signed-in loop, the monthly --refresh of stale items, and the idempotent --import-into of its price file into the console's price DB.",
     "territory": "d2jsp"
   },
   "d2jsp_refresh.py": {
@@ -3152,7 +3166,11 @@
       "load",
       "save",
       "checks_running",
-      "fresh_refresh"
+      "fresh_refresh",
+      "import_backfill",
+      "vote_shares",
+      "mark_same_listing",
+      "price_of"
     ],
     "gotcha": "An outlier (w 0) stays on record but never moves the price. fresh_refresh pauses while a gate or heart2 run holds the tree, so a refresh during checks says paused rather than reading.",
     "purpose": "The d2jsp price DB: every priced post the desk read, keyed once by its forum link, priced by an age-decayed weighted median with a Wilson confidence and a separate perfect tier.",

@@ -185,14 +185,14 @@ class TheSameSellerIsOneVoteAcrossReadings(unittest.TestCase):
         db, now = self._db([(1, 1850, "SellerA"), (2, 1850, "sellera"), (3, 1400, "SellerB")])
         pr = DB.price(db, "Enigma", now=now)["perfect"]
         self.assertEqual(pr["fg"], 1400, "one seller's relist out-voted another seller: %s" % pr)
-        ws = sorted((r["fg"], r["w"]) for r in DB.explain(db, "Enigma", now=now)["posts"])
+        ws = sorted((r["fg"], r["vote"]) for r in DB.explain(db, "Enigma", now=now)["posts"])   # v3899: #151's vote_shares
         self.assertEqual(ws, [(1400, 1.0), (1850, 0.5), (1850, 0.5)], "the proof does not show the weights the price used")
 
     def test_unknown_or_different_sellers_keep_a_full_vote_each(self):
         """BASELINE - no stored author (every row before v3898) stays one vote per link; nothing is invented"""
         db, now = self._db([(1, 1850, None), (2, 1850, None), (3, 1400, "SellerB")])
         self.assertEqual(DB.price(db, "Enigma", now=now)["perfect"]["fg"], 1850)
-        self.assertEqual(sorted(r["w"] for r in DB.explain(db, "Enigma", now=now)["posts"]), [1.0, 1.0, 1.0])
+        self.assertEqual(sorted(r["vote"] for r in DB.explain(db, "Enigma", now=now)["posts"]), [1.0, 1.0, 1.0])
 
 
 RED_PROOF = [
@@ -228,13 +228,13 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "v3898 (#180) - one seller's relist stored from another read keeps a full vote again",
      "file": "tv/d2jsp_price_db.py",
-     "find": "        if a and tot[a] > 1.0:\n",
-     "replace": "        if False:\n",
+     "find": "            union(me, \"seller:\" + who.lower())\n",
+     "replace": "            pass\n",
      "matches": 1},
     {"why": "v3898 (#180) - the price stops sharing the seller's vote while the proof still shows it shared",
      "file": "tv/d2jsp_price_db.py",
-     "find": "    priced = seller_shared([p for p in posts if counts(p)])     # REG-3327 + v3898 #180 - one vote per seller\n",
-     "replace": "    priced = [p for p in posts if counts(p)]\n",
+     "find": "        _age, w = _age_weight(p, now, share)\n        if w > 0:\n            pairs.append((p[\"fg\"], w))\n            votes += share\n",
+     "replace": "        _age, w = _age_weight(p, now)\n        if w > 0:\n            pairs.append((p[\"fg\"], w))\n            votes += share\n",
      "matches": 1},
 ]
 

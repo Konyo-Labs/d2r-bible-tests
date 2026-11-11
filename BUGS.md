@@ -23,6 +23,53 @@ BOSS_PORTRAIT serves countess01_graphic.png and summoner_graphic.png while every
 d2mon_The_Countess.gif and d2mon_The_Summoner.gif, each OPENED and sha256-pinned before any wiring; art/verify_boss_portraits.py
 hashes those rows like portraits[] and accepts BOSS_PORTRAIT[id] serving either file, so the wiring is one bible.html edit.
 Law: the same gate (the ready rows must verify; a ready row whose bytes changed is red). Seen RED.
+### REG-3795 - THE d2jsp BACKFILL RAN FROM A PRIVATE FOLDER WHOSE MODULE COPIES SHADOWED THE TREE (v3899 #151, GrokBot's grok/ build)
+MEASURED 11-11: the read-only backfill (158 of 676 items when a d2jsp challenge stopped it at 17:49) ran run_backfill.py from a
+run folder that put ITS OWN d2jsp_backfill.py / d2jsp_price_db.py first on sys.path - a fix shipped in tv/ never reached the run.
+The runner is tv/d2jsp_backfill_run.py now and never puts the run folder on sys.path; the folder holds data only. A challenge or
+rate-limit page writes CHALLENGE and exits 2, and nothing is asked (not even the sign-in) while that file stands - his look
+first, never a bypass. Law: test_a_d2jsp_challenge_stops_the_backfill_cleanly. Seen RED x3 (heart2 --prove).
+
+### REG-3794 - NOTHING EVER RE-ASKED A FINISHED BACKFILL ITEM: NO MONTHLY REFRESH (v3899 #151)
+His 11-08 ruling: a ~2-year backfill, then a monthly refresh. Once every queued item was done the runner said "every queued
+item is done" forever. d2jsp_backfill.queue_monthly_refresh (runner: --refresh) re-opens only an item whose backfill finished
+and whose price file read it over 30 days ago (or never), pages it back only to the day before that read ("caught up"), and
+the pace is run_once's own lastAskAt - 1 search a minute. A fresh item and a mid-backfill item are left alone.
+Law: test_the_monthly_d2jsp_refresh_asks_only_stale_items. Seen RED x2.
+
+### REG-3793 - THE BACKFILL STORED 1,829 OF 1,832 ROWS WITH NO SELLER (v3899 #151)
+MEASURED 11-11 on the running backfill: every log line said authors=-. The parser takes a seller only from a line that neither
+names the item nor carries a price (v3894 - so a body mention is never the seller), and a results row names both.
+d2jsp_backfill.topic_authors reads the page's own rows: a topic belongs to the smallest <tr> linking to it, and that row names
+its seller only with exactly one topic and one user.php name. Two names, two topics, none, or two rows that disagree: unknown.
+The runner fills only posts the parser left without a seller (--check-authors counts it over the kept pages/, asking nothing).
+UNKNOWN until a kept signed-in page is read: the rule is the page's structure, not yet seen on a real page.
+Law: test_the_backfill_reads_the_seller_off_the_results_page. Seen RED x3.
+
+### REG-3792 - A DUPLICATE ENIGMA TOPIC WEIGHED 1.5 VOTES: THE VOTE WAS SPLIT PER PAGE, NOT PER SELLER (v3899 #151 / #180)
+MEASURED 11-11 16:07 on his console DB (GrokBot 6798004838): Enigma perfect weighed 110566436 at w 0.5 beside its duplicate
+110552180 at w 1.0. d2jspOneVotePerPost shares a vote only between rows on ONE page; the DB keeps one row per link, so the
+stored 0.5 was half a vote whose other half had folded onto the same key, and a seller's two topics on two pages were two
+votes. d2jsp_price_db.vote_shares groups every stored row of a tier at price time: rows sharing a seller (author), a topic
+(t=), or a declared same listing (mark_same_listing -> sameAs) never weigh more than ONE vote together (stored w scaled to 1 in
+proportion); a group under one keeps its w (a shop post's 1/28 row is not raised); a w 0 outlier stays 0; unknown sellers in
+different topics stay a group each. MEASURED on the 11-11 snapshot: 171 priced tiers, 0 prices moved. The runner's
+reweight_sellers (rewrote w on every fold) is gone. Tiers carry "votes", explain rows "vote" and "author". His Enigma reads as
+one vote once its seller is read (REG-3793) or the pair is marked. Law: test_a_duplicate_d2jsp_topic_counts_once. Seen RED x3.
+
+### REG-3791 - THE PRICE DB STORED inf, nan AND True AS POSTS (v3899 #151)
+His rule: a post without a price is not a post. ingest kept any float(fg) > 0: "inf", "nan" (nan <= 0 is False) and True
+(float(True) == 1.0) were stored and counted as new posts, though counts() never priced them. ingest and counts share
+price_of (a finite fg > 0, never a bool). Law: test_a_post_without_a_price_is_not_a_post. Seen RED x2.
+
+### REG-3790 - THE BACKFILL'S PRICES NEVER REACHED THE STORED DB, AND A ROW'S SELLER COULD BE DROPPED (v3899 #151)
+MEASURED 11-11: prices-shard0.json held 158 items / 1,832 rows and nothing folded it in. d2jsp_price_db.import_backfill (runner:
+--import-into DB [--dry-run]) is IDEMPOTENT - a post already stored is never added or re-stamped, so the same file twice leaves
+the DB byte-identical (measured on the snapshot: 1,642 new, then 0, md5 unchanged); readAt is the newer, never fresher. Every
+row carries "author" - None when the page named no seller, never invented; a later file or re-read fills a None and never
+clears a known seller (ingest too). A post without a price or link is skipped whole and counted (190 linkless rows).
+Law: test_the_d2jsp_backfill_imports_once_with_its_sellers. Seen RED x3.
+
 ### REG-3700 - THE BOARD'S TV-D LINK KEPT :17771 AFTER IT LEARNED THE AGENT'S REAL PORT (v3896 round 2, the Mac rehearsal)
 MEASURED 11-11 10:10: v3896's Mac rehearsal went RED on changed_tests - test_button_matrix (changed by REG-3670) failed on his
 Mac first for a missing browser (Python Playwright 1.55 wants Chromium 1187, which a Node Playwright install had removed -
