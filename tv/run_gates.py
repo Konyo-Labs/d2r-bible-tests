@@ -13887,6 +13887,20 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_war_mule_he_took_back_makes_the_board_offer_the_next_one.py")], 300,
          needs_app=False,
          why='REG-2997 a war mule he took back makes the board offer the next one, with its make task'),
+    Gate("test_a_ship_that_only_watches_publish_holds_nothing",
+         [sys.executable, os.path.join(HERE, "test_a_ship_that_only_watches_publish_holds_nothing.py")], 60,
+         needs_app=False,
+         why="v3898 (card #206, REG-3706, GrokBot's v3896 look) - the proof import on his Mac read 'a push is grading on this "
+             "PC' for v3896's whole Publish while the ship only polled GitHub. The ship now writes a marker in git's common dir "
+             "while it watches Publish (removed however the watch ends), and push_grading excuses only the ship that marker "
+             "names - never a hook. Driven on fixture process tables, a fake Publish and both callers' syntax trees."),
+    Gate("test_a_yield_that_is_not_his_game_never_reads_playing",
+         [sys.executable, os.path.join(HERE, "test_a_yield_that_is_not_his_game_never_reads_playing.py")], 60,
+         needs_app=False,
+         why="v3898 (card #207, REG-3707, his 11-11 13:19 Fleet: 'it says in fleet im playing.. thats not true') - the "
+             "console's stand-aside judge says yes for a push grading, a sweep reading and GitHub's import too; a proof not "
+             "yet started was filed as 'he is playing on this PC' and the Fleet read 'you are playing'. The judge now carries "
+             "a key with its reason and the tick files the wait under it; his game alone is 'playing'."),
     Gate("test_game_names_wear_the_game_face",
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,

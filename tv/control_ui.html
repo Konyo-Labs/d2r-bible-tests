@@ -29059,7 +29059,11 @@ function escC(s) {
      mostly waited. While the lane's key says it is waiting, the row names the wait instead of a time. */
   /* asked with waitOnly: the wait's few words, or '' - one table, inside the function every Fleet surface already reads */
   var _proofMeterFacts = function (hs) {
-    var waitOnly = arguments[1] === true, W = { busy: 'PC busy', playing: 'you are playing', backoff: 'retries soon', 'low-memory': 'low memory' };
+    /* v3898 (card #207, his 11-11 Fleet: "it says in fleet im playing.. thats not true") - a proof that waits for a push, a
+       sweep or GitHub's import says which; "you are playing" is his game on THAT PC and nothing else */
+    var waitOnly = arguments[1] === true, W = { busy: 'PC busy', playing: 'you are playing', backoff: 'retries soon', 'low-memory': 'low memory',
+                                                'push-grading': 'a push is grading', 'sweep-reading': 'a sweep is reading',
+                                                'import-first': 'import first', 'yield': 'waits its turn' };
     var wait = (hs && typeof hs === 'object' && typeof hs.key === 'string' && Object.prototype.hasOwnProperty.call(W, hs.key)) ? W[hs.key] : '';
     /* v3894 (REG-3580, his 11-10 Fleet: the work ALT read "import first" while a proof had stood aside for 691 MB free,
        and GitHub's import had already landed). stood-aside / aside-cooldown mean a proof paused; the why says whether
@@ -30011,7 +30015,10 @@ function escC(s) {
       /* v3861 - the few words that say what the proof is waiting on (the hover keeps the long form) */
       var _LOCK_WHY = { 'takes-fleet': 'borrows proofs, proves none', 'start': 'proof waits for an idle PC',
                         'busy': 'proof waits for an idle PC', 'running': 'proving now', 'stood-aside': 'proof paused',
-                        'playing': 'proof paused while playing' };
+                        'playing': 'proof paused while playing',
+                        /* v3898 (#207) - a push, a sweep or the import, never "playing" */
+                        'push-grading': 'proof waits for a push', 'sweep-reading': 'proof waits for a sweep',
+                        'import-first': 'proof waits for the import', 'yield': 'proof waits its turn' };
       var _lw = (!_memWait && !_recheck && hs && _LOCK_WHY[hs.key]) ? ' \u00b7 ' + _LOCK_WHY[hs.key] : '';
       /* REG-3197 - the ONE reason, when the import or this PC's own proving is it; the chip then reads amber, not red.
          The reviewer on r3 (his live ALT rows: blind 1 and blind 3, drawn amber "until this PC proves") - A BLIND GATE IS

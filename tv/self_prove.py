@@ -1320,7 +1320,7 @@ def process_rows(run=None):
         return None
 
 
-def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_pid=None):
+def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_pid=None, watching=None):
     """v3861 - IS A PUSH GRADING ON THIS PC, outside this lane's own prover? -> (True | False | None, detail). Pure.
 
     MEASURED 2026-11-05 ~02:00 on his Mac: the console's `heart2 --prove test_control` started 20 minutes before the
@@ -1338,7 +1338,10 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
     `self_pid`: a hook that is an ANCESTOR of the asking process is the push that is running it - a law inside the
     pre-push gate - never one to stand aside for. CAUGHT BY THE v3861 PUSH ITSELF: TheSelfProveYieldsToASweep asked
     _sp_yield_here() inside the pre-push, saw that very push and read "yield" on an idle fixture (green on CI, where no
-    push runs). His real console is never a child of a hook, so it still yields."""
+    push runs). His real console is never a child of a hook, so it still yields.
+
+    `watching` (v3898, card #206): the pids of ships that wrote they are past main and only watching GitHub's Publish
+    (ships_only_watching()). Such a ship grades nothing here, so it never holds a proof or the proof import."""
     if rows is None:
         return None, "the process list could not be read"
     try:
@@ -1361,6 +1364,12 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
                 continue
             if pid in mine:
                 continue                       # the push that is running THIS process (a law inside the gate)
+            # v3898 (card #206) - A SHIP THAT ONLY WATCHES PUBLISH GRADES NOTHING HERE. MEASURED 11-11 by GrokBot on his Mac:
+            # 12:43, 12:48 and 13:01 IL the proof import read "a push is grading on this PC - the proof import waits for it"
+            # while v3896's ship was past main and only polling GitHub's Publish (an hour on a slow one). REG-3678 counts a
+            # ship for its whole run because its readiness, rehearsal and hook grade on this Mac; after main none of that runs.
+            if ship and pid in (watching or ()):
+                continue
             age = age_of.get(pid)
             # v3897 (REG-3705, the Grok CLI's look on v3896) - THE FLOOR IS FOR A HOOK, NEVER A SHIP. A ci/ push's hook exits in
             # seconds, so a proof does not give up half an hour for one younger than after_s; a ship runs for an hour, and its
@@ -1386,6 +1395,62 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
     if ships and len(ships) == len(hits):
         return True, "a ship is running on this PC (pid %s)" % ", ".join(sorted(ships, key=int)[:4])
     return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
+
+
+#: v3898 (card #206) - a ship past its main push writes this in git's COMMON dir (every checkout and worktree of this PC reads
+#: one file; never a tracked byte) while it only watches GitHub's Publish, and removes it when the watch ends
+SHIP_PHASE_FILE = "ship_phase.json"
+SHIP_WATCHING = "publish-watch"
+
+
+def ship_phase_path(repo=None):
+    """-> the marker's path in git's common dir for the checkout at `repo` (this file's own by default), or None. Read
+    from the files git reads (heart2._git_common_dir), never by running git: inside a hook GIT_DIR is inherited."""
+    try:
+        import heart2 as _h2
+        d, _why = _h2._git_common_dir(repo or os.path.dirname(HERE))
+    except Exception:
+        return None
+    return os.path.join(d, SHIP_PHASE_FILE) if d else None
+
+
+def mark_ship_watching(path, pid=None, sha=None, now=None):
+    """The ship is past main and only watches Publish: say so. -> True if written. Never raises."""
+    if not path:
+        return False
+    try:
+        tmp = path + ".tmp"
+        with io.open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps({"pid": str(pid if pid is not None else os.getpid()), "phase": SHIP_WATCHING,
+                                 "sha": str(sha or ""), "at": float(now if now is not None else time.time())}))
+        os.replace(tmp, path)
+        return True
+    except Exception:
+        return False
+
+
+def clear_ship_watching(path, pid=None):
+    """The watch ended: remove the marker if it is this ship's. -> True if removed. Never raises."""
+    try:
+        with io.open(path, encoding="utf-8") as fh:
+            d = json.loads(fh.read())
+        if str(d.get("pid")) != str(pid if pid is not None else os.getpid()):
+            return False
+        os.remove(path)
+        return True
+    except Exception:
+        return False
+
+
+def ships_only_watching(path):
+    """-> the set of ship pids (strings) whose marker says they only watch Publish. An unreadable or absent marker is an
+    empty set: the ship then counts as grading, which can only hold a proof longer, never run one beside a real grade."""
+    try:
+        with io.open(path, encoding="utf-8") as fh:
+            d = json.loads(fh.read())
+    except Exception:
+        return set()
+    return {str(d.get("pid"))} if d.get("phase") == SHIP_WATCHING and d.get("pid") else set()
 
 
 def spawn(log_path, python=None, workers=None, popen=None, names=None, door=None, reuse=True, net=False, trust=False):
@@ -1525,7 +1590,8 @@ def _hold_awake(pid, real=True):
 
 
 def tick(now_s=None, busy=None, tree=None, census=None, path=None, spawn_fn=None, env=None,
-         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False, lock_rank=None, play_why=None):
+         playing=None, free=None, kill_fn=None, sandbox=None, takes_only=False, lock_rank=None, play_why=None,
+         play_key=None):
     """One pass of the lane. NEVER raises - it runs inside the rescue loop that also watches whether the
     console can still answer its own port. -> the lane's status in the shared vocabulary.
     `playing` / `free` are callables or values (REG-1502); None asks this machine. #103-C - `lock_rank` (a callable,
@@ -1533,7 +1599,7 @@ def tick(now_s=None, busy=None, tree=None, census=None, path=None, spawn_fn=None
     itself, so a census handed in is never ranked against this PC's real one."""
     try:
         return _tick(now_s, busy, tree, census, path, spawn_fn, env, playing, free, kill_fn, sandbox, takes_only,
-                     lock_rank, play_why)
+                     lock_rank, play_why, play_key)
     except Exception as e:
         return {"on": enabled(env), "worked": None, "lastTs": None, "owed": None, "key": "raised",
                 "say": "the self-prove tick raised %s - nothing was started" % type(e).__name__}
@@ -1575,11 +1641,13 @@ def guard(now_s=None, path=None, playing=None, free=None, kill_fn=None, _tick=No
             return (_tick or tick)(now_s=now_s, path=path, kill_fn=kill_fn, busy=busy, playing=playing, free=free)
         play_now = _ask(playing, proof_playing_state)
         play_why = _play_why(playing)
+        play_key = _play_key(playing)
         free_now = _ask(free, free_mb)
         aside, _why = stand_aside(play_now, free_now, why=play_why)
         if not aside:
             return None
-        return (_tick or tick)(now_s=now_s, path=path, playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why)
+        return (_tick or tick)(now_s=now_s, path=path, playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why,
+                               play_key=play_key)
     except Exception as e:
         return {"on": None, "worked": None, "lastTs": None, "owed": None, "key": "raised",
                 "say": "the self-prove guard raised %s - the tick will ask again" % type(e).__name__}
@@ -1640,6 +1708,13 @@ def _play_why(v):
     return w if isinstance(w, str) and w.strip() else None
 
 
+def _play_key(v):
+    """v3898 (card #207) - the judge's own KEY for its last yes (its `.key`: push-grading, sweep-reading, import-first), read
+    like its `.why`. -> a wire-safe key | None (None: the yes is the game's)."""
+    k = getattr(v, "key", None) if callable(v) else None
+    return k if isinstance(k, str) and re.match(r"^[a-z][a-z-]{0,31}$", k) and k != "playing" else None
+
+
 def _ask(v, probe):
     try:
         return (v() if callable(v) else v) if v is not None else probe()
@@ -1656,12 +1731,13 @@ def _forget(mem):
 
 
 def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=None, kill_fn=None, sandbox=None,
-          takes_only=False, lock_rank=None, play_why=None):
+          takes_only=False, lock_rank=None, play_why=None, play_key=None):
     _rank_here = lock_rank is not None or census is None     # #103-C - the rank speaks only for the census it ranks
     now_s = time.time() if now_s is None else now_s
     now_ms = int(now_s * 1000)
     play_now = _ask(playing, proof_playing_state)
     play_why = play_why or _play_why(playing)              # v3883 - the judge's own reason, read right after its call
+    play_key = play_key or _play_key(playing)              # v3898 (#207) - and its key, read with it
     free_now = _ask(free, free_mb)
     mem = load(path)
     if mem.get("unreadable"):
@@ -1796,6 +1872,13 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
                busy() if callable(busy) else busy, mem, now_s, on=on, playing=play_now, free=free_now,
                sandbox=(_sb() if callable(_sb) else _sb), takes_only=takes_only,
                cloud=(cloud_streaming() if mem.get("busySince") is not None else None))   # v3884 - asked only while busy
+    # v3898 (card #207, his 11-11 13:19 Fleet: his MacBook read "proving 22 checks · you are playing" - "thats not true my
+    # alt windows pc ... is though") - A YIELD THAT IS NOT HIS GAME IS NEVER "playing". The console's judge says yes for a
+    # push grading, a sweep reading or GitHub's import too (its .why / .key name which); decide() saw only the yes and filed
+    # it as "he is playing on this PC". MEASURED on his Mac at 13:20: no D2R.exe running (proof_playing_state False), the
+    # key "playing", the stand-aside "a push is grading on this PC" - v3896's ship. The judge's reason is the record's.
+    if d.get("key") == "playing" and play_why:
+        d = {"start": False, "key": play_key or "yield", "why": play_why}
     if stall_gone is True:
         d = {"start": False, "key": "silent", "why": stall_why}
     elif stall_gone is False:

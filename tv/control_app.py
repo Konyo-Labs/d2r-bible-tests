@@ -24114,7 +24114,9 @@ def _a_push_is_grading():
         import self_prove as _sp
         now = time.time()
         if now - _PUSH_GRADING["at"] >= _sp.PUSH_ASK_EVERY_S:
-            _PUSH_GRADING["v"] = _sp.push_grading(_sp.process_rows(), self_pid=os.getpid())
+            # v3898 (#206) - a ship that only watches Publish holds nothing (its own marker in git's common dir)
+            _PUSH_GRADING["v"] = _sp.push_grading(_sp.process_rows(), self_pid=os.getpid(),
+                                                  watching=_sp.ships_only_watching(_sp.ship_phase_path()))
             _PUSH_GRADING["at"] = now
         return _PUSH_GRADING["v"][0] is True
     except Exception:
@@ -24129,14 +24131,17 @@ def _sp_yield_here():
     start-anyway under genuine (non-sweep) busy is untouched - a sweep only DELAYS the proof, between
     sweeps it still proves. A new proof does not start while either is true; a running one yields in 10 s."""
     _sp_yield_here.why = None       # v3883 - its reason for a yes, read by the prover's record (None: the game)
+    _sp_yield_here.key = None       # v3898 (#207) - and its key, so the Fleet never reads a push as "you are playing"
     try:
         if _a_sweep_is_reading():
             _sp_yield_here.why = "a sweep is reading his reels - the proof waits for it (REG-2192)"
+            _sp_yield_here.key = "sweep-reading"
             return True
     except Exception:
         pass
     if _a_push_is_grading():        # v3861 - a push grading on this PC goes first; the proof waits for it
         _sp_yield_here.why = PUSH_STAND_ASIDE
+        _sp_yield_here.key = "push-grading"
         return True
     return _sp_proof_playing_here()     # v3862 - the local game only (his ruling: prove beside cloud)
 
@@ -24163,9 +24168,11 @@ def _sp_prove_yield_here():
     read is no BLIND here: the import keeps the cores, as before. [[heart-first]]"""
     if _PROOF_RELEASE.get("running") is True and not _sp_blind_owed():
         _sp_prove_yield_here.why = IMPORT_STAND_ASIDE     # v3883 - the prover's record says the import, never "playing"
+        _sp_prove_yield_here.key = "import-first"          # v3898 (#207)
         return True
     y = _sp_yield_here()
     _sp_prove_yield_here.why = getattr(_sp_yield_here, "why", None)
+    _sp_prove_yield_here.key = getattr(_sp_yield_here, "key", None)
     return y
 
 

@@ -173,7 +173,8 @@ class TheLawHolds(unittest.TestCase):
         first_watch = src.index("        got = watch(sha)\n", watch_def)
         self.assertLess(watch_def, call_at)
         self.assertLess(call_at, first_watch)
-        ret = "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)\n"
+        # v3898 re-anchored (card #206): the call carries the ship's phase marker on its next line
+        ret = "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run,\n"
         self.assertIn(ret, src)
 
     def test_the_live_shard_watch_protects_runners(self):
@@ -208,8 +209,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3654 - the ship no longer hands its gh runner to the Publish watch",
      "file": "tv/ship_when_green.py",
-     "find": "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)\n",
-     "replace": "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s)\n",
+     "find": "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run,\n",   # v3898 re-anchored
+     "replace": "        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s,\n",
      "matches": 1},
     {"why": "REG-3654 - the live shard watch no longer yields runners when a ship is queued",
      "file": "tv/shard_watch.py",

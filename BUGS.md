@@ -50,6 +50,17 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3707 - THE FLEET SAID "YOU ARE PLAYING" ON HIS MACBOOK WHILE A PUSH WAS GRADING (v3898, card #207, his 11-11 report)
+His words 13:19: "for konyo me on my macbook it says in fleet im playing.. thats not true my alt windows pc work issta is
+though". MEASURED on his Mac 13:20: no D2R.exe (proof_playing_state False), the prover's key "playing", its stand-aside
+"a push is grading on this PC". The console's judge says yes for a push, a sweep and GitHub's import as well as his game;
+decide() saw only the yes. The judge now carries a key with its reason and the tick files the wait under it.
+Law: test_a_yield_that_is_not_his_game_never_reads_playing.
+### REG-3706 - THE PROOF IMPORT WAITED FOR A SHIP'S WHOLE PUBLISH WATCH (v3898, card #206, GrokBot's v3896 look)
+MEASURED 11-11 by GrokBot on his Mac: 12:43, 12:48 and 13:01 IL the console read "a push is grading on this PC - the proof
+import waits for it" while v3896's ship was past main and only polling GitHub's Publish. v3896's REG-3678 counts a ship like
+a push for its whole run, and after main nothing grades here. The ship now marks its Publish watch in git's common dir and
+push_grading excuses only that ship. Law: test_a_ship_that_only_watches_publish_holds_nothing.
 ### REG-3705 - A SHIP IN ITS FIRST MINUTE WAS INVISIBLE TO THE CONSOLE'S PROOF (v3897, the Grok CLI's look on v3896)
 self_prove.push_grading skipped every push or ship younger than PUSH_GRADING_AFTER_S (60 s) - a floor written for a ci/
 push's hook, which exits in seconds. A ship runs for an hour, and a proof that started in its first minute was never stopped

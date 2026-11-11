@@ -366,9 +366,23 @@ def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
             % (sha[:9], int(minutes), limit, "; ".join(named[:10]) or "nothing GitHub would name"))
 
 
-def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None):
+def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None, phase_path=None):
     """REG-3213 - after the main push: follow Publish on `sha` until it ends or `wait_s` passes, alerting once past
-    `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way)."""
+    `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way).
+
+    v3898 (card #206) - `phase_path`: while it watches, the ship says so in git's common dir, so the console's proof and its
+    proof import (self_prove.push_grading) stop waiting for a ship that grades nothing here any more. Removed when the watch
+    ends, however it ends."""
+    import self_prove as _SP
+    _marked = _SP.mark_ship_watching(phase_path, sha=sha) if phase_path else False
+    try:
+        return _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run)
+    finally:
+        if _marked:
+            _SP.clear_ship_watching(phase_path)
+
+
+def _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run):
     t0, said, alerted = clock(), None, False
     say("ship: REG-3213 watching Publish on %s - an alert at %d min, the console's eagle watches it too" % (sha[:9], limit))
     while True:
@@ -817,7 +831,9 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     # nothing commits (v3896 carried it by hand). A round's real prices travel on GitHub, round to round (REG-3274).
     post_land_status(version, run, say)
     if watch_publish_s:
-        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)
+        import self_prove as _SP
+        return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run,
+                             phase_path=_SP.ship_phase_path(REPO))
     return 0
 
 

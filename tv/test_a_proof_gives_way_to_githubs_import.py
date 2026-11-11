@@ -235,8 +235,8 @@ RED_PROOF = [
      "replace": "        return True, \"he started playing - a proof never runs beside his game\"\n", "matches": 1},
     {"why": "v3883 - the guard never hands the judge's reason to the tick that books the stand-aside",
      "file": "tv/self_prove.py",
-     "find": "playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why)",
-     "replace": "playing=play_now, free=free_now, kill_fn=kill_fn)", "matches": 1},
+     "find": "playing=play_now, free=free_now, kill_fn=kill_fn, play_why=play_why,\n",   # v3898 re-anchored (#207 play_key)
+     "replace": "playing=play_now, free=free_now, kill_fn=kill_fn,\n", "matches": 1},
     {"why": "v3883 - the import's yes carries no reason",
      "file": "tv/control_app.py",
      "find": "        _sp_prove_yield_here.why = IMPORT_STAND_ASIDE     # v3883",
