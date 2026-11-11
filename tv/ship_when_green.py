@@ -695,6 +695,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     t0 = clock()
     tries, last = {}, None          # v3865 - per workflow: dispatches asked; a refused one is asked again next poll
     made = {}                       # REG-3270 - run id -> when its make-up re-run was asked (None: judged, not made up)
+    held = set()                    # v3897 (REG-3688) - proof runs whose red shard waits for the run's own census
     alerted = False                 # REG-3213 - the 75-minute alert is said once, loudly
     rehearsed = {"code": None, "rows": [], "done": not bool(mac_rehearse)}
     rehearse_thread = None
@@ -739,6 +740,17 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             only_proofs = all(x.startswith(CV.REQUIRED[3]) for x in red)
             if only_proofs and asked is not None and clock() - asked < MAKEUP_GRACE_S:
                 red = []                # the re-run was asked a moment ago and GitHub has not started it yet
+            elif only_proofs and pr and asked is None and pr.get("status") not in (None, "completed"):
+                # v3897 (REG-3688) - A RED SHARD WAITS FOR ITS ROUND'S CENSUS. MEASURED 11-11 08:16, v3896 round 1: shard 5 lost
+                # its runner 7 minutes in ("The runner has received a shutdown signal", exit 143) while 20 shards still ran;
+                # the make-up looked for the census the fan-in writes only at the end, read UNKNOWN, and the ship stopped. The
+                # make-up (REG-3292: a runner-killed shard is no law's fault) is judged once the run has finished.
+                rid = pr.get("databaseId")
+                if rid not in held:
+                    held.add(rid)
+                    say("ship: REG-3688 a proof shard went red while run %s still runs - the make-up is judged on the "
+                        "census its fan-in writes; waiting" % rid)
+                red = []
             elif only_proofs and makeup(sha, runs, run, say, made, clock):
                 red = []
             elif (not only_proofs) and suite_makeup(sha, runs, run, say, made, clock):

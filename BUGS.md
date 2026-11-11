@@ -50,6 +50,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3688 - A SHARD RED WHILE ITS ROUND STILL RAN STOPPED THE SHIP ON A CENSUS NOT YET WRITTEN (v3897, card #200)
+MEASURED 11-11 08:16, v3896 round 1 (4110dfc86): shard 5 lost its runner 7 minutes in ("The runner has received a shutdown
+signal", exit 143) while 20 shards still proved. The ship saw the required job red, asked the make-up at once, and the make-up
+asked for the census the fan-in writes only after every shard has ended - none existed, it read UNKNOWN ("not made up - the
+census could not be read") and the ship stopped. A runner-killed shard is exactly what REG-3292 makes up, so it became a hand
+re-run and a relaunch. Now a red that is only proof shards, on a run that is still running and not yet judged, waits (said
+once per run) and the make-up is judged on the round's own census when it completes. A red in any other required run, and a
+REAL red the live shard watch classifies (REG-3648), still stop the ship at once. Law:
+test_a_round_cut_only_by_its_deadline_is_made_up (TheShipMakesUpARound). Seen RED x2.
 ### REG-3687 - EVERY PC READ THE SHIP'S OWN CANCEL AS "THIS VERSION'S CI DID NOT SUCCEED" (v3897, card #200 guard 7)
 MEASURED 11-11 07:10: right after v3895 went live, the OLD PC ALT's doctor row "this version's CI" read "a run on f1245cf6a did
 not succeed: proof-keys windows (cancelled)" - the optional Windows run the ship cancelled on purpose once GitHub vouched

@@ -132,17 +132,29 @@ class TheMakeupDecision(unittest.TestCase):
 class _Gh(object):
     """A fake `gh`/`git` for ship(): runs on one sha; the proof run red until re-run, then green (or red again)."""
 
-    def __init__(self, census, second="success", job_log="", attempt=None):
+    def __init__(self, census, second="success", job_log="", attempt=None, running=0):
         self.census, self.second, self.reruns, self.calls, self.job_log = census, second, 0, [], job_log
         self.attempt = attempt          # #146 - None: the run's attempt cannot be read (UNKNOWN)
+        self.running = running          # REG-3688 - polls on which the proof run still runs, one shard already red
+        self.live = False               # REG-3688 - the last poll saw the run running: its fan-in has written no census
+        self.early = 0                  # REG-3688 - census downloads asked while the run still ran
 
     def runs(self):
         rs = [{"workflowName": wf, "headSha": SHA, "status": "completed", "conclusion": "success",
                "createdAt": "2026-11-06T10:00:00Z", "databaseId": 100 + i} for i, wf in enumerate(CV.REQUIRED)]
         p = rs[3]
         p["databaseId"] = 42200089396
+        self.live = False
         if self.reruns == 0:
             p["conclusion"] = "failure"
+            if self.running > 0:        # REG-3688 - v3896 round 1: shard 5 lost its runner while 20 shards still ran
+                self.running -= 1
+                self.live = True
+                p.update(status="in_progress", conclusion=None, jobs=[
+                    {"name": "seed - the proofs this exact commit already has", "status": "completed", "conclusion": "success"},
+                    {"name": "shard 7", "status": "completed", "conclusion": "failure"},
+                    {"name": "shard 8", "status": "in_progress", "conclusion": None},
+                    {"name": "fan-in - one whole set of this commit, or none", "status": "queued", "conclusion": None}])
         else:
             p["conclusion"] = self.second
         return rs
@@ -152,6 +164,9 @@ class _Gh(object):
         out = ""
         if cmd[:3] == ["gh", "run", "download"]:
             d = cmd[cmd.index("-D") + 1]
+            if self.live:               # REG-3688 - the fan-in writes the census only once every shard has ended
+                self.early += 1
+                return subprocess.CompletedProcess(cmd, 1, "", "no artifact matches any of the names or patterns provided")
             if self.census is None:
                 return subprocess.CompletedProcess(cmd, 1, "", "no artifact")
             with io.open(os.path.join(d, "census.json"), "w", encoding="utf-8") as fh:
@@ -265,6 +280,22 @@ class TheShipMakesUpARound(unittest.TestCase):
         gh = _Gh(None)
         code, said = _ship(gh)
         self.assertEqual((gh.reruns, code), (0, 1), said)
+
+    def test_a_shard_red_while_its_round_still_runs_waits_for_the_census(self):
+        """* v3897 (REG-3688) THE POINT - MEASURED 11-11 08:16, v3896 round 1 (4110dfc86): shard 5 lost its runner 7 minutes in
+        (exit 143) while 20 shards still proved; the make-up asked for the census the fan-in writes only at the end, read
+        UNKNOWN, and the ship stopped - a runner-killed shard REG-3292 makes up became a hand re-run. Now the red waits for
+        the round's census, and the make-up is judged on it."""
+        lost = dict(CUT, cut=[], lost=[7])
+        gh = _Gh(lost, job_log="2026-11-11T06:16Z ##[error]" + SW.RUNNER_KILLED + ".\nexit 143", running=3)
+        import shard_watch as SHW
+        with mock.patch.object(SHW, "watch_jobs_live", lambda *a, **k: (None, None)):   # REG-3648's own law, not this one
+            code, said = _ship(gh)
+        self.assertEqual(gh.early, 0, "the census was asked for while the run still ran: %s" % said)
+        self.assertFalse(any("not made up" in s for s in said), "a running round was judged on no census: %s" % said)
+        self.assertEqual(sum("REG-3688" in s for s in said), 1, "the wait was not said, or said on every poll: %s" % said)
+        self.assertEqual((gh.reruns, code), (1, 0), "\n".join(said))
+        self.assertIn(["git", "-c", "core.hooksPath=hooks", "push", "origin", "HEAD:main"], gh.calls)
 
 
 class ThePricesMeasureThemselves(unittest.TestCase):
@@ -553,6 +584,14 @@ RED_PROOF = [
      "file": "tv/proof_shard.py",
      "find": "        if attempt == 1 and len(clean) == len(fix):\n",
      "replace": "        if len(clean) == len(fix):\n", "matches": 1},
+    {"why": "v3897 (REG-3688) - a shard red while its round still runs is judged at once on a census not yet written (v3896 r1)",
+     "file": "tv/ship_when_green.py",
+     "find": "            elif only_proofs and pr and asked is None and pr.get(\"status\") not in (None, \"completed\"):\n",
+     "replace": "            elif False:\n", "matches": 1},
+    {"why": "v3897 (REG-3688) - the wait is said on every poll (a 40-minute round floods the ship log)",
+     "file": "tv/ship_when_green.py",
+     "find": "                if rid not in held:\n",
+     "replace": "                if True:\n", "matches": 1},
     {"why": "#146 - an unreadable attempt reads as a first attempt",
      "file": "tv/ship_when_green.py",
      "find": "        return int(a) if a is not None else None\n",
