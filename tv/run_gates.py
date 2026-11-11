@@ -13912,6 +13912,11 @@ GATES = [
          needs_app=False,
          why="v3898 (#184's four boxes) - repeat(4, 1fr) kept CHRONICLES' min-content: the row needed 290 px in a 237 px card "
              "and SETS was cut off at the card's edge (his font, measured); a card lays the boxes 2 x 2, no bare 1fr track"),
+    Gate("test_a_boss_wears_one_picture_everywhere",
+         [sys.executable, os.path.join(HERE, "test_a_boss_wears_one_picture_everywhere.py")], 60,
+         needs_app=False,
+         why="v3899 (#91, GrokBot #230 6803962990) - the Summoner wore his sprite on his Boss card and his old render in "
+             "BOSS_PORTRAIT; the TV·D area art still gave the act bosses their stone-backed renders. One file per boss"),
     Gate("test_the_shelf_header_counts_every_pc",
          [sys.executable, os.path.join(HERE, "test_the_shelf_header_counts_every_pc.py")], 120,
          why="v3899 (#213, GrokBot #230 6798971834) - his Mac's own Shelf header (best run, most reads, streak, the 14-day "

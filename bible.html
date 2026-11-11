@@ -72195,12 +72195,15 @@ function renderJournal(){
      Council (fandom's sits on a solid black box - rejected) or the Hell Bovine: they keep their portraits.
      v3898 (#203, GrokBot #230 6797908757) - the Countess HAS one: rankedboost's assets/boss path (the source the map already
      names) holds her 13-frame sprite, opened on a contact sheet and recorded in the manifest. The Council and the Hell
-     Bovine still keep their portraits. */
+     Bovine still keep their portraits.
+     v3899 (#91, GrokBot #230 6803962990) - THE SUMMONER WAS SPLIT: his Boss card and Terror Zone card already wore
+     d2mon_The_Summoner.gif while this map (run thumbs, source seams) and the TV·D area art kept summoner_graphic.png. One
+     picture per monster: his 8-frame sprite everywhere, opened on a contact sheet and recorded in the manifest. */
   var BOSS_PORTRAIT = {
     andariel:  'd2mon_Andariel.gif',        mephisto:  'd2mon_Mephisto.gif',
     duriel:    'd2mon_Duriel.gif',          diablo:    'd2mon_Diablo.gif',
     baal:      'd2mon_Baal.gif',            nihl:      'd2mon_Nihlathak.gif',
-    cows:      'hellbovine_graphic.png',    summoner:  'summoner_graphic.png',
+    cows:      'hellbovine_graphic.png',    summoner:  'd2mon_The_Summoner.gif',   /* v3899 (#91, GrokBot #230 6803962990) */
     countess:  'd2mon_The_Countess.gif',    travincal: 'councilmember_graphic.png',   /* v3898 (#203) - her sprite, found by GrokBot */
     /* v1642 — Konyo: the Pindle thumb is "still showing here like maps plainly instead of the HD
        art". Three ids had no entry. Each was decided on its own evidence, not swept in together:
@@ -88120,14 +88123,16 @@ window.tvStashAutoIntake = async function(tab, opts){
   // names (HD art · rarity ring · lifecycle badge). Fingerprint-skip (never a 250ms innerHTML
   // blast), honesty-gated (note/db:false never gets a tile), click-contained (hover cards yes,
   // routing never). Hidden entirely when off — the CRT static owns that story.
+  /* v3899 (#91) - the TV·D area art wears each boss's ONE picture, the same file BOSS_PORTRAIT serves (the act bosses kept
+     their stone-backed renders here after REG-3321 moved every other surface to the sprites) */
   var TVN_BOSS=[
-    { re:/durance of hate/i,                     name:'Mephisto',     art:'art/mephisto_graphic.png' },
-    { re:/(throne of destruction|worldstone)/i,  name:'Baal',         art:'art/baal-opt_graphic.png' },
-    { re:/chaos sanctuary/i,                      name:'Diablo',       art:'art/diablo_graphic.png' },
-    { re:/catacombs\s*(level\s*4|lvl\s*4|4)\b/i,  name:'Andariel',     art:'art/Andariel_graphic.png' },
-    { re:/(tal rasha|duriel)/i,                   name:'Duriel',       art:'art/duriel_graphic.png' },
-    { re:/halls of (vaught|anguish|pain)/i,       name:'Nihlathak',    art:'art/nihlathak-opt_graphic.png' },
-    { re:/arcane sanctuary/i,                     name:'The Summoner', art:'art/summoner_graphic.png' },
+    { re:/durance of hate/i,                     name:'Mephisto',     art:'art/d2mon_Mephisto.gif' },
+    { re:/(throne of destruction|worldstone)/i,  name:'Baal',         art:'art/d2mon_Baal.gif' },
+    { re:/chaos sanctuary/i,                      name:'Diablo',       art:'art/d2mon_Diablo.gif' },
+    { re:/catacombs\s*(level\s*4|lvl\s*4|4)\b/i,  name:'Andariel',     art:'art/d2mon_Andariel.gif' },
+    { re:/(tal rasha|duriel)/i,                   name:'Duriel',       art:'art/d2mon_Duriel.gif' },
+    { re:/halls of (vaught|anguish|pain)/i,       name:'Nihlathak',    art:'art/d2mon_Nihlathak.gif' },
+    { re:/arcane sanctuary/i,                     name:'The Summoner', art:'art/d2mon_The_Summoner.gif' },
     { re:/(forgotten tower|tower cellar)/i,       name:'The Countess', art:'art/d2mon_The_Countess.gif' }
   ];
   function tvnBoss(area){ if(!area) return null; for(var i=0;i<TVN_BOSS.length;i++){ if(TVN_BOSS[i].re.test(area)) return TVN_BOSS[i]; } return null; }

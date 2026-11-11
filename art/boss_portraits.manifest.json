@@ -75,11 +75,12 @@
     },
     {
       "bossId": "summoner",
-      "file": "summoner_graphic.png",
-      "bytes": 47656,
-      "sha256": "c2c62ea119d84715cd6e95f60fa782e55592b89ae1f35eb78a42e7205e0cce43",
-      "depicts": "Robed mage in blue and gold with a wide horned/bar headdress, holding a tall gold serpent-headed staff. The Summoner.",
-      "verdict": "correct"
+      "file": "d2mon_The_Summoner.gif",
+      "bytes": 11006,
+      "sha256": "f0e78e12e847e8f5a58f510b5217554472c517d69ccada1092c29a32f9247596",
+      "depicts": "Animated sprite, 8 frames: the robed mage in blue and gold with a wide horned headdress, holding a tall gold serpent-headed staff, on a transparent ground. The Summoner.",
+      "verdict": "correct",
+      "opened": "2026-11-11 by Claude on a contact sheet before wiring (v3899, #91 - GrokBot #230 6803962990 found the split)"
     },
     {
       "bossId": "countess",
