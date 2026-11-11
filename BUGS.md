@@ -19,6 +19,15 @@ dry/). Law: test_a_dry_or_grok_push_yields_to_a_live_ship.
 ci_verdict judged the proof-keys workflow red on its optional Windows jobs; now its required jobs (seed, Linux shards, fan-in)
 decide. Law: test_required_checks_ignore_windows_jobs.
 
+### REG-3672 - READINESS ASKED THE SECOND EYE ABOUT NO VERSION AND REFUSED EVERY MAIN PUSH (v3895 round 2, card #200 guard 9)
+MEASURED 11-11 05:25: GitHub vouched for v3895 (6332d8005, every required workflow green) and the main push was refused by
+the hook's readiness step - first "no Playwright chromium and no system Chrome" (REG-3666), and with that cleared, "second
+eye OWED" although v3894's look was on the ledger. preship._prev_version read "version"/"v"/"build" from
+origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--check --gate` with no version, refused, and
+readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
+still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
+which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+
 ### REG-3667 - A READINESS CASE READ HIS MAC'S node_modules INSTEAD OF ITS OWN SANDBOX (v3896, card #200 guard 9)
 test_a_tree_with_no_node_modules_is_red promised "auto-fix cannot find the Mac install in this sandbox" and on his Mac it
 could: mac_ready linked the real ~/d2r_bible_tests/node_modules into the temp tree, passed node_modules, and went red on the

@@ -389,19 +389,32 @@ def check_failed_shards(root, timeout=FAILED_SHARDS_TIMEOUT_S, **_):
     return 0, "rehearsed %s from %s" % (" and ".join(bits), ", ".join(plan["names"]))
 
 
+def ship_version(text):
+    """The version a WINDOWS_SHIP.json names. -> str | None. Pure.
+
+    v3895 round 2 (REG-3672) - MEASURED 11-11 05:25: GitHub vouched for v3895 and the main push was refused with "second
+    eye OWED" although v3894's look was on the ledger. This read "version", "v" and "build"; the file bump_version writes
+    says "ver". So the version was None, the ledger was asked `--check --gate` with no version and refused ("'--gate' is not
+    a version"), and readiness refused EVERY main push. The real file's key is read first; the old names stay accepted."""
+    try:
+        data = json.loads(text or "")
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    for k in ("ver", "version", "v", "build"):
+        ver = data.get(k)
+        if isinstance(ver, str) and ver.startswith("v"):
+            return ver
+    return None
+
+
 def _prev_version(root):
     """The version already on origin/main, which the hook's second-eye gate asks about. -> str | None."""
     p = _run(["git", "show", "origin/main:tv/WINDOWS_SHIP.json"], root, 15)
     if p.returncode != 0 or not (p.stdout or "").strip():
         p = _run(["git", "show", "origin/main:WINDOWS_SHIP.json"], root, 15)
-    try:
-        data = json.loads(p.stdout or "")
-        ver = data.get("version") or data.get("v") or data.get("build")
-        if isinstance(ver, str) and ver.startswith("v"):
-            return ver
-    except (ValueError, AttributeError):
-        pass
-    return None
+    return ship_version(p.stdout or "")
 
 
 def check_second_eye(root, timeout=30, refuse_owed=False, **_):

@@ -136,6 +136,27 @@ class TheBrowserCheckReadsAPathAndTheHooksOwnFinder(unittest.TestCase):
 
 
 
+class TheReadinessAsksTheVersionMainShips(unittest.TestCase):
+    """v3895 round 2 (REG-3672) - readiness read "version"/"v"/"build" from WINDOWS_SHIP.json, which says "ver": the second
+    eye was asked about no version, the ledger refused, and every main push was refused as 'second eye OWED'"""
+
+    def test_the_real_ship_file_names_its_version(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "tv", "WINDOWS_SHIP.json"), encoding="utf-8") as fh:
+            got = P.ship_version(fh.read())
+        self.assertIsNotNone(got, "the version this tree's WINDOWS_SHIP.json names could not be read - readiness would "
+                                  "ask the second eye about no version and refuse every main push")
+        self.assertRegex(got, r"^v\d+$")
+
+    def test_each_spelling_is_read_and_nothing_is_guessed(self):
+        self.assertEqual(P.ship_version('{"ver": "v3894"}'), "v3894")
+        self.assertEqual(P.ship_version('{"version": "v12"}'), "v12")
+        for bad in ("", "not json", "[1]", '{"ver": 3894}', '{"ver": "3894"}'):
+            with self.subTest(bad=bad):
+                self.assertIsNone(P.ship_version(bad))
+
+
+
 RED_PROOF = [
     {"why": "v3895 - the rehearsal asks a changed law by its FILE name again (the registry refuses every renamed gate)",
      "file": "tv/preship.py",
@@ -156,6 +177,11 @@ RED_PROOF = [
      "file": "tv/preship.py",
      "find": "    if src.count(HOOK_BROWSER_BEGIN) != 1 or src.count(HOOK_BROWSER_END) != 1:\n        return None, \"the hook's browser finder markers moved - UNKNOWN\"\n",
      "replace": "    if HOOK_BROWSER_BEGIN not in src:\n        src = HOOK_BROWSER_BEGIN + src + HOOK_BROWSER_END\n",
+     "matches": 1},
+    {"why": "REG-3672 - readiness reads the old key names only, so the version main ships is None and every main push is refused",
+     "file": "tv/preship.py",
+     "find": "    for k in (\"ver\", \"version\", \"v\", \"build\"):\n",
+     "replace": "    for k in (\"version\", \"v\", \"build\"):\n",
      "matches": 1},
 ]
 
