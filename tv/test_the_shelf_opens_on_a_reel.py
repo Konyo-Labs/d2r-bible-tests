@@ -70,8 +70,12 @@ class TestTheShelfOpensOnAReel(unittest.TestCase):
         self.assertIn("window._shOpenOnAReel = function (ov)", self.code,
                       "the opening-scroll logic is not a named function, so it cannot be run "
                       "again once the layout is settled")
-        tline = self.code.find("_shTimeline();")
-        self.assertGreater(tline, -1, "_shTimeline() call vanished")
+        # v3899 (#213) - bounded by the subject: the fleet repaint draws _shTimeline() too, ABOVE thShelf, and a search from
+        # the file's first call found the early opening-scroll call after it - the law stayed green with the real one gone
+        shelf = self.code.find("function thShelf(")
+        self.assertGreater(shelf, -1, "PREMISE: thShelf is gone")
+        tline = self.code.find("_shTimeline();", shelf)
+        self.assertGreater(tline, -1, "_shTimeline() call vanished from thShelf")
         after = self.code.find("window._shOpenOnAReel(ov)", tline)
         self.assertGreater(after, -1,
                            "nothing re-decides the opening scroll after _shTimeline() fills the "
