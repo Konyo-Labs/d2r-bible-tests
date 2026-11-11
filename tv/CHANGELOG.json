@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3897",
+    "date": "2026-11-11",
+    "items": [
+      "The optional Windows run the ship cancels no longer reads as this version CI failed on every PC (#200, REG-3687)",
+      "A proof shard red while its round still runs waits for the round census before the make-up (#200, REG-3688)",
+      "The vouch counts how many GitHub rounds and re-runs each version took, against a target of 2 (#200, REG-3689)",
+      "The ship writes nothing into the shipped tree after main, and the timings say their true round (#200, REG-3690)",
+      "The gate cost tool refuses a flag with no path after it (second eye on v3891, REG-3691)",
+      "The Mac refuses a shard set whose manifests disagree on its size (second eye on v3891, REG-3692)",
+      "A re-run the ship asked a moment ago is not red yet, whichever required run it is (#200, REG-3693)",
+      "Four proofs only POSIX can judge declare it, so no Windows PC files them BLIND (#107, REG-3695)",
+      "A killed run leaves no gate-ledger dir behind - the next run collects it (REG-3696)",
+      "The Grok lamp says how old its last error is (REG-3697)",
+      "A cut-off that repeats on a re-run is reported as real, never re-run again (#200, REG-3698)",
+      "The second eye can look again at only the files a large version look never saw (#196, REG-3699)",
+      "The shard watch reads what a job printed, never its own step script comments (#200, REG-3701)",
+      "A rehearsal that finds no branch point says UNKNOWN, never no changed tests (#200, REG-3702)",
+      "The verdict asks for the jobs of the repo whose runs it listed (REG-3703)"
+    ]
+  },
+  {
     "ver": "v3896",
     "date": "2026-11-11",
     "items": [

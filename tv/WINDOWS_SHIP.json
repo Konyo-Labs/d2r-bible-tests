@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3896",
+  "ver": "v3897",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3896: the ship never races or writes its own tree, and the Uniques cards are drawn big",
+  "note": "v3897: The ship reads its own rounds honestly - and four Windows locks open",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
