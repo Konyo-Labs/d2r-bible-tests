@@ -34,6 +34,15 @@ FORUM = 268
 SHARDS = 2
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONSOLE_DB_QUIET_S = 60.0
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+# REG-3734 (v3899's pre-flight) - this runner prints the forum's own words (item names, sellers, the challenge line) and
+# runs on his Windows PCs, where a cp1255 console crashes the run WHILE it reports. One encoding rule, the repo's own.
+try:
+    from console_safe import enable as _console_safe_enable
+    _console_safe_enable()
+except ImportError:
+    pass
 
 # Bare rune names. Searching "ber rune" misses posts; the forum query is just "ber".
 RUNE_NAMES = [
