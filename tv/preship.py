@@ -287,6 +287,25 @@ def check_heart(root, timeout=HEART_TIMEOUT_S, **_):
 RENDER_LOST_BROWSER = ("the browser connection was lost mid-render", "Re-run on a quiet machine before reading this as a dead tab")
 
 
+def render_bound_for(timeout, load=None):
+    """v3898 (card #200, REG-3712) - THE REHEARSAL'S RENDER BOUND MOVES WITH THE LOAD, AS THE HOOK'S DOES. -> (timeout, env, scale)
+    MEASURED 11-11 on v3897's ship: the Mac rehearsal killed render_check at a FIXED 360 s ("Mac rehearsal ended UNKNOWN
+    while CI was still running - main is NOT pushed") while hooks/pre-push grades the same render with its bound scaled
+    by tv/render_bound.py (REG-1993, x1-x2.5 by the 1-min load). One rule for both: the load measured now scales the
+    kill, and TV_RENDER_SCALE / GATE_SCALE carry it to render_check's own cost and report-by deadline. At or under
+    render_bound.BASE_LOAD nothing changes - a quiet machine keeps the hang detector it had."""
+    import render_bound
+    if load is None:
+        try:
+            load = os.getloadavg()[0]
+        except (OSError, AttributeError):
+            load = None
+    k = render_bound.scale(load)
+    env = os.environ.copy()
+    env["TV_RENDER_SCALE"] = env["GATE_SCALE"] = "%.2f" % k
+    return int(round(timeout * k)), env, k
+
+
 def check_render(root, timeout=RENDER_TIMEOUT_S, **_):
     """All TARGETS, all five viewports (render_check.WIDTHS). Exit 2 is UNKNOWN (no Chrome) - not a pass.
 
@@ -295,14 +314,16 @@ def check_render(root, timeout=RENDER_TIMEOUT_S, **_):
     established NOTHING about the page and asks for a re-run; that re-run is asked here, ONCE. A second UNKNOWN stays
     UNKNOWN, and a red (exit 1) is never asked again."""
     cmd = [_py(root), os.path.join(root, "tv", "render_check.py")]
-    p = _run(cmd, root, timeout)
+    timeout, env, scale = render_bound_for(timeout)
+    p = _run(cmd, root, timeout, env=env)
     again = False
     if p.returncode == 2 and any(w in ((p.stdout or "") + (p.stderr or "")) for w in RENDER_LOST_BROWSER):
         again = True
-        p = _run(cmd, root, timeout)
+        p = _run(cmd, root, timeout, env=env)
     if p.returncode == 0:
         return 0, "render_check green (all targets, 5 viewports)" + (
-            " - asked again once after the browser was lost mid-render" if again else "")
+            " - asked again once after the browser was lost mid-render" if again else "") + (
+            " - bound x%.2f for the load (REG-1993)" % scale if scale > 1 else "")
     if p.returncode == 2 or p.returncode in (124, 127):
         return 2, _tail(p) or "render_check UNKNOWN (no browser, or timed out) - a skip is not a pass"
     return 1, _tail(p) or "render_check red"
