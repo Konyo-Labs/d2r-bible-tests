@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_live_page_ends_a_stuck_publish_watch",
+         [sys.executable, os.path.join(HERE, "test_a_live_page_ends_a_stuck_publish_watch.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3736) - 11-11 Publish sat queued 50+ min (GitHub started nothing) and v3898 went live by hand; the "
+             "watch now asks the live page's build stamp past a grace and says LIVE, never SUCCEEDED"),
     Gate("test_a_hand_deploy_finds_its_one_account",
          [sys.executable, os.path.join(HERE, "test_a_hand_deploy_finds_its_one_account.py")], 60,
          needs_app=False,

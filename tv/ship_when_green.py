@@ -61,6 +61,26 @@ PUBLISH = "Publish — gates, review, then deploy"
 #: (authenticated: 5,000 an hour, as ci_verdict.fetch already does) and asks every 2 minutes; only when gh cannot answer
 #: does it fall back to the public API (30 an hour, + the console's 12-24 = inside 60).
 PUBLISH_POLL_S = 120
+#: v3900 (REG-3736) - how long Publish may sit UNSTARTED before the watch also asks the live page which build it serves
+LIVE_PAGE_AFTER_S = 10 * 60
+LIVE_PAGE_URL = "https://bull-4-u.com/d2r/"
+
+
+def page_serves(version, url=LIVE_PAGE_URL, fetch=None, timeout=20):
+    """v3900 (REG-3736) - does the live page serve `version`? -> True | False | None (could not be read - UNKNOWN). Read off
+    the page's own d2r-build meta, the stamp bump_version writes, never inferred from a workflow."""
+    import re as _re
+    try:
+        if fetch is not None:
+            html = fetch(url)
+        else:
+            import urllib.request as _u
+            with _u.urlopen(url, timeout=timeout) as r:
+                html = r.read().decode("utf-8", "replace")
+    except Exception:
+        return None
+    m = _re.search(r'name="d2r-build" content="([^"]+)"', html or "")
+    return None if not m else (m.group(1) == version)
 #: REG-3214 - workflows that run BESIDE the required ones on the ci/proof-keys push and are never waited on. GitHub fired
 #: nothing on the v3864 ci push (round 3) and only the REQUIRED ones were dispatched, so a Windows set that runs only on a
 #: push would never run before main: it is dispatched like a missing required one, and its verdict never holds the ship
@@ -367,7 +387,7 @@ def overrun_alert(sha, minutes, runs, watch=None, limit=CW.OVERRUN_MIN):
             % (sha[:9], int(minutes), limit, "; ".join(named[:10]) or "nothing GitHub would name"))
 
 
-def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None, phase_path=None):
+def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, run=None, phase_path=None, live=None):
     """REG-3213 - after the main push: follow Publish on `sha` until it ends or `wait_s` passes, alerting once past
     `limit` minutes. -> 0 Publish green · 1 Publish red · 2 not finished / unknown (main IS pushed either way).
 
@@ -377,13 +397,13 @@ def watch_publish(sha, watch, sleep, clock, say, wait_s, limit=CW.OVERRUN_MIN, r
     import self_prove as _SP
     _marked = _SP.mark_ship_watching(phase_path, sha=sha) if phase_path else False
     try:
-        return _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run)
+        return _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run, live=live)
     finally:
         if _marked:
             _SP.clear_ship_watching(phase_path)
 
 
-def _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run):
+def _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run, live=None):
     t0, said, alerted = clock(), None, False
     say("ship: REG-3213 watching Publish on %s - an alert at %d min, the console's eagle watches it too" % (sha[:9], limit))
     while True:
@@ -407,6 +427,16 @@ def _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run):
                 "UNKNOWN" if mins is None else int(mins),
                 (" - past the %d-minute max" % limit) if (mins or 0) >= limit else ""))
             return 0 if ok else 1
+        # v3900 (REG-3736, 11-11) - Publish sat QUEUED for 50+ min while GitHub started none of the repo's runs, and v3898 went
+        # live by hand on his order; this watch could only ever see the workflow. Past the grace with Publish not started,
+        # the live page's own build stamp is asked too: serving this version is LIVE, said as that - never "SUCCEEDED".
+        if live is not None and (not row or row.get("status") in ("queued", "waiting", "pending", "requested")) \
+                and clock() - t0 >= LIVE_PAGE_AFTER_S:
+            on_page = live()
+            if on_page is True:
+                say("ship: LIVE - the live page already serves this version while Publish on %s is still %s (published "
+                    "another way); the watch ends here" % (sha[:9], (row or {}).get("status") or "not started"))
+                return 0
         line = ("Publish %s, %s min" % (row.get("status"), "UNKNOWN" if mins is None else int(mins))) if row else (
             "GitHub has not started Publish on this commit yet" if got.get("worked") else
             "GitHub could not be read - UNKNOWN")
@@ -601,7 +631,7 @@ def post_land_status(version, run, say, url=STATUS_URL):
 
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
          watch=None, watch_publish_s=None, version_check=None, speed=None,
-         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None):
+         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None, live=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
     Publish red / a local rehearsal or readiness check was red · 2 timed out or unknown · 3 refused.
 
@@ -834,7 +864,8 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     if watch_publish_s:
         import self_prove as _SP
         return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run,
-                             phase_path=_SP.ship_phase_path(REPO))
+                             phase_path=_SP.ship_phase_path(REPO),
+                             live=live)
     return 0
 
 
@@ -861,6 +892,7 @@ def main(argv=None):
         return 2
     import ci_speed as _CS        # v3890 (#194) - the real round is measured; a law's ship() is never sent to GitHub
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
+                live=lambda: page_serves(a.version),   # v3900 (REG-3736) - only the real door asks the live page
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
                 mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
