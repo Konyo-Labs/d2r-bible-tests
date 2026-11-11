@@ -50,6 +50,38 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3698 - A CUT-OFF THAT REPEATED ON EVERY RE-RUN WAS RE-RUN AS A FLAKE EACH TIME (v3897, card #200)
+MEASURED 11-11 on v3896: agent-suite (4) died "The runner has received a shutdown signal" on attempts 1, 2 and 3 of run
+42970634968, each about 40 s after the same gate - the cause was v3896's own os.killpg(0) (REG-3694), not GitHub - and the
+live shard watch (REG-3648) classed each one a cut-off and re-ran it: an hour of rounds before the cause was read. A
+cut-off, timeout or infra kill on attempt 2 or later of the same run is now reported as REAL ("a cut that repeats is the
+code's, not the runner's") and never re-run again; attempt 1 keeps its one re-run, and an attempt that cannot be read keeps
+the old rule and says so. Law: test_a_red_shard_is_classified_and_reported_while_others_run.
+### REG-3697 - THE GROK LAMP SHOWED A MONTH-OLD TIMEOUT AS ITS LAST ERROR, WITH NO AGE (v3897, stale-reading)
+MEASURED 11-11 09:50 on his Mac: the reader row read "Grok is on (shadow) - 9732 ok, 3656 errors - last error: grok -p timeout
+140s" and the doctor said the lane was unaskable for 5 days, which read as a cross-family eye failing now. It was not: the
+lane's last call was 11-03 (deep reads run only while he plays on this PC, and his reels come from the Windows PCs), its
+last error was stamped 10-11, and three lane-shaped calls made now (his sign-in, the lean HOME the lane uses, a frame
+outside the work dir) each answered in 7-11 s. The error now carries its age ("..., 31.0 days ago"), or says its time was
+never recorded. Law: test_each_reader_says_whether_it_is_connected (GrokSaysItsLanesState).
+### REG-3696 - A KILLED RUN LEFT ITS GATE-LEDGER DIR IN HIS TEMP DIR FOREVER (v3897, the doctor's "our scratch is collected")
+MEASURED 11-11 09:46 on his Mac: the doctor read MISSING - 13 of our scratch dirs older than 3 days (oldest 5.4), 8 of them
+tvd-gate-ledgers-*, and 37 of those in all. run_gates' per-run ledger dir (v3864 card 75, the child guard's since REG-3478)
+is removed by atexit, and atexit never runs when the process is KILLED - a law run past its timeout, a prover the console
+stands aside with SIGTERM. The dir's name now carries its owner pid, and the next run's first ledger request removes any dir
+whose owner is not alive; a pid-less dir (made before v3897), our own, a live owner's and one whose owner cannot be asked are
+kept. The 11 empty dirs older than 3 days were removed by hand (rmdir, empty only). Law: test_our_old_scratch_is_collected
+(AKilledRunsLedgerDirIsTakenByTheNextRun).
+### REG-3695 - THREE PROOFS ONLY POSIX CAN JUDGE FILED BLIND ON EVERY WINDOWS PC AND SHUT ALL ITS LOCKS (v3897, #107)
+MEASURED 11-11 09:40: the work ALT had all 4 river locks shut and its drain STOPPED through 9 passes on "instruments BLIND
+here"; the OLD ALT the same. GitHub's own windows-latest set for f1245cf6a (proofs-...-win32.tgz on the proof bank, 1,474
+gates) owes exactly three BLINDs, and each tampers a line only POSIX reaches: test_a_proof_starts_beside_a_cloud_stream[2]
+(the POSIX process listing's return, after cloud_streaming's Windows branch - its one catcher skips on Windows),
+test_a_vanished_sandbox_names_its_remover[7] (a file mode, a POSIX permission - its catcher checks it only off Windows), and
+test_triage_runs_beside_a_shadow_reel[0], whose v3895 "claude-cli" need was satisfied by the runner's refusing claude.cmd
+while its catcher's own tripwire is a #!/bin/sh script Windows never runs. Each now declares "needs": "posix", so a Windows
+PC reads it ELSEWHERE (judged on POSIX) instead of BLIND. Not changed: test_the_gate_set_shards_cleanly reads BLIND on both
+ALTs but was cut at the deadline (TIMEOUT) on the Windows runner, so which proof is blind there is UNMEASURED.
 ### REG-3693 - THE SHIP STOPPED RED ON THE AGENT-TESTS RE-RUN IT HAD JUST ASKED FOR (v3897, card #200)
 MEASURED 11-11 09:13, v3896 try 2 (and again on try 3): the live shard watch (REG-3648) re-ran agent-suite (4) for a runner
 cut-off and recorded the ask; the next poll still read the run's old "completed, failure" because GitHub had not started the
