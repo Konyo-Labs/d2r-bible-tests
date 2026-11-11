@@ -65,7 +65,35 @@ class ABossWearsOnePictureEverywhere(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(ROOT, "art", "d2mon_The_Summoner.gif")))
 
 
+    def test_each_council_priest_wears_its_own_picture_on_every_row(self):
+        """v3899 (#91, his 11-11: "give each priest its own picture") - no row or art entry naming a priest (or Bartuc)
+        wears the shared council picture; only the Travincal Council itself keeps it"""
+        import re
+        src = _src()
+        priests = {"Ismail": "d2mon_Ismail_Vilehand.gif", "Geleb": "d2mon_Geleb_Flamefinger.gif",
+                   "Toorc": "d2mon_Toorc_Icefist.gif", "Bremm": "d2mon_Bremm_Sparkfist.gif",
+                   "Wyand": "d2mon_Wyand_Voidbringer.gif", "Maffer": "d2mon_Maffer_Dragonhand.gif",
+                   "Bartuc": "d2mon_Bartuc_the_Bloody.gif"}
+        bad = []
+        for i, line in enumerate(src.split("\n"), 1):
+            for m in re.finditer(r'src="art/([^"]+)"', line):
+                txt = re.sub(r"<[^>]+>", " ", line[m.end():m.end() + 600].split("src=", 1)[0])
+                hit = sorted((txt.find(k), k) for k in priests if txt.find(k) >= 0)
+                if hit and hit[0][0] < 400 and m.group(1) != priests[hit[0][1]]:
+                    bad.append("line %d: %s wears %s" % (i, hit[0][1], m.group(1)))
+        self.assertEqual(bad, [], "a priest's row draws another picture:\n" + "\n".join(bad[:12]))
+        for name, f in (("Ismail Vilehand", "d2mon_Ismail_Vilehand.gif"), ("Maffer Dragonhand", "d2mon_Maffer_Dragonhand.gif")):
+            self.assertEqual(src.count('  "%s": "art/%s",' % (name, f)), 1, "%s's art entry is not its own picture" % name)
+        self.assertEqual(src.count('  "Travincal Council": "art/councilmember_graphic.png",'), 1,
+                         "PREMISE: the Travincal Council card (the council as a whole) no longer keeps the council picture")
+
+
 RED_PROOF = [
+    {"why": "v3899 (#91) - Maffer Dragonhand's art entry wears the shared council picture again",
+     "file": "bible.html",
+     "find": "  \"Maffer Dragonhand\": \"art/d2mon_Maffer_Dragonhand.gif\",",
+     "replace": "  \"Maffer Dragonhand\": \"art/councilmember_graphic.png\",",
+     "matches": 1},
     {"why": "v3899 (#91) - the Summoner's run thumb wears his old render while his Boss card wears his sprite",
      "file": "bible.html",
      "find": "summoner:  'd2mon_The_Summoner.gif',",
