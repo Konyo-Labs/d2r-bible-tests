@@ -164,6 +164,20 @@ class TheLawHolds(unittest.TestCase):
         self.assertIn("--failed", reruns[0])
         self.assertNotIn(42810705250, made, "a refused mid-run rerun stays queued for suite_makeup")
 
+    def test_a_mark_inside_the_echoed_step_script_is_not_what_the_job_said(self):
+        """* v3897 (REG-3701, the Grok CLI's look on v3895) - GitHub echoes each step's script (in cyan) into the job log, and
+        the gate-set step's script carries the words "NO VERDICT" in a comment. A slice that failed with no named test then
+        read as a cut-off - by its own workflow's comment - and was re-run."""
+        echoed = "\n".join("2026-11-11T07:10:24Z \x1b[36;1m# %s\x1b[0m" % t for t in (
+            'reports NO VERDICT and exits 1 - so the job is `failure`', '"NO VERDICT" and "GATES RED" is the conflation'))
+        crash = "2026-11-11T07:12:00Z Traceback (most recent call last):\n  File \"tv/run_gates.py\", line 1\nImportError: x"
+        job = {"name": "agent-suite (3)", "status": "completed", "conclusion": "failure"}
+        self.assertEqual(SHW.classify(echoed + "\n" + crash, job)["class"], "real",
+                         "a crash with no named test read as a cut-off on its own script's comment")
+        cut = echoed + "\n2026-11-11T07:30:00Z NO VERDICT \u2014 the gate set never reached the end\n"
+        self.assertEqual(SHW.classify(cut, dict(job, conclusion="cancelled"))["class"], "cutoff",
+                         "PREMISE: a cut-off the job itself printed is still a cut-off")
+
     def test_a_cut_that_repeats_on_a_re_run_is_real_and_never_re_run_again(self):
         """* v3897 (REG-3698) - v3896's agent-suite (4) died the same way on attempts 1, 2 and 3 (its own os.killpg(0)) and
         was re-run as a cut-off each time. On attempt 2+ a cut is reported as real; attempt 1 and an unreadable attempt
@@ -204,6 +218,11 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3701) - a mark inside the echoed step script classifies the job again (a crash reads as a cut-off)",
+     "file": "tv/shard_watch.py",
+     "find": "    blob = job_output(log_text)         # v3897 (REG-3701) - what the job said, never its own script's comments\n",
+     "replace": "    blob = log_text or \"\"\n",
+     "matches": 1},
     {"why": "v3897 (REG-3698) - a cut that repeats on a re-run is re-run again (v3896's agent-suite (4), three attempts)",
      "file": "tv/shard_watch.py",
      "find": "                if _att is not None and _att >= 2:\n",

@@ -187,11 +187,23 @@ def _job_seconds(job):
         return None
 
 
+#: v3897 (REG-3701) - GitHub writes each step's own script into the job log, every line in cyan (ESC[36;1m), before its output
+ECHOED_SCRIPT = "[36;1m"
+
+
+def job_output(log_text):
+    """v3897 (REG-3701, the Grok CLI's look on v3895) - the log with the echoed step scripts left out: what the job PRINTED.
+    MEASURED 11-11 on v3896's agent-suite (4): its only "NO VERDICT" (a CUTOFF_MARK) was a COMMENT in the gate-set step's own
+    script, which GitHub echoes into every job's log - so a failed slice with no named failure read as a cut-off by its own
+    workflow's comment, and was re-run. -> str"""
+    return "\n".join(l for l in str(log_text or "").splitlines() if ECHOED_SCRIPT not in l)
+
+
 def classify(log_text, job=None):
     """Classify one finished shard job. -> dict with class in {real, cutoff, timeout, infra, success}."""
     job = job or {}
     conclusion = str(job.get("conclusion") or "").lower()
-    blob = log_text or ""
+    blob = job_output(log_text)         # v3897 (REG-3701) - what the job said, never its own script's comments
     failed = failed_tests(blob)
     used = None
     m = USED_S.search(blob)

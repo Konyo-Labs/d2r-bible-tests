@@ -50,6 +50,13 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3701 - A FAILED SLICE READ AS A CUT-OFF BECAUSE OF ITS OWN WORKFLOW'S COMMENT (v3897, the Grok CLI's look on v3895)
+The follow-up look on v3895's unseen ship code (REG-3699) said shard_watch.classify reads cut-off marks before a failure is
+named. MEASURED on v3896's agent-suite (4) log: its only "NO VERDICT" - a CUTOFF_MARK - was a COMMENT inside the gate-set step's
+script, which GitHub echoes (in cyan, ESC[36;1m) into every job's log; no other job output carried it. So every failed agent
+slice with no named failure was classed a cut-off by its own workflow's text and re-run. classify() now reads job_output():
+the log without the echoed step scripts. A cut-off the job itself prints is still a cut-off; today's slice-4 log now reads
+infra (the runner's shutdown signal). Law: test_a_red_shard_is_classified_and_reported_while_others_run. Seen RED.
 ### REG-3699 - ON A LARGE VERSION THE SECOND EYE COULD NEVER BE SHOWN bible.html (v3897, card #196)
 MEASURED 11-11: the Grok CLI's look on v3892 came back CANNOT-TELL - in its own words the payload "omitted bible.html,
 control_ui.html, run_gates.py" - and the doctor says v3895's one look "NEVER SAW a SUBSTANTIVE part of the change (bible.html
