@@ -1575,6 +1575,12 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_a_rehearsal_never_races_its_own_tree_lock",
+         [sys.executable, os.path.join(HERE, "test_a_rehearsal_never_races_its_own_tree_lock.py")], 60,
+         why="REG-3676 (card #200 guard 9c, 2026-11-11) - the box rehearsal ran failed_shards and changed_tests together; "
+             "both run tv/run_gates.py, which takes the tree's flock, and the second was refused by the first. A check "
+             "marked locks_tree runs in one serial lane beside the others. Driven through run_checks with stub checks that "
+             "record when they ran; the baseline shows two free checks DO overlap."),
     Gate("test_a_refused_rehearsal_never_writes_the_tree",
          [sys.executable, os.path.join(HERE, "test_a_refused_rehearsal_never_writes_the_tree.py")], 60,
          why="REG-3674 (2026-11-11) - v3895's main hook refused on readiness and tv/preship.py appended two lessons to the "

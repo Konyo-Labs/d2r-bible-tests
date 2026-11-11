@@ -176,9 +176,9 @@ def catalog():
                             "why": "the page is rendered at every target and viewport"}),
         ("console_demos",  {"run": check_demos, "cheap": False, "timeout": DEMOS_TIMEOUT_S,
                             "why": "node tv/demo_console.mjs (needs playwright in this tree)"}),
-        ("changed_tests",  {"run": check_changed, "cheap": False, "timeout": CHANGED_TIMEOUT_S,
+        ("changed_tests",  {"run": check_changed, "cheap": False, "timeout": CHANGED_TIMEOUT_S, "locks_tree": True,
                             "why": "agent tests whose files this push touches"}),
-        ("failed_shards",  {"run": check_failed_shards, "cheap": False, "timeout": FAILED_SHARDS_TIMEOUT_S,
+        ("failed_shards",  {"run": check_failed_shards, "cheap": False, "timeout": FAILED_SHARDS_TIMEOUT_S, "locks_tree": True,
                             "why": "exact tests of a shard that failed in the last N rounds (attempt 9)"}),
         ("test_render_gate_sees_the_page",
                            {"run": check_page_zero_census, "cheap": True, "timeout": 60,
@@ -897,18 +897,26 @@ def run_checks(names, root, parallel=True, fail_fast=True, include_lessons=True,
     if not rest:
         return worst, results
 
-    if parallel and len(rest) > 1 and not fail_fast:
-        with ThreadPoolExecutor(max_workers=min(4, len(rest))) as pool:
-            futs = {pool.submit(run_one, n, root, **kw): n for n in rest}
-            for fut in as_completed(futs):
-                worst = max(worst, take(fut.result()))
-    elif parallel and len(rest) > 1:
+    # v3896 (card #200 guard 9c, REG-3676) - CHECKS THAT RUN run_gates SHARE ONE LANE. MEASURED 11-11 01:47-02:30, the box
+    # rehearsal's first real use: failed_shards and changed_tests started together on one tree and the second was refused by
+    # the first's run_gates tree lock - a red about the rehearsal, never about the push. A check marked locks_tree runs after
+    # the one before it in a single lane; every other check still runs beside them.
+    tree = [n for n in rest if (cat.get(n) or {}).get("locks_tree")]
+    free = [n for n in rest if n not in tree]
+
+    def _lanes(pool):
+        futs = [pool.submit(lambda n=n: [run_one(n, root, **kw)]) for n in free]
+        if tree:
+            futs.append(pool.submit(lambda: [run_one(n, root, **kw) for n in tree]))
+        return futs
+
+    if parallel and len(rest) > 1:
         # start them together; if one goes red, remaining futures still finish (the work is
         # already running) but we do not start a later serial group.
-        with ThreadPoolExecutor(max_workers=min(4, len(rest))) as pool:
-            futs = [pool.submit(run_one, n, root, **kw) for n in rest]
-            for fut in as_completed(futs):
-                worst = max(worst, take(fut.result()))
+        with ThreadPoolExecutor(max_workers=min(4, len(free) + (1 if tree else 0))) as pool:
+            for fut in as_completed(_lanes(pool)):
+                for row in fut.result():
+                    worst = max(worst, take(row))
     else:
         for n in rest:
             row = run_one(n, root, **kw)

@@ -27,6 +27,13 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3676 - THE REHEARSAL RACED ITS OWN TREE LOCK (v3896, card #200 guard 9c)
+MEASURED 11-11 01:47-02:30, the box rehearsal's first real use on v3895: failed_shards and changed_tests both run
+tv/run_gates.py, which takes the tree's flock; started together the second was refused by the first's lock and the
+rehearsal stopped the ship on a red about itself. A catalog check marked locks_tree now runs in one serial lane while the
+other checks still run beside it. Law: test_a_rehearsal_never_races_its_own_tree_lock (stub checks record when they ran; the
+baseline shows two free checks do overlap). Seen RED x2.
+
 ### REG-3675 - TWO SHIP LINES SAID THE WRONG THING IN PLAIN WORDS (v3896)
 Read on every ship, 11-11: the speed ledger's tie read "slowest job 0.5 min (the same than the last 5 rounds' 0.6)" - now
 "the same as"; and the seed's shard count read "the slowest proof chunk alone models 6343 s" while the model's 22 shards were
