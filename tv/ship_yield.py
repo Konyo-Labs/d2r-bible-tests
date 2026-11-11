@@ -380,16 +380,26 @@ def sweep_stale(runs, run, say=print, tips=None):
     return done
 
 
-def _log_queued(queued, cancelled, now, say):
+def _log_queued(queued, cancelled, now, say, runs=None):
+    """REG-3732 (v3898's Publish, 11-11 22:40) - the line said "while our own non-ship runs held runners" every time; that
+    night GitHub had started NONE of the repo's 11 queued runs (0 in progress) and the cause it named was never measured.
+    It now counts what is really running: 0 is a queue on GitHub's side, nothing here to cancel."""
     now = time.time() if now is None else now
+    running = None if runs is None else sum(1 for r in runs if isinstance(r, dict) and _status(r) == "in_progress")
     bits = []
     for r in queued:
         created = _epoch(r.get("createdAt") or r.get("created_at"))
         age = int(now - created) if created is not None else QUEUE_GRACE_S
         bits.append("%s run %s queued %ds" % (_workflow(r) or _branch(r) or "priority",
                                               _rid(r) or "?", age))
-    say("ship: REG-3654 QUEUED - %s while our own non-ship runs held runners; cancelled %s. lesson %s"
-        % ("; ".join(bits), cancelled or "none", LESSON_ID))
+    if running == 0:
+        why = "while NO run of this repo is in progress - GitHub has not started it, nothing here holds a runner"
+    elif running is None:
+        why = "while what holds the runners is UNKNOWN (the live runs were not read)"
+    else:
+        why = "while %d run(s) of this repo held runners" % running
+    say("ship: REG-3654 QUEUED - %s %s; cancelled %s. lesson %s"
+        % ("; ".join(bits), why, cancelled or "none", LESSON_ID))
 
 
 def fetch_live(run=None, repo=None):
@@ -516,7 +526,7 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
             for rid in more:
                 if rid not in done:
                     done.append(rid)
-            _log_queued(queued, done, now, say)
+            _log_queued(queued, done, now, say, runs=state_runs)
         return done
     except Exception as e:
         say("ship: REG-3654 yield could not run (%s)" % type(e).__name__)

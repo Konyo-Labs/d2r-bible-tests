@@ -24,6 +24,7 @@
       "The backfill stands aside when the age of the console price DB will not read (REG-3730)",
       "A MAIN character card wears its class in armour, a Warlock MAIN keeps its figure (#154, REG-3971)",
       "The evidence-ledger row counts a not-found reading as testimony, never an emptied ledger (REG-3729)",
+      "A Publish queued with nothing of ours running says GitHub has not started it, never blaming our runs (#200, REG-3732)",
       "The full history of v3898 and v3899 is listed, and the every-ship law counts fix commits again (REG-3731)"
     ]
   },

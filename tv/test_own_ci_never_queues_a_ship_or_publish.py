@@ -135,6 +135,18 @@ class TheLawHolds(unittest.TestCase):
         self.assertIn("42833420352", blob)
         self.assertIn("REG-3654 QUEUED", blob)
 
+    def test_a_publish_queued_with_nothing_running_blames_no_runner_of_ours(self):
+        """REG-3732 (v3898's Publish, 11-11 22:40): GitHub had started none of the repo's 11 queued runs, and the line said
+        our own runs held the runners. With nothing in progress it says so; with runs in progress it counts them."""
+        said = []
+        SY.yield_to_ship(run=_GH(), say=said.append, runs=LIVE_PUBLISH, now=NOW, sweep=True)
+        blob = "\n".join(said)
+        self.assertIn("NO run of this repo is in progress - GitHub has not started it", blob)
+        self.assertNotIn("held runners", blob, "a queue nothing of ours holds was blamed on our runners")
+        said = []
+        SY.yield_to_ship(run=_GH(), say=said.append, runs=LIVE_PUBLISH + COMPETING, now=NOW, sweep=True)
+        self.assertIn("2 run(s) of this repo held runners", "\n".join(said))
+
     def test_a_publish_queued_under_two_minutes_is_not_the_queued_lesson(self):
         fresh = [_run("main", "queued", 42833420352, PUBLISH, sha=MAIN_SHA,
                       created="2026-11-10T14:45:00Z")]
@@ -202,6 +214,11 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3732 - a Publish queued with nothing of ours running is blamed on our runners again",
+     "file": "tv/ship_yield.py",
+     "find": "    if running == 0:\n",
+     "replace": "    if False:\n",
+     "matches": 1},
     {"why": "REG-3654 - the Publish watch no longer frees runners for a live Publish",
      "file": "tv/ship_when_green.py",
      "find": "            SY.protect_priority(run=run, say=say, main=sha, now=clock())\n",
