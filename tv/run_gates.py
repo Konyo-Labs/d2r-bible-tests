@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_fixed_console_home_is_not_old_scratch",
+         [sys.executable, os.path.join(HERE, "test_a_fixed_console_home_is_not_old_scratch.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3738) - his Mac's feed called the console's fixed working homes (G5's stand-in HOME, the vision "
+             "cwd) old uncollected scratch; the row skips exactly those names, tied to the lines that make them"),
     Gate("test_a_relook_probe_is_not_a_session_in_parts",
          [sys.executable, os.path.join(HERE, "test_a_relook_probe_is_not_a_session_in_parts.py")], 120,
          why="v3900 (REG-3737) - the work ALT's relook probes after a launcher seal (by design on a PC that films only "

@@ -10359,12 +10359,18 @@ def _check_nothing_we_made_is_still_on_his_disk_days_later():
             "diskrep_", "triage_", "heart2.", "TemporaryDirectory.",
             # 2026-09-26 — three more of ours were still minting daily and this row could not see them
             "heartlane_", "sweeplink_", "scarledger")
+    # REG-3738 (v3900, his Mac's fleet feed 11-11) - two of "ours" are FIXED working homes the console reuses on purpose,
+    # never mkdtemp litter: g5_grok_eyes' stand-in HOME and tv_diablo's vision cwd. Each is emptied or reused in place, so
+    # its mtime ages while it works, and the row called them "4 of 165 ... older than 3 days ... nothing is collecting them".
+    # Their mkdtemp fallbacks ("tvd-g5-home-xxxx") stay counted. test_a_fixed_console_home_is_not_old_scratch ties each
+    # name to the line that makes it.
+    FIXED_HOMES = ("tvd-g5-home", "tvd-vision-cwd")
     now, total, old, oldest, capped = time.time(), 0, 0, 0.0, False
     try:
         with os.scandir(root) as it:
             for e in it:
-                if not e.name.startswith(MINE):
-                    continue          # somebody else's container; not ours to report on
+                if not e.name.startswith(MINE) or e.name in FIXED_HOMES:
+                    continue          # somebody else's container, or a fixed home in use; not litter to report on
                 # ⚠ BOUNDED. This runs on a machine he is using; a scan with no ceiling is the
                 # unbounded-search scar, and a partial answer with a stated reach beats a hang.
                 if total >= _SCRATCH_SCAN_CAP:
