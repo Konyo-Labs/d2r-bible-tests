@@ -57,7 +57,7 @@ class TheShelfCardBoxesFitTheCard(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3898 (#184) - the card's four boxes go four across again and SETS is cut off at the card's edge",
      "file": "tv/control_ui.html",
-     "find": "  .sh-card .shc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n",
+     "find": "  .sh-card .shc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) /* card: 2 x 2 */; }\n",
      "replace": "",
      "matches": 1},
     {"why": "v3898 (#184) - a bare 1fr track again (min-content blows the row out)",

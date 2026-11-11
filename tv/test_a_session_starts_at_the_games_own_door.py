@@ -318,7 +318,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3890 (#188) - a logo with no title witness starts a session",
      "file": "tv/d2r_screens.py",
-     "find": "        if title is None:\n            continue\n",
+     "find": "        if title is None and conn is None:\n            continue\n",   # v3898 (REG-3715) - CONNECTING witnesses too
      "replace": "",
      "matches": 1},
     {"why": "v3890 (#188) - a reel walked to its end with no D2R frame stays UNKNOWN, so it is never left out",

@@ -2475,7 +2475,7 @@
      min-content, so CHRONICLES held its column at ~98 px and the row needed 290 px in a 237 px card at 1440 (267 in 226 at
      1120): SETS sat 39 px past the card's edge and was cut off. The label floor (--fs-2xs, 13 px+) cannot shrink it to fit
      four across (~260 px at best), so a Shelf CARD lays its four boxes 2 x 2; the wide shadow row keeps four in a row. */
-  .sh-card .shc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sh-card .shc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) /* card: 2 x 2 */; }
   .shc-stat { text-align: center; padding: 7px 3px; border: 1px solid rgba(240,192,96,.12); border-radius: 8px; background: rgba(255,255,255,.02); }
   .sh-card.chronicle .shc-stat { border-color: rgba(240,192,96,.2); }
   .shc-sv { font: var(--fw-bold) var(--fs-sm)/1 var(--mono); color: #e8dcc0; font-variant-numeric: tabular-nums; white-space: nowrap; }
