@@ -1529,8 +1529,11 @@ def agreement(version, path=None):
                      ", ".join(_names[:6]) +
                      (" +%d more" % (len(_names) - 6) if len(_names) > 6 else "")))
         # v3897 (REG-3699) - and the row names the look that shows them: a follow-up at only those files
+        # v3898 (the Grok CLI's look on v3897) - the COMMAND carries every name, each shell-quoted: it cut at six like the
+        # prose and split a path with a space into two arguments, so the follow-up never asked for the set it named
+        import shlex as _shlex
         _pnote += (" - `python3 tv/second_eye_run.py %s --files %s` shows them on their own"
-                   % (version, " ".join(_names[:6])))
+                   % (version, " ".join(_shlex.quote(n) for n in _names)))
     # ⚠ THE DENOMINATOR TRAVELS WITH THE VERDICT: how many looks there were, and how many of
     # them the model id could attribute at all. A state that says AGREE while nobody knows who
     # looked is the confident number this file argues against on every other axis.

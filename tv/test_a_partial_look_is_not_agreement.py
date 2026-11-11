@@ -122,6 +122,19 @@ class AgreementSaysWhenNobodySawIt(unittest.TestCase):
         self.assertIn("tv/second_eye_run.py v9001 --files tv/subject.py", a["say"],
                       "the row says a file was never seen and not how to show it: %r" % a["say"])
 
+    def test_the_follow_up_command_carries_every_unseen_file_quoted(self):
+        """v3898 (the Grok CLI's look on v3897) - the prose may stop at six names; the command may not, and a path with a
+        space is ONE argument"""
+        import shlex
+        p = _tmp()
+        names = ["tv/f%d.py" % i for i in range(7)] + ["tv/a b.py"]
+        L.record(version="v9002", model="m", verdict="clean", answer_head="fine", path=p, absent=names)
+        say = L.agreement("v9002", path=p)["say"]
+        cmd = say.split("`")[1]
+        argv = shlex.split(cmd)
+        self.assertEqual(sorted(argv[argv.index("--files") + 1:]), sorted(names),
+                         "the follow-up command does not ask for the set the row named: %r" % cmd)
+
     def test_complete_looks_are_left_alone(self):
         """⚠ THE BASELINE, or the clause above would fire on everything and mean nothing.
         [[regression-guard]] §5"""
@@ -248,6 +261,11 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3898 (the Grok CLI on v3897) - the follow-up command cuts at six names and splits a spaced path again",
+     "file": "tv/second_eye_ledger.py",
+     "find": "                   % (version, \" \".join(_shlex.quote(n) for n in _names)))\n",
+     "replace": "                   % (version, \" \".join(_names[:6])))\n",
+     "matches": 1},
     {"why": "v3897 (REG-3699) - the never-saw row stops naming the follow-up look that shows the unseen files",
      "file": "tv/second_eye_ledger.py",
      "find": "\" - `python3 tv/second_eye_run.py %s --files %s` shows them on their own\"",

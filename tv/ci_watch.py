@@ -153,7 +153,7 @@ def judge(runs, sha, now=None, jobs=None, limit=OVERRUN_MIN):
         k = str(r.get("name") or r.get("workflow_id") or "?")
         if k not in newest or str(r.get("created_at") or "") > str(newest[k].get("created_at") or ""):
             newest[k] = r
-    over, slow, red, going, rows, unread = [], [], [], [], [], []
+    over, slow, red, going, rows, unread, beside = [], [], [], [], [], [], []
     for name in sorted(newest):
         r = newest[name]
         m = _minutes(r, now)
@@ -167,6 +167,7 @@ def judge(runs, sha, now=None, jobs=None, limit=OVERRUN_MIN):
             # succeed: proof-keys windows (cancelled)" - the optional run the ship itself cancelled once GitHub vouched (guard 7).
             # An optional run the ship cancels is not a red; a cancelled REQUIRED run, or Publish, still is.
             rows[-1]["cancelledBeside"] = True
+            beside.append(name)
         elif done and r.get("conclusion") not in ("success", "skipped", "neutral"):
             red.append("%s (%s)" % (name, r.get("conclusion")))
         elif not done and m is not None and m >= limit:
@@ -205,8 +206,13 @@ def judge(runs, sha, now=None, jobs=None, limit=OVERRUN_MIN):
         out.update(state="running", why="%d run(s) on %s still going, the longest %d min of %d: %s" % (
             len(going), sha[:9], int(out["minutes"] or 0), limit, ", ".join(going[:6])))
     else:
-        out.update(state="green", why="every run on %s succeeded inside %d min (the longest %d min)" % (
-            sha[:9], limit, int(out["minutes"] or 0)))
+        # v3898 (the Grok CLI's look on v3897, #231) - a run the ship cancelled did NOT succeed: the sentence names it. MEASURED:
+        # required runs green + the optional Windows run cancelled read "every run on <sha> succeeded" - green is right
+        # (REG-3687), the words were not.
+        out.update(state="green", why=("every run on %s succeeded inside %d min (the longest %d min)" % (
+            sha[:9], limit, int(out["minutes"] or 0))) if not beside else (
+            "every required run on %s succeeded inside %d min (the longest %d min); the ship cancelled the optional %s "
+            "once GitHub vouched" % (sha[:9], limit, int(out["minutes"] or 0), ", ".join(beside))))
     return out
 
 

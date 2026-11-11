@@ -100,6 +100,11 @@ class TheJudge(unittest.TestCase):
         cut = _run(beside[0], 40, "completed", "cancelled", rid=5)
         g = CW.judge([cut, _run(PUBLISH, 30, "completed", "success", rid=6)], SHA, now=T0 + 99 * 60)
         self.assertEqual(g["state"], "green", "the optional run the ship cancelled painted this version's CI red: %r" % (g,))
+        # v3898 (the Grok CLI's look on v3897) - green, and the sentence never says a cancelled run succeeded
+        self.assertNotIn("every run on", g["why"], "the green sentence says every run succeeded - one was cancelled: %r" % g["why"])
+        self.assertIn("the ship cancelled the optional %s" % beside[0], g["why"])
+        ok = CW.judge([_run(PUBLISH, 30, "completed", "success", rid=6)], SHA, now=T0 + 99 * 60)
+        self.assertIn("every run on", ok["why"], "BASELINE - with nothing cancelled the plain sentence stays")
         for name in ("📺 TV DIABLO — agent tests", PUBLISH):
             with self.subTest(name=name):
                 r = CW.judge([_run(name, 20, "completed", "cancelled", rid=7)], SHA, now=T0 + 30 * 60)
@@ -328,6 +333,11 @@ class ShipWhenGreenAlerts(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3898 (the Grok CLI on v3897) - the green sentence says every run succeeded while the ship cancelled one",
+     "file": "tv/ci_watch.py",
+     "find": "            sha[:9], limit, int(out[\"minutes\"] or 0))) if not beside else (\n",
+     "replace": "            sha[:9], limit, int(out[\"minutes\"] or 0))) if True else (\n",
+     "matches": 1},
     {"why": "REG-3213 - a run still going past 75 minutes is never called overrun (v3864: shard 10 at 87 min, no alert)",
      "file": "tv/ci_watch.py",
      "find": "        elif not done and m is not None and m >= limit:\n",
