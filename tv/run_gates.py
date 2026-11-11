@@ -13946,6 +13946,16 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_half_applied_update_heals_itself",
+         [sys.executable, os.path.join(HERE, "test_a_half_applied_update_heals_itself.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3740) - Dean and the OLD ALT sat 97 behind for good: an update to v3898 wrote main's files and never "
+             "moved HEAD, and main's own new files read 'in the way'; a file with main's own bytes is the update"),
+    Gate("test_a_drain_waiting_on_its_proofs_is_updating",
+         [sys.executable, os.path.join(HERE, "test_a_drain_waiting_on_its_proofs_is_updating.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3741) - his 11-12 Fleet: Dean and Konyo ALT read BLOCKED 'drain stopped' while each imported "
+             "GitHub's proofs (the release lock waits on them) and no closed row said the import's count; UPDATING + count"),
     Gate("test_a_documented_loss_closes_out_as_documented",
          [sys.executable, os.path.join(HERE, "test_a_documented_loss_closes_out_as_documented.py")], 60,
          needs_app=False,

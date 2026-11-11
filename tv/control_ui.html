@@ -29539,6 +29539,27 @@ function escC(s) {
     return 'drain stopped — ' + nSay + gbSay;
   };
   window._fleetDrainAlert = _fleetDrainAlert;
+  /* REG-3741 (his 11-12: "not showing the import ... and the amount of proofs and progress") - AN IMPORT SAYS HOW FAR IT
+     IS, on the closed row too: "import 157 of 10,028 ~3.8 h". One unit, drawn by the word's next-line and the closed line
+     alike. Counts only when both were sent; a quiet import says so, never a stale ETA (v3882); a count at its total is
+     the save, never "N of N". */
+  var _fleetImportUnit = function (imp) {
+    var n = function (x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var whole = function (x) { return typeof x === 'number' && isFinite(x) && x >= 0; };
+    var u = 'import';
+    if (imp && whole(imp.done) && whole(imp.of) && imp.of > 0) {
+      u = imp.done >= imp.of ? 'import saving · all ' + n(imp.of) + ' checked' : 'import ' + n(imp.done) + ' of ' + n(imp.of);
+    }
+    if (imp && whole(imp.quietS) && imp.quietS > 0) {
+      return u + ' · no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min'
+                                                                  : (imp.quietS / 3600).toFixed(1) + ' h');
+    }
+    if (imp && whole(imp.etaS)) {
+      var e = imp.etaS;
+      return u + ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h');
+    }
+    return u;
+  };
   var _pcStatus = function (m, nowMs) {
     var now = (typeof nowMs === 'number') ? nowMs : Date.now();
     var parts = null, off = null;
@@ -29556,6 +29577,22 @@ function escC(s) {
     var eta = proving ? _proofMeterFacts(hs).join(' · ') : '';
     var drainAlert = null;
     try { drainAlert = _fleetDrainAlert(m); } catch (e) { drainAlert = null; }
+    /* REG-3741 (his 11-12 01:45 Fleet: Dean and Konyo · ALT BLOCKED "drain stopped" while each imported GitHub's proofs,
+       the OLD PC ALT UPDATING in the same state, and no import count on any closed row) - A DRAIN THAT WAITS ON THE PROOF
+       BEING HEALED IS NOT A WOUND. Measured on Dean's report: locksShut [frame.release, vault.sweep_start, vault.apply],
+       census stale, importing v3898's proofs 157 of 10,028, reel.route open, nothing blind. Release cannot happen until the
+       census is current, and this PC is making it current by itself, so the drain is the consequence: UPDATING, its line
+       says the drain waits and what it waits on. A BLIND lock, a shut routing door or a refused pull stays BLOCKED. */
+    var pullStuck = null;   /* v3896 (REG-3671) - the refused pull, read once: a PC that cannot pull heals nothing by itself */
+    var _pl = m && m.pull;
+    if (_pl && typeof _pl === 'object' && _pl.can === false && typeof _pl.behind === 'number' && _pl.behind > 0) {
+      pullStuck = 'not updating: ' + _pl.behind + ' behind and its pull is refused'
+                + (_pl.why ? ' - ' + _pcCut(_pl.why, 60) : '');
+    }
+    var _imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
+    var _healsItself = !!((proving || _imp) && _routeOpen && !_blindsLock && !pullStuck);
+    var drainWaits = !!(drainAlert && _healsItself && hs.census !== 'current' && _shutList.indexOf('frame.release') >= 0);
+    if (drainWaits) drainAlert = drainAlert.replace(/^drain stopped/, 'drain waits for the proofs');
     var hurt = [];
     var st = by.stuck, pv = by.proved;
     if (drainAlert) hurt.push(drainAlert);
@@ -29577,13 +29614,7 @@ function escC(s) {
     /* v3896 (REG-3671) - A PC THAT CANNOT PULL IS BLOCKED, NOT UPDATING. MEASURED 11-11 on Dean's PC: 181 commits behind
        for days, every pull refused by 65 tracked local edits, while its row read UPDATING - proving bytes no ship would
        ever replace. The open card's dim "not pulling" was there; the word was not. A pinned PC sends no behind count. */
-    var pullStuck = null;
-    var _pl = m && m.pull;
-    if (_pl && typeof _pl === 'object' && _pl.can === false && typeof _pl.behind === 'number' && _pl.behind > 0) {
-      pullStuck = 'not updating: ' + _pl.behind + ' behind and its pull is refused'
-                + (_pl.why ? ' - ' + _pcCut(_pl.why, 60) : '');
-      hurt.push(pullStuck);
-    }
+    if (pullStuck) hurt.push(pullStuck);   /* REG-3741 - decided above, before the drain is judged */
     if (by.picker && by.picker.warn) hurt.push('item picker: ' + by.picker.t);
     if (by.readers && by.readers.warn) hurt.push('readers: ' + by.readers.t);
     var key, next;
@@ -29600,13 +29631,15 @@ function escC(s) {
       key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
       key = 'lost'; next = 'open the console on that PC once, so it can report';
-    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {
+    } else if ((drainAlert && !drainWaits) || pullStuck || (hurt.length && !_healsItself)) {
       key = 'wounded';
       next = pullStuck ? 'it will not catch up on its own - its pull is refused until that clears'
            : proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do')
                      : (drainAlert ? 'the drain released nothing — disk is at stake' : '');
-    } else if (proving) {
-      key = 'healing'; next = 'proving ' + eta + ' - nothing for you to do';
+    } else if (proving || _imp) {
+      key = 'healing';
+      next = (_imp ? _fleetImportUnit(_imp) : 'proving ' + eta) + ' - nothing for you to do'
+           + (drainWaits ? '; the drain releases its reels once the proofs land' : '');
     } else if (!hs || !hs.census || hs.census === 'unknown') {
       key = 'lost'; next = 'whether it has proved itself could not be read on this console';
     } else {
@@ -29700,11 +29733,13 @@ function escC(s) {
       ? ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h') : ''; };
     var proving = (hs && typeof hs.owed === 'number' && hs.owed > 0) ? 'proving ' + _n(hs.owed) + (hs.owed === 1 ? ' check' : ' checks')
       + (_proofMeterFacts(hs, true) ? ' \u00b7 ' + _proofMeterFacts(hs, true) : _eta(hs.etaS)) : '';   // v3885 - a waiting prover says why, not "~175 h"
+    var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
     if (s.key === 'healing') {
       if (s.starting) return ['starting up'];
       var _left = (hs && typeof hs.blind === 'number' && hs.blind > 0)
         ? (hs.blind + (hs.blind === 1 ? ' check still blind' : ' checks still blind')) : '';
-      return (s.drainAlert ? [s.drainAlert] : []).concat([proving || 'proving', _left].filter(Boolean));
+      /* REG-3741 - an importing PC says the import and its count, never "proving 543 checks · import first" */
+      return (s.drainAlert ? [s.drainAlert] : []).concat([imp ? _fleetImportUnit(imp) : (proving || 'proving'), _left].filter(Boolean));
     }
     /* ONE wound, the one that needs a hand first: a blind gate keeps every lock shut whatever this PC proves next, so it
        leads; the rest are "+N" (the open row and the State panel name them). Then what is healing it, if anything. */
@@ -29724,11 +29759,9 @@ function escC(s) {
        rest) - one line is 25-37 characters at the rail's widths, so every word on it has to earn its place */
     /* v3884 - plain: WHAT is blind and what is being proved (the Grok CLI: "2 blind" / "proving 102 - 102 of what") */
     var first = hurt.length ? _short(hurt[0]).replace(/ gates? blind$/, function (m) { return / gate blind$/.test(m) ? ' check blind' : ' checks blind'; }) : '';
-    var imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
-    /* v3882 - a quiet import says it is quiet, never a stale ETA (his 11-08: "the 5 min thing isnt correlated") */
-    var _quiet = (imp && typeof imp.quietS === 'number' && isFinite(imp.quietS) && imp.quietS > 0)
-      ? ' \u00b7 no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min' : (imp.quietS / 3600).toFixed(1) + ' h') : '';
-    var heal = imp ? 'import' + (_quiet || _eta(imp.etaS)) : proving;   /* v3887 (REG-3473) - 'importing' cost 1512 its one line */
+    /* v3882 - a quiet import says it is quiet, never a stale ETA; v3887 (REG-3473) - 'importing' cost 1512 its one line;
+       REG-3741 - and it says its count (_fleetImportUnit, the one unit) */
+    var heal = imp ? _fleetImportUnit(imp) : proving;
     return (s.drainAlert ? [s.drainAlert] : []).concat([first, heal].filter(Boolean));
   };
   /* v3883 (#116) - the line is its units joined (the hover, the laws); the row draws each unit whole */

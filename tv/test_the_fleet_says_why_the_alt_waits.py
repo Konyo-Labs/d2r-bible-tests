@@ -222,7 +222,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3580 - any leftover hurt (tombstones, drain work) makes a proving open-route PC BLOCKED again",
      "file": "tv/control_ui.html",
-     "find": "    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",   # v3896 re-anchor
+     "find": "    } else if ((drainAlert && !drainWaits) || pullStuck || (hurt.length && !_healsItself)) {\n",   # v3900 REG-3741 re-anchor
      "replace": "    } else if (hurt.length) {\n",
      "matches": 1},
 ]
