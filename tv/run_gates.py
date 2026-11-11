@@ -155,13 +155,57 @@ LAW_LEDGERS = (("TV_UNKNOWN_AGE", "unknown_age"), ("TV_EAGLE_SLOW", "eagle_slow"
 _LAW_LEDGER = {"dir": None, "n": 0}
 
 
+#: v3897 (REG-3696) - the per-run ledger dir's name carries its owner: tvd-gate-ledgers-<pid>-<random>
+LAW_LEDGER_PREFIX = "tvd-gate-ledgers-"
+
+
+def sweep_dead_law_ledgers(root=None, alive=None, own=None):
+    """v3897 (REG-3696) - A RUN THAT WAS KILLED LEAVES ITS LEDGER DIR, SO THE NEXT RUN TAKES IT. MEASURED 11-11 on his Mac: 37
+    tvd-gate-ledgers-* dirs in his temp dir, 8 of them older than 3 days - the doctor's "our scratch is collected" MISSING row.
+    The dir is removed by atexit, and atexit never runs when the process is KILLED: a law run past its timeout, a prover the
+    console stands aside with SIGTERM. A dir is removed here only when its name carries an owner pid and that pid is not
+    alive; a dir with no pid in its name (made before v3897), our own, a live owner's, or an owner that cannot be asked is
+    kept. -> how many were removed (None when the root cannot be listed)"""
+    import re as _re
+    import shutil
+    import tempfile
+    root = root or tempfile.gettempdir()
+    own = os.getpid() if own is None else own
+    if alive is None:
+        try:
+            from self_prove import pid_alive as alive      # Windows-safe: never os.kill(pid, 0) there (a Ctrl-C)
+        except Exception:
+            return 0                                       # no way to ask whether an owner lives: every dir is kept
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return None
+    gone = 0
+    for nm in names:
+        m = _re.match(r"^%s(\d+)-" % _re.escape(LAW_LEDGER_PREFIX), nm)
+        if not m or int(m.group(1)) == own:
+            continue
+        try:
+            if alive(int(m.group(1))) is not False:
+                continue                                   # alive, or cannot tell: theirs
+        except Exception:
+            continue
+        shutil.rmtree(os.path.join(root, nm), True)
+        gone += 0 if os.path.exists(os.path.join(root, nm)) else 1
+    return gone
+
+
 def _law_ledger_path(stem):
     """A fresh temp path for one gate's copy of one ledger, under one per-run dir removed at exit. -> str"""
     if _LAW_LEDGER["dir"] is None:
         import atexit
         import shutil
         import tempfile
-        _LAW_LEDGER["dir"] = tempfile.mkdtemp(prefix="tvd-gate-ledgers-")
+        try:
+            sweep_dead_law_ledgers()                       # v3897 (REG-3696) - what killed runs left behind
+        except Exception:
+            pass
+        _LAW_LEDGER["dir"] = tempfile.mkdtemp(prefix="%s%d-" % (LAW_LEDGER_PREFIX, os.getpid()))
         atexit.register(shutil.rmtree, _LAW_LEDGER["dir"], True)
     _LAW_LEDGER["n"] += 1
     return os.path.join(_LAW_LEDGER["dir"], "%s_%d.json" % (stem, _LAW_LEDGER["n"]))

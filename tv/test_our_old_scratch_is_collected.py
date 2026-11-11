@@ -67,6 +67,41 @@ class AGateKeepsItsLedgerInTheRunsScratch(unittest.TestCase):
         self.assertNotEqual(rg.law_env(False, {})["TV_CHILD_GUARD_DIR"], d, "two gates share one ledger dir")
         self.assertEqual(rg.law_env(False, {"TV_CHILD_GUARD_DIR": "/x/mine"})["TV_CHILD_GUARD_DIR"], "/x/mine",
                          "a caller's own dir was overridden")
+        # v3897 (REG-3696) - the run's dir names its owner, so a run that was killed before its atexit can be collected
+        self.assertTrue(os.path.basename(rg._LAW_LEDGER["dir"]).startswith("%s%d-" % (rg.LAW_LEDGER_PREFIX, os.getpid())),
+                        "the run's ledger dir does not name its owner: %s" % rg._LAW_LEDGER["dir"])
+
+
+class AKilledRunsLedgerDirIsTakenByTheNextRun(unittest.TestCase):
+    """* v3897 (REG-3696) THE POINT - MEASURED 11-11 on his Mac: 37 tvd-gate-ledgers-* dirs, 8 older than 3 days (the doctor's
+    "our scratch is collected" MISSING). atexit never runs for a KILLED run (a law past its timeout, a prover stood aside with
+    SIGTERM). The next run removes a dir only when its name carries an owner pid that is not alive."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="rg-ledger-sweep-law-")
+        self.addCleanup(shutil.rmtree, self.root, True)
+        self.d = {}
+        for key, nm in (("dead", "%s11-a" % rg.LAW_LEDGER_PREFIX), ("live", "%s22-b" % rg.LAW_LEDGER_PREFIX),
+                        ("unknown", "%s33-c" % rg.LAW_LEDGER_PREFIX), ("own", "%s44-d" % rg.LAW_LEDGER_PREFIX),
+                        ("legacy", "%sx7q2" % rg.LAW_LEDGER_PREFIX), ("other", "tvd-other-11-e")):
+            self.d[key] = os.path.join(self.root, nm)
+            os.makedirs(os.path.join(self.d[key], "child_guard_1"))
+        self.alive = lambda pid: {11: False, 22: True, 33: None}.get(pid, True)
+
+    def test_only_a_dead_owners_dir_is_removed(self):
+        n = rg.sweep_dead_law_ledgers(root=self.root, alive=self.alive, own=44)
+        gone = sorted(k for k, p in self.d.items() if not os.path.exists(p))
+        self.assertEqual(gone, ["dead"], "the sweep removed %r - only a dir whose owner is provably gone may go" % gone)
+        self.assertEqual(n, 1)
+
+    def test_an_unlistable_root_is_unknown_never_zero(self):
+        self.assertIsNone(rg.sweep_dead_law_ledgers(root=os.path.join(self.root, "nope"), alive=self.alive, own=44))
+
+    def test_a_new_run_asks_the_sweep_first(self):
+        src = inspect.getsource(rg._law_ledger_path)
+        code = "\n".join(l.split("#", 1)[0] for l in src.split("\n"))
+        self.assertEqual(code.count("sweep_dead_law_ledgers()"), 1, "a new run no longer takes what killed runs left")
+        self.assertLess(code.index("sweep_dead_law_ledgers()"), code.index("tempfile.mkdtemp("))
 
 
 class OldLedgerDirsAreCollectedOnProof(unittest.TestCase):
@@ -184,6 +219,26 @@ class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3696) - the sweep removes a dir whose owner is alive or cannot be asked",
+     "file": "tv/run_gates.py",
+     "find": "            if alive(int(m.group(1))) is not False:\n",
+     "replace": "            if alive(int(m.group(1))) is True and False:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3696) - the sweep removes the running process's own dir",
+     "file": "tv/run_gates.py",
+     "find": "        if not m or int(m.group(1)) == own:\n",
+     "replace": "        if not m:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3696) - the run's ledger dir stops naming its owner, so a killed run's dir is never collected",
+     "file": "tv/run_gates.py",
+     "find": "        _LAW_LEDGER[\"dir\"] = tempfile.mkdtemp(prefix=\"%s%d-\" % (LAW_LEDGER_PREFIX, os.getpid()))\n",
+     "replace": "        _LAW_LEDGER[\"dir\"] = tempfile.mkdtemp(prefix=LAW_LEDGER_PREFIX)\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3696) - a new run no longer takes what killed runs left",
+     "file": "tv/run_gates.py",
+     "find": "            sweep_dead_law_ledgers()                       # v3897 (REG-3696) - what killed runs left behind\n",
+     "replace": "            pass\n",
+     "matches": 1},
     {"why": "v3888 (REG-3478) - a gate's child guard keeps its ledger in %TEMP% keyed by the tree again (one dir per sandbox)",
      "file": "tv/run_gates.py",
      "find": "        env[\"TV_CHILD_GUARD_DIR\"] = _law_ledger_path(\"child_guard\")[:-len(\".json\")]\n",
