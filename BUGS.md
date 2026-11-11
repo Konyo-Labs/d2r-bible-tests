@@ -50,6 +50,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3687 - EVERY PC READ THE SHIP'S OWN CANCEL AS "THIS VERSION'S CI DID NOT SUCCEED" (v3897, card #200 guard 7)
+MEASURED 11-11 07:10: right after v3895 went live, the OLD PC ALT's doctor row "this version's CI" read "a run on f1245cf6a did
+not succeed: proof-keys windows (cancelled)" - the optional Windows run the ship cancelled on purpose once GitHub vouched
+(guard 7, REG-3663), so every PC on that version carried a false CI red. ci_watch.judge now skips a cancelled run of a
+workflow the ship runs BESIDE the required ones (ship_when_green.BESIDE, the one definition, read lazily; unreadable =
+empty, so a cancel counts red as before). A cancelled REQUIRED run, and a cancelled Publish, still read red. Law:
+test_a_ci_run_past_75_minutes_alerts. Seen RED x2.
+
 ### REG-3686 - THE PROOF-CACHE LAW ACCEPTED A RESTORE UNDER ANOTHER KEY FORMAT (v3896, the Grok CLI's look on v3895)
 The second eye on v3895 (grok-cli, 6 findings): test_ci_reuses_a_proof_only_for_identical_bytes checked the seed's
 restore-keys against heart2-proofs-k<any digits>- while the save was pinned to k3, so a k2 restore beside a k3 save - the

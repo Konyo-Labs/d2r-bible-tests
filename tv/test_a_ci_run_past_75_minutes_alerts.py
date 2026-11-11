@@ -93,6 +93,18 @@ class TheJudge(unittest.TestCase):
         r = CW.judge([sched, _run(PUBLISH, 30, "completed", "success", rid=4)], SHA, now=T0 + 99 * 60)
         self.assertEqual(r["state"], "green", "a scheduled routine's red painted this version's CI red")
 
+    def test_the_ships_own_cancelled_optional_run_is_not_red_but_a_cancelled_required_one_is(self):
+        """v3897 (REG-3687) - every PC read "did not succeed: proof-keys windows (cancelled)" after guard 7 cancelled it"""
+        beside = sorted(CW.beside_workflows())
+        self.assertTrue(beside, "PREMISE: the ship names no optional run it cancels")
+        cut = _run(beside[0], 40, "completed", "cancelled", rid=5)
+        g = CW.judge([cut, _run(PUBLISH, 30, "completed", "success", rid=6)], SHA, now=T0 + 99 * 60)
+        self.assertEqual(g["state"], "green", "the optional run the ship cancelled painted this version's CI red: %r" % (g,))
+        for name in ("📺 TV DIABLO — agent tests", PUBLISH):
+            with self.subTest(name=name):
+                r = CW.judge([_run(name, 20, "completed", "cancelled", rid=7)], SHA, now=T0 + 30 * 60)
+                self.assertEqual(r["state"], "red", "a cancelled %s read as fine" % name)
+
     def test_only_the_newest_run_of_a_workflow_counts(self):
         old = _run(PUBLISH, 30, "completed", "failure", rid=1, created=T0)
         new = _run(PUBLISH, 10, "completed", "success", rid=2, started=T0 + 3600, created=T0 + 3600)
@@ -386,6 +398,16 @@ RED_PROOF = [
      "find": "        if getattr(r, \"returncode\", 1) == 0:\n            return json.loads(r.stdout or \"null\")\n",
      "replace": "        if False:\n            return json.loads(r.stdout or \"null\")\n",
      "matches": 1},
+    {"why": "v3897 (REG-3687) - the optional run the ship cancels reads as a red on every PC again",
+     "file": "tv/ci_watch.py",
+     "find": "        if done and r.get(\"conclusion\") == \"cancelled\" and name in beside_workflows():\n",
+     "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3687) - ANY cancelled run reads as fine, a required one and Publish included",
+     "file": "tv/ci_watch.py",
+     "find": "        if done and r.get(\"conclusion\") == \"cancelled\" and name in beside_workflows():\n",
+     "replace": "        if done and r.get(\"conclusion\") == \"cancelled\":\n",
+     "matches": 1}
 ]
 
 

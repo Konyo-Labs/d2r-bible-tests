@@ -51,6 +51,18 @@ CI_WATCH_EVERY_S = 300
 RED_STATES = ("overrun", "slow", "red")
 
 
+def beside_workflows():
+    """v3897 (REG-3687) - the optional workflows the ship runs BESIDE the required ones and cancels once GitHub vouches
+    (card #200 guard 7): ship_when_green.BESIDE, the one definition, minus anything required. Read lazily (the ship imports
+    this module). -> frozenset; empty when it cannot be read, so a cancel then counts red exactly as before (fails closed)."""
+    try:
+        import ship_when_green as _SW
+        import ci_verdict as _CV
+        return frozenset(n for n in _SW.BESIDE if n not in _CV.REQUIRED)
+    except Exception:
+        return frozenset()
+
+
 def _ts(s):
     """GitHub's '2026-11-05T18:27:03Z' -> epoch seconds | None. Pure."""
     try:
@@ -150,7 +162,12 @@ def judge(runs, sha, now=None, jobs=None, limit=OVERRUN_MIN):
                      "minutes": None if m is None else round(m, 1), "id": r.get("id"), "url": r.get("html_url")})
         if m is None:
             unread.append(name)
-        if done and r.get("conclusion") not in ("success", "skipped", "neutral"):
+        if done and r.get("conclusion") == "cancelled" and name in beside_workflows():
+            # v3897 (REG-3687) - MEASURED 11-11 07:10: every PC's "this version's CI" row read "a run on f1245cf6a did not
+            # succeed: proof-keys windows (cancelled)" - the optional run the ship itself cancelled once GitHub vouched (guard 7).
+            # An optional run the ship cancels is not a red; a cancelled REQUIRED run, or Publish, still is.
+            rows[-1]["cancelledBeside"] = True
+        elif done and r.get("conclusion") not in ("success", "skipped", "neutral"):
             red.append("%s (%s)" % (name, r.get("conclusion")))
         elif not done and m is not None and m >= limit:
             over.append((name, r))
