@@ -13908,6 +13908,12 @@ GATES = [
              "shelf…' hid the shelf and left the theatre's empty stage open (on his Mac it held v3897's pre-flight red): the "
              "door's flag was set only after thOpen returned. _thShelfWasTheDoor now counts the in-flight open. Runs the "
              "shipped rule in node."),
+    Gate("test_the_shelf_keeps_its_data_lanes_in_a_backdoor",
+         [sys.executable, os.path.join(HERE, "test_the_shelf_keeps_its_data_lanes_in_a_backdoor.py")], 60,
+         needs_app=False,
+         why="v3898 (card #214, his 11-11 design brief via GrokBot) - 'if it is not for him to act on and it is just data, it "
+             "stays off the main view': the shelf's river strip and pipeline board live in one collapsed drawer at its foot, "
+             "the Vault backdoor's format; ids kept, below the reel list, open state for the page's life only."),
     Gate("test_game_names_wear_the_game_face",
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,

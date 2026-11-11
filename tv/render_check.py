@@ -3365,6 +3365,11 @@ TARGETS = {
                contract, and the wired copy had bolted a second builder on top of the click.
                [[the-unjoined-end]] [[copy-drift]] */
             if (ov.hidden) return false;
+            /* v3898 (#214) - THE RIVER LIVES IN THE SHELF BACKDOOR NOW (a closed <details>, his "just data stays off the
+               main view"), and inside a closed drawer every lane is 0x0 - a refusal, never a look. Open it the way he
+               would before measuring; `.open = true` is idempotent, and its ontoggle keeps it open across repaints. */
+            var _bd = document.getElementById('sh-backdoor');
+            if (_bd && !_bd.open) _bd.open = true;
             var el = document.getElementById('sh-lanes');
             if (!el) return false;
             /* ask again ONLY while it is still waiting — that is what keeps this idempotent,

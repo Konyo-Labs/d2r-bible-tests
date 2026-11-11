@@ -1934,6 +1934,14 @@
      ⚠ AND `topElementAtXCentre: th-shelf-x` ALONE PROVES NOTHING — hit-testing the centre of a
      button returns that button. The overlap is established by rect intersection and it is
      SCROLL-DEPENDENT; the first reading of it as evidence was mine and it was wrong. */
+  /* v3898 (#214) - the Shelf backdoor: the Vault backdoor's drawer (bible.html .vault-advanced), closed by default */
+  #th-shelfov .sh-backdoor { grid-column: 1 / -1; margin: 16px 0 4px; border: 1px solid rgba(212,168,71,.28);
+    border-radius: 12px; background: rgba(13,10,6,.35); }
+  #th-shelfov .sh-backdoor > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 10px; padding: 9px 13px; color: var(--gold-hi, #f0c060); font-family: var(--serif); letter-spacing: var(--ls-wide); }
+  #th-shelfov .sh-backdoor > summary::-webkit-details-marker { display: none; }
+  #th-shelfov .sh-backdoor .shbd-hint { font-family: inherit; font-size: var(--fs-xs); color: var(--gold-dim); letter-spacing: 0; }
+  #th-shelfov .sh-backdoor[open] > summary { border-bottom: 1px solid rgba(212,168,71,.2); margin-bottom: 10px; }
   #th-shelfov .sh-lanes { margin: 0 0 12px; padding: 11px 13px; padding-right: 48px;
     border: 1px solid var(--edge);
     border-radius: 10px; background: rgba(255,255,255,.022); }
@@ -20137,8 +20145,20 @@ window._lockMark = function(isOpen, px, label){
          ⚠ ORDER ONLY. No id moves, nothing is removed, and `_shTimeline`/`_shLanesLoad`/
          `_shStoryRender` each still find their block by getElementById exactly as before.
          [[borrowed-surface]] [[visual-regression-detector]] */
+      /* v3898 (card #214, his 11-11 design brief via GrokBot #230 6795098365) - THE SHELF BACKDOOR. His rule: "if it is not
+         for him to act on and it is just data, it stays off the main view". The river strip (the four lanes, the FRESH ...
+         UNKNOWN chips, the intake / printer / tombstone line, the triage lane) and the pipeline board move into ONE collapsed
+         drawer at the foot of the shelf, in the Vault backdoor's format - superseding v2985's "nothing collapsed behind a
+         click" by his newer word. ORDER and IDS kept: both blocks still sit below the reel list, and _shLanesLoad /
+         _shStoryRender still find them by getElementById. Opened, it stays open across the shelf's repaints for this
+         page's life only (a reload starts collapsed, his default) - the snap-shut v2079 fixed on the walls. */
+      + '<details class="sh-backdoor" id="sh-backdoor"' + (window._shBackdoorOpen ? ' open' : '')
+      + ' ontoggle="window._shBackdoorOpen=this.open">'
+      + '<summary class="shbd-sum"><b>\u2699 Advanced \u00b7 Shelf backdoor</b>'
+      + '<span class="shbd-hint">River lanes \u00b7 intake \u00b7 printer \u00b7 tombstone \u00b7 Triage \u00b7 Pipeline</span></summary>'
       + '<div class="sh-lanes" id="sh-lanes"><div class="shr-wait">reading the river…</div></div>'
-      + '<div class="sh-story" id="sh-story"><div class="shs-wait">reading the pipeline…</div></div>';
+      + '<div class="sh-story" id="sh-story"><div class="shs-wait">reading the pipeline…</div></div>'
+      + '</details>';
     ov.hidden = false;
     /* ⚠⚠ v3029 (#58) — OPEN ON A REEL, NOT ON FURNITURE. MEASURED on his live console at 1120x660
        with the shelf open and measurable: clientH 361, firstCardTop 426 — the first reel card sits
