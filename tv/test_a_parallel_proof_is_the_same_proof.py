@@ -45,6 +45,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -380,6 +381,11 @@ class TheLaneCountIsMeasuredAndTurnableDown(unittest.TestCase):
                              % (want, len(sbs.made)))
 
 
+def _not_the_provers_env(env):
+    """v3898 (REG-3709) - a law that drives heart2's own prove path runs without the prover's allowance in its env"""
+    env.pop("HEART2_DEADLINE_SCALE", None)
+
+
 class TheDeadlineGrowsWithTheLoadTheLanesMake(unittest.TestCase):
     """⚠⚠ THE ONE THING THE A/B FOUND, AND IT WAS NOT A LOST UPDATE.
 
@@ -401,6 +407,25 @@ class TheDeadlineGrowsWithTheLoadTheLanesMake(unittest.TestCase):
     deadline expiring because of this prover's own concurrency would quietly delete a proof the
     heart had banked. [[unknown-stays-unknown]] [[label-outlived-referent]]
     """
+
+    def setUp(self):
+        # v3898 (REG-3709) - THE PROVER'S OWN ALLOWANCE IS NOT THIS CASE'S. MEASURED 11-11: his Mac's safety net filed this
+        # law RED 10 times from 10:33 and shut the chronicle, fleet and roster routes for runewords, sets and uniques, while a
+        # plain run passed. self_prove starts heart2 with HEART2_DEADLINE_SCALE=4 (REG-1454) and every law it runs inherits
+        # it, so the single-lane path read x4 where this case pins x1 ("Items in the first set but not the second"). Each run
+        # now plays that hostile host on purpose - the prover's own value set, then removed by this case's fixture - so the
+        # isolation is proven on every machine, never only under a prover.
+        env = mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ["HEART2_DEADLINE_SCALE"] = "4"      # self_prove.PROVER_DEADLINE_SCALE - what a prover's child inherits
+        _not_the_provers_env(os.environ)
+
+    def test_the_host_allowance_is_real_and_this_case_is_free_of_it(self):
+        """BASELINE - the host's variable does widen the single-lane path; this case runs without it"""
+        self.assertEqual(H._deadline_scale(1, env={"HEART2_DEADLINE_SCALE": "4"}), 4,
+                         "PREMISE: heart2 no longer reads HEART2_DEADLINE_SCALE, so the isolation below proves nothing")
+        self.assertNotIn("HEART2_DEADLINE_SCALE", os.environ, "the prover's own deadline allowance reached this case")
 
     def test_the_allowance_is_on_for_lanes_and_off_for_one_lane(self):
         seen = []
@@ -870,6 +895,12 @@ class AnUntamperedRedRunNamesItsRedCases(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3898 (REG-3709) - the deadline case inherits the prover's HEART2_DEADLINE_SCALE again: red only under a prover, "
+            "and on his Mac that shut the chronicle routes",
+     "file": "tv/test_a_parallel_proof_is_the_same_proof.py",
+     "find": "    env.pop(\"HEART2_DEADLINE_SCALE\", None)\n",
+     "replace": "    pass\n",
+     "matches": 1},
     {"why": "v3888 (REG-3479) - a named red run's tail drops what its first failure said",
      "file": "tv/heart2.py",
      "find": "                    _parts.append(\"why: \" + _c[:240])\n",

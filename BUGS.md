@@ -50,6 +50,12 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3709 - A LAW READ THE PROVER'S DEADLINE ALLOWANCE AND SHUT HIS MAC'S CHRONICLE ROUTES (v3898, 11-11)
+MEASURED from the Fleet 11-11 14:20: his Mac's safety net filed test_a_parallel_proof_is_the_same_proof RED 10 times from
+10:33 and shut the chronicle / fleet / roster routes for runewords, sets and uniques, while a plain run passed. self_prove
+starts heart2 with HEART2_DEADLINE_SCALE=4 (REG-1454) and every law inherits it; the case's single-lane path read x4 where
+it pins x1. Reproduced with HEART2_DEADLINE_SCALE=3. The case now plays the hostile host (sets 4, then its fixture removes
+it), proven red without the removal. Swept: 8 other laws that drive heart2's deadline path pass under the prover's env.
 ### REG-3708 - A SHELF CLOSED WHILE "OPENING THE SHELF…" LEFT THE THEATRE'S EMPTY STAGE OPEN (v3898, card #204, GrokBot 11-11)
 GrokBot's v3896 look: ✕ during "opening the shelf…" left "THEATRE · SESSION 1 · PAST REPLAY" on his Mac; the live-panel
 gate read it red at 13:4x and held v3897's pre-flight until it was closed. The door handler set TH.shelfIsDoor only after
