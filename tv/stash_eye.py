@@ -1012,7 +1012,14 @@ def class_from_tab(tab: str) -> str:
     return ""
 
 
-def classify_when_in_play(src_path: str, kind=None, chain=None, recording=True):
+#: v3896 (#197 finding 5, REG-3680) - "the caller never asked what screen this is" - never the same as screen_of's own None
+#: ("asked: no known screen", the answer for most gameplay frames). MEASURED on v3893's look: a reel frame was decoded up to
+#: three times - v3894 handed the closer's screen_of answer in, but a None answer read as "not asked" and decoded the frame
+#: again, which is every frame of play. A caller that asked passes its answer, None included; only an unasked frame decodes.
+SCREEN_UNASKED = object()
+
+
+def classify_when_in_play(src_path: str, kind=SCREEN_UNASKED, chain=None, recording=True):
     """v3893 (#187/#185, REG-3550) - the stash-grid reader, joined to the shared screen
     templates and the recorder's window. Pre-game frames (logo, title, character select)
     and frames outside a recording never reach classify_stash_grid. An unlabelled frame
@@ -1020,8 +1027,8 @@ def classify_when_in_play(src_path: str, kind=None, chain=None, recording=True):
     or when the caller did not pass a chain (a standalone look at a known panel)."""
     try:
         import d2r_screens as _DS
-        if kind is None and src_path:
-            kind = _DS.screen_of(src_path)[0]
+        if kind is SCREEN_UNASKED:
+            kind = _DS.screen_of(src_path)[0] if src_path else None
         if not _DS.readers_may_run(kind, chain=chain, recording=recording):
             return "gameplay", {"method": "screen-type", "screen": kind, "skipped": True}
     except Exception:
@@ -1039,7 +1046,7 @@ def analyze_frame(
     allow_grid_solo: bool = False,
     chain=None,
     recording: bool = True,
-    screen=None,
+    screen=SCREEN_UNASKED,
 ) -> Dict[str, Any]:
     """Full eye analysis of one photo (for KAI / live resolve).
 

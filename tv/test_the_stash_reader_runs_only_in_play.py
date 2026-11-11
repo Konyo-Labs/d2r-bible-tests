@@ -22,6 +22,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -120,6 +121,35 @@ class TheStashReaderIsJoinedToTheGate(unittest.TestCase):
         self.assertEqual(self.calls, [])
 
 
+class AFrameIsDecodedOnceForItsScreen(unittest.TestCase):
+    """v3896 (#197 finding 5, REG-3680) - the closer asks screen_of once per frame and hands the answer in; an answer of None
+    ("no known screen" - every frame of play) is an answer, never "unasked", so the eye does not decode the frame again"""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="stash_once_")
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.hud = os.path.join(self.tmp, "hud.jpg")
+        in_game().save(self.hud, "JPEG", quality=92)
+        import d2r_screens as DS
+        self.asked = []
+        real = DS.screen_of
+        p = mock.patch.object(DS, "screen_of", lambda src, *a, **k: (self.asked.append(src), real(src, *a, **k))[1])
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_an_answer_of_none_is_not_asked_again(self):
+        SE.classify_when_in_play(self.hud, kind=None, chain={"entered": True}, recording=True)
+        self.assertEqual(self.asked, [], "a frame the caller already asked about (answer: no known screen) was decoded again")
+
+    def test_an_unasked_frame_is_still_asked_once(self):
+        SE.classify_when_in_play(self.hud, chain={"entered": True}, recording=True)
+        self.assertEqual(self.asked, [self.hud], "PREMISE: a frame nobody asked about must be asked")
+
+    def test_the_eye_passes_the_closers_none_through(self):
+        SE.analyze_frame(self.hud, ocr_lines=[], screen=None, chain={"entered": True}, recording=True)
+        self.assertEqual(self.asked, [], "analyze_frame decoded a frame the closer had already asked about")
+
+
 class TheWalkPassesTheSharedGate(unittest.TestCase):
 
     def test_the_closer_hands_the_walk_and_the_recording_window_to_the_eye(self):
@@ -162,6 +192,11 @@ RED_PROOF = [
              "                            _in_play = True\n",
      "replace": "                            pass\n",
      "matches": 1},
+    {"why": "v3896 (#197 finding 5, REG-3680) - an answer of None reads as 'unasked' again and every frame of play is decoded twice",
+     "file": "tv/stash_eye.py",
+     "find": "        if kind is SCREEN_UNASKED:\n",
+     "replace": "        if kind is SCREEN_UNASKED or kind is None:\n",
+     "matches": 1}
 ]
 
 
