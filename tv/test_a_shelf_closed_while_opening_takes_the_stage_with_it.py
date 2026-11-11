@@ -96,6 +96,12 @@ class AShelfClosedWhileOpeningTakesTheStageWithIt(unittest.TestCase):
         self.assertIn("} finally {\n      try { TH.shelfOpening = false; } catch (e) {}", rest,
                       "the in-flight mark is not cleared in a finally - a later shelf over a reel would close the reel's stage")
 
+    def test_a_closed_theatre_claims_no_ink(self):
+        """GrokBot #230 6795804579: after a close his status still said painted:false / 'naturalWidth 0' about a gone image"""
+        body = _function(js_strip.strip_js_comments(_ui()), "thClose")
+        self.assertIn("try { window._thInk = null; } catch (e) {}", body,
+                      "a closed Theatre keeps the last ink check, so the status calls a stage that is not there broken")
+
 
 RED_PROOF = [
     {"why": "v3898 (#204) - a shelf closed while still opening leaves the empty theatre stage open again (GrokBot 11-11)",
@@ -108,6 +114,11 @@ RED_PROOF = [
      "find": "    try { return !!(TH.shelfIsDoor || TH.shelfOpening); } catch (e) { return false; }\n",
      "replace": "    try { return true; } catch (e) { return false; }\n",
      "matches": 1, "needs": "node"},
+    {"why": "v3898 (#204) - a closed Theatre keeps its last ink check (painted:false about a gone image)",
+     "file": "tv/control_ui.html",
+     "find": "    try { window._thInk = null; } catch (e) {}\n",
+     "replace": "",
+     "matches": 1},
     {"why": "v3898 (#204) - Escape stops asking the rule and strands the stage",
      "file": "tv/control_ui.html",
      "find": "      if (_thShelfWasTheDoor()) thClose();\n",

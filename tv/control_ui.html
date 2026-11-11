@@ -19040,6 +19040,10 @@ window._lockMark = function(isOpen, px, label){
        the shelf…" in front of Session 53's frame). The reel is dropped first; the next open loads its own. */
     try { TH.beats = []; TH.allBeats = []; TH.i = 0; thTimeline(); } catch (e) {}
     try { var _cf = $('th-film'); if (_cf){ _cf.__want = ''; _cf.__url = ''; _cf.removeAttribute('src'); _cf.title = ''; } } catch (e) {}
+    /* v3898 (#204, GrokBot #230 6795804579) - A CLOSED THEATRE CLAIMS NO INK. The last ink check (window._thInk) outlived the
+       close, so his status kept saying theatre {open:false, painted:false, why:'naturalWidth 0'} about an image no longer
+       on screen - a reader that does not ask `open` first would call a closed stage broken. */
+    try { window._thInk = null; } catch (e) {}
     thCinema(false);   // v825 — leaving the theatre always leaves cinema
     thLit();
     /* REG-1934 — AND THE COCKPIT'S WORDS NOW, NOT AT THE NEXT POLL. The THEATRE word, marquee, kicker and
