@@ -2235,6 +2235,10 @@
       "s": 1.141,
       "src": "measured"
     },
+    "test_the_boards_link_follows_the_learned_port": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_look_can_cover_a_batch": {
       "s": 0.906,
       "src": "measured"

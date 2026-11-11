@@ -84665,6 +84665,16 @@ body.engine-driven.cousin-shell .gsearch-wrap{margin-left:196px!important}
 // Specs never poll (navigator.webdriver guard — the v617 cost lesson).
 (function(){
   var URL0='http://127.0.0.1:17771/state', FRAME0='http://127.0.0.1:17771/frame', T=null, SEEN=0, STATE='off', FEED=[];
+  /* v3896 (REG-3700) - THE BOARD'S LINK FOLLOWS THE LEARNED BRIDGE PORT. v2224 taught the console's status to hand the board
+     the agent's port (window._tvdBridgePort), and one frame grab read it - but the probe, the /state poll and the live picture
+     kept :17771, so a board whose agent is anywhere else could never go live (MEASURED 11-11: test_button_matrix's site half,
+     red on v3895's code too). Refreshed before each probe and each poll. */
+  function _tvdSyncPorts(){
+    try {
+      var bp = window._tvdBridgePort;
+      if (bp) { URL0 = 'http://127.0.0.1:' + bp + '/state'; FRAME0 = 'http://127.0.0.1:' + bp + '/frame'; }
+    } catch (eSp) {}
+  }
   var _pollFails=0;   /* v3893 - consecutive dead-bridge strikes; a single abort is a slow frame */
   // v930.2 (Grok r2: ONE intake owner) — the app's engine tile is DRIVEN by the control
   // process (evaluate_js fires tvStashAutoIntake directly). Its own read-poll trigger
@@ -88720,6 +88730,7 @@ window.tvStashAutoIntake = async function(tab, opts){
     } catch(e){}
   }
   function poll(){
+    _tvdSyncPorts();
     var ac = (typeof AbortController!=='undefined') ? new AbortController() : null;
     var to = ac && setTimeout(function(){ ac.abort(); }, 1800);
     fetch(URL0 + (SEEN ? ('?since=' + SEEN) : ''), { signal: ac && ac.signal, cache:'no-store' }).then(function(r){ return r.json(); }).then(function(st){
@@ -88987,7 +88998,8 @@ window.tvStashAutoIntake = async function(tab, opts){
     if (T || document.hidden) return;
     var ac = (typeof AbortController!=='undefined') ? new AbortController() : null;
     var to = ac && setTimeout(function(){ ac.abort(); }, 900);
-    fetch('http://127.0.0.1:17771/ping', { signal: ac && ac.signal, cache:'no-store' })
+    _tvdSyncPorts();   /* v3896 (REG-3700) - the probe asks the LEARNED bridge port, never a hardcoded :17771 */
+    fetch(URL0.replace(/\/state$/, '/ping'), { signal: ac && ac.signal, cache:'no-store' })
       .then(function(r){ if(to) clearTimeout(to); if (!r.ok || T) return;
         try { localStorage.setItem('d2r_tvdOn','1'); } catch(e){}
         setState('conn'); render(); poll(); T=setInterval(poll, 250); })

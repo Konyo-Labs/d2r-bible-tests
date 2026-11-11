@@ -7,6 +7,18 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3700 - THE BOARD'S TV-D LINK KEPT :17771 AFTER IT LEARNED THE AGENT'S REAL PORT (v3896 round 2, the Mac rehearsal)
+MEASURED 11-11 10:10: v3896's Mac rehearsal went RED on changed_tests - test_button_matrix (changed by REG-3670) failed on his
+Mac first for a missing browser (Python Playwright 1.55 wants Chromium 1187, which a Node Playwright install had removed -
+reinstalled), then for real: "site -> ON AIR while SIM agent up: bug='OFF AIR'", the SAME red on v3895's code. Two defects,
+either one enough: the law never called window._tvdProbe() (under Playwright the page never probes on its own -
+navigator.webdriver - and bible.html's own comment says a matrix must call it), and the board's probe, /state poll and live
+picture kept http://127.0.0.1:17771 although v2224 taught it the agent's real port (window._tvdBridgePort) - so a board whose
+agent runs anywhere else could never go live, and this law's board asked HIS agent. GitHub has no Python Playwright, so the
+site half only ever ran on his Mac. Fixed: _tvdSyncPorts() refreshes URL0/FRAME0 from the learned port before every probe and
+poll; the law sets the port and asks the probe. test_button_matrix ALL CHECKS PASSED on his Mac. Law:
+test_the_boards_link_follows_the_learned_port (runs everywhere). Seen RED x3.
+
 ### REG-3694 - THE PRIVATE CONSOLE'S NEW GROUP STOP SENT SIGTERM TO os.killpg(0) - THE RUNNER ITSELF (v3896 round 1)
 MEASURED 11-11 on GitHub, v3896 agent-suite (4), three attempts out of three: the slice died about 3 minutes in with "The
 runner has received a shutdown signal" (exit 143), each time ~40 s after test_console_fleet. Reproduced the slice exactly

@@ -429,12 +429,20 @@ def main():
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
+            # v3896 (REG-3700) - THE SITE ASKS THIS LAW'S AGENT, NEVER HIS. A board opened from disk probes
+            # window._tvdBridgePort || 17771, and nothing on file:// sets the port, so this half asked HIS live agent on :17771:
+            # green while his agent happened to be on, red while it was off (MEASURED 11-11 on his Mac, the same red on v3895's
+            # code). GitHub has no Python Playwright, so this half only ever ran here. The private agent's port goes in first.
+            page.add_init_script("window._tvdBridgePort = %d;" % int(str(AGENT).rsplit(":", 1)[-1]))
             page.goto(bible)
             page.wait_for_timeout(500)
             page.evaluate("window.switchTab && window.switchTab('tvd')")
             # wait for auto-probe to see agent (2.5s + poll)
             live = False
             for _ in range(20):
+                # v3896 (REG-3700) - under Playwright the page never probes on its own (navigator.webdriver), so the
+                # harness asks it, as bible.html's own comment says a matrix must
+                page.evaluate("window._tvdProbe && window._tvdProbe()")
                 page.wait_for_timeout(500)
                 bug = page.evaluate(
                     "() => (document.getElementById('tvz-bug-txt')||{}).textContent || ''"
