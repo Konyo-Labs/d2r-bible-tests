@@ -196,9 +196,24 @@ def _untracked_in_the_way(repo):
         occupied = _untracked_occupies(repo, rel)
         if occupied is None:
             return None
-        if occupied:
+        if occupied and not _is_the_updates_own_file(repo, rel):
             return True
     return False
+
+
+def _is_the_updates_own_file(repo, rel):
+    """REG-3740 - an untracked REGULAR file whose bytes are origin/main's own blob at that path (CR ignored) is the
+    update already on disk, not his work: the reset writes the same bytes over it. -> bool, False when unsure.
+
+    MEASURED 11-11/12 on Dean's PC and the OLD ALT: an update stopped mid-checkout left 53 of main's new files on disk
+    as untracked and HEAD unmoved, and every later pull refused 'an untracked file is in the way' - for ever, both PCs
+    sat 97 behind until a hand reset. A file with different bytes, a directory or a link is still in the way."""
+    try:
+        if not stat.S_ISREG(os.lstat(os.path.join(repo, rel)).st_mode):
+            return False
+    except OSError:
+        return False
+    return _matches(repo, rel)
 
 
 def _own_record(status, path):
