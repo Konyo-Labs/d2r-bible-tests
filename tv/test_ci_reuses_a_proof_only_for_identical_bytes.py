@@ -186,6 +186,18 @@ class TheWorkflowSeedsEachShardAndSavesFromMainOnly(unittest.TestCase):
         self.assertIn('export HEART2_CACHE_PATH="$D/.heart2_cache.json"', prove, "the shard's own file is no longer fresh")
         self.assertIn("unset HEART2_SHARD_SEED", prove, "a missed restore hands heart2 a path that is not there")
 
+    def test_every_proof_key_in_the_workflow_carries_the_one_declared_format(self):
+        """v3896 (REG-3686, the Grok CLI's look on v3895) - the restore check accepted heart2-proofs-k<any digits>- while the
+        save was pinned to k3, so a restore under k2 beside a k3 save passed it. Every proof-key prefix the workflow names -
+        the seed's restore, the shards' re-run restore, every save - carries ONE format, and it is heart2's declared one."""
+        import re as _re
+        import heart2 as _H2
+        ks = [int(k) for k in _re.findall(r"heart2-proofs-k(\d+)-", self.code)]
+        self.assertGreaterEqual(len(ks), 4, "PREMISE: the workflow's proof keys were not found - %r" % ks)
+        self.assertEqual(set(ks), {_H2.P3_KEY_FORMAT},
+                         "the workflow's proof keys name formats %s, heart2 declares %d - a restore would read another "
+                         "format's entries" % (sorted(set(ks)), _H2.P3_KEY_FORMAT))
+
     def test_the_fan_in_merges_and_saves_on_main_only_under_the_prefix_the_shards_restore(self):
         m = self.code.find('python3 tv/proof_shard.py --merge-shards shards --out "$RUNNER_TEMP/heart2-seed/.heart2_cache.json"')
         s = self.code.find("uses: actions/cache/save@v4")
@@ -241,6 +253,11 @@ RED_PROOF = [
      "find": "          export HEART2_SHARD_SEED=\"$RUNNER_TEMP/heart2-seed/.heart2_cache.json\"\n",
      "replace": "",
      "matches": 1},
+    {"why": "REG-3686 - the seed restores another proof-key format than the shards save (k2 beside k3) and the law still passes",
+     "file": ".github/workflows/proof-keys-shards.yml",
+     "find": "            heart2-proofs-k3-\n",
+     "replace": "            heart2-proofs-k2-\n",
+     "matches": 1}
 ]
 
 if __name__ == "__main__":

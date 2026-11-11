@@ -27,6 +27,16 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3686 - THE PROOF-CACHE LAW ACCEPTED A RESTORE UNDER ANOTHER KEY FORMAT (v3896, the Grok CLI's look on v3895)
+The second eye on v3895 (grok-cli, 6 findings): test_ci_reuses_a_proof_only_for_identical_bytes checked the seed's
+restore-keys against heart2-proofs-k<any digits>- while the save was pinned to k3, so a k2 restore beside a k3 save - the
+v3894 attempt-3/5 failure guard 3 exists for - passed the restore assertion. A new case collects every proof-key prefix the
+workflow names (seed restore, shard re-run restore, every save) and requires one format, heart2.P3_KEY_FORMAT. Seen RED.
+The look's other findings, checked in the code: the d2jsp law's temp dir is set in its own single-threaded process (the race
+it isolates is between processes); a red-proof's `if False:` runs only in the sandbox copy, never in shipped bytes; the
+speed proof is PROVEN on its anchor; the character-window law does assert the skill key and pins the call on purpose
+(REG-3572). Not changed.
+
 ### REG-3685 - A BOARD LAW LOST ITS FOCUS TO ANOTHER LAW'S TAB IN THE SHARED CHROME (v3896)
 MEASURED 11-11: v3895 round 3's agent-suite slice 3 went red twice on test_a_board_field_takes_keys_after_a_click
 ("#d2jsp-price-q took no keys after a click that gave no focus: ['', '', True, 'visible']") - green alone 3 of 3 on the same
