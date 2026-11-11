@@ -86,7 +86,9 @@ class AKilledRunsLedgerDirIsTakenByTheNextRun(unittest.TestCase):
                         ("legacy", "%sx7q2" % rg.LAW_LEDGER_PREFIX), ("other", "tvd-other-11-e")):
             self.d[key] = os.path.join(self.root, nm)
             os.makedirs(os.path.join(self.d[key], "child_guard_1"))
-        self.alive = lambda pid: {11: False, 22: True, 33: None}.get(pid, True)
+        # 44 (own) reads NOT alive on purpose: only the own-pid rule may keep the running process's dir - had the probe
+        # answered alive, the own rule would decide nothing and its red-proof would stay green (BLIND, measured 11-11)
+        self.alive = lambda pid: {11: False, 22: True, 33: None, 44: False}.get(pid, True)
 
     def test_only_a_dead_owners_dir_is_removed(self):
         n = rg.sweep_dead_law_ledgers(root=self.root, alive=self.alive, own=44)
