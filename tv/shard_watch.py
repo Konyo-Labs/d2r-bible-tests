@@ -654,6 +654,17 @@ def watch_jobs_live(sha, runs, run, say, seen, made, clock, root=None):
             ok, why = FL.should_rerun(info["name"], log_text=log, root=root)
             if info["class"] in ("cutoff", "timeout", "infra"):
                 ok, why = True, info["class"] + " - auto-rerun this shard only"
+                # v3897 (REG-3698) - THE SAME CUT ON A RE-RUN IS A PATTERN, NOT THE RUNNER. MEASURED 11-11 on v3896:
+                # agent-suite (4) died "The runner has received a shutdown signal" three attempts out of three, each ~40 s
+                # after the same gate - the law's own os.killpg(0) (REG-3694), not GitHub - and each was re-run as a
+                # cut-off, an hour of rounds before anyone read it. On attempt 2 or later of the same run it is reported
+                # as real; an attempt that cannot be read keeps the one re-run (the old rule), and says so.
+                _att = SW.run_attempt(rid, run)
+                if _att is not None and _att >= 2:
+                    ok, why = False, ("%s again on attempt %d of the same run - a cut that repeats is the code's, "
+                                      "not the runner's" % (info["class"], _att))
+                elif _att is None:
+                    why += " (its attempt could not be read - re-run once, as before)"
             if not ok:
                 say("ship: REG-3648 not re-run - job %r is a real red (%s)" % (info["name"], why))
                 return "real", info

@@ -44,7 +44,8 @@ used 1490s, 10s left of 1500s ceiling
 
 
 class _GH:
-    def __init__(self, jobs, logs=None, rerun_ok=True, rerun_err=""):
+    def __init__(self, jobs, logs=None, rerun_ok=True, rerun_err="", attempt=None):
+        self.attempt = attempt          # v3897 (REG-3698) - None: the run's attempt cannot be read
         self.jobs = jobs
         self.logs = logs or {}
         self.rerun_ok = rerun_ok
@@ -53,6 +54,9 @@ class _GH:
 
     def __call__(self, cmd, **kw):
         self.calls.append(cmd)
+        if cmd[:3] == ["gh", "run", "view"] and "attempt" in cmd:
+            return subprocess.CompletedProcess(cmd, 0 if self.attempt is not None else 1,
+                                               json.dumps({"attempt": self.attempt}) if self.attempt is not None else "", "")
         if cmd[:3] == ["gh", "run", "view"]:
             return subprocess.CompletedProcess(cmd, 0, json.dumps({"jobs": self.jobs}), "")
         if len(cmd) >= 3 and cmd[0] == "gh" and cmd[1] == "api" and "/logs" in cmd[2]:
@@ -160,6 +164,26 @@ class TheLawHolds(unittest.TestCase):
         self.assertIn("--failed", reruns[0])
         self.assertNotIn(42810705250, made, "a refused mid-run rerun stays queued for suite_makeup")
 
+    def test_a_cut_that_repeats_on_a_re_run_is_real_and_never_re_run_again(self):
+        """* v3897 (REG-3698) - v3896's agent-suite (4) died the same way on attempts 1, 2 and 3 (its own os.killpg(0)) and
+        was re-run as a cut-off each time. On attempt 2+ a cut is reported as real; attempt 1 and an unreadable attempt
+        keep the one re-run."""
+        for attempt, want, reruns in ((2, "real", 0), (1, "rerun", 1), (None, "rerun", 1)):
+            with self.subTest(attempt=attempt):
+                root = tempfile.mkdtemp(prefix="shard-repeat-")
+                self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+                os.makedirs(os.path.join(root, "tv"), exist_ok=True)
+                SHW.save({"rounds": [], "flags": []}, root)
+                jobs = [{"name": "agent-suite (4)", "databaseId": 9, "status": "completed", "conclusion": "cancelled"}]
+                gh = _GH(jobs, logs={9: CUTOFF_LOG}, attempt=attempt)
+                said = []
+                kind, info = SHW.watch_jobs_live("a" * 40, [_suite(jobs)], gh, said.append, set(), {},
+                                                 clock=lambda: 1.0, root=root)
+                self.assertEqual(kind, want, (kind, info, said))
+                self.assertEqual(len([c for c in gh.calls if c[:3] == ["gh", "run", "rerun"]]), reruns, gh.calls)
+                if attempt == 2:
+                    self.assertTrue(any("a cut that repeats is the code's" in s for s in said), said)
+
     def test_the_wait_loop_calls_the_live_watch_before_the_round_ends(self):
         with open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8") as fh:
             src = fh.read()
@@ -180,6 +204,16 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3698) - a cut that repeats on a re-run is re-run again (v3896's agent-suite (4), three attempts)",
+     "file": "tv/shard_watch.py",
+     "find": "                if _att is not None and _att >= 2:\n",
+     "replace": "                if False:\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3698) - an attempt that cannot be read is taken as a repeat (a first cut is never re-run)",
+     "file": "tv/shard_watch.py",
+     "find": "                if _att is not None and _att >= 2:\n",
+     "replace": "                if _att is None or _att >= 2:\n",
+     "matches": 1},
     {"why": "REG-3648 - the wait loop no longer watches a shard the moment it goes red",
      "file": "tv/ship_when_green.py",
      "find": "watch_jobs_live",
