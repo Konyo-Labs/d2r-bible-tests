@@ -50,6 +50,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3690 - THE SHIP'S POST-GREEN "TIMINGS MERGE" WAS NO MEASUREMENT, WRITTEN INTO A TREE NOTHING COMMITS (v3897, card #200)
+MEASURED 11-11 on v3895's merge (carried by hand into v3896 as d9c6f6da6): it read proof_shard.proof_costs() on the Mac,
+which is the COMMITTED price table plus the timings file's own median rows - no GitHub round is on this machine - so it
+changed 0 values, relabelled the 6 median rows of v3896's new laws "measured", and stamped "measuredOn v3895 f1245cf6a"
+over a measurement nobody took; and it wrote that into the shipped worktree after main, where nothing commits it. A round's
+real prices already travel on GitHub, round to round (REG-3274: the fan-in measures them and every next shard reads them).
+The merge, shard_timings.merge_measured (its one caller) and the ship's post-main writer are gone; the CLI hands the ship no
+tree writer. Laws: test_required_checks_ignore_windows_jobs (NoShipWritesTheShippedTree, which reads everything after the
+main push) and test_every_round_records_how_fast_it_ran (the CLI's ship call). Seen RED x3.
 ### REG-3689 - NOTHING COUNTED HOW MANY ROUNDS A VERSION TOOK TO SHIP (v3897, card #200 "measure it")
 His 11-10 words: "this is ridiculous to do 7-12 attempts to ship". Card #200's target is at most 2 GitHub rounds a version,
 and the count was kept by hand in prose. At the vouch the ship now counts the commits its two ci branches carried a REQUIRED

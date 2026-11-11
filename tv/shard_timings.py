@@ -125,16 +125,6 @@ def per_proof(root=None):
     return out
 
 
-def merge_measured(measured, root=None, measured_on=None):
-    """Write newly measured seconds over the file (defaults stay for anything not measured)."""
-    prev = load(root) or {}
-    doc = build(root, measured=measured, previous=prev)
-    if measured_on:
-        doc["measuredOn"] = measured_on
-    write(doc, root)
-    return doc
-
-
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     root = REPO

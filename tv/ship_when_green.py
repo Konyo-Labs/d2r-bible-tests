@@ -570,22 +570,9 @@ def post_land_status(version, run, say, url=STATUS_URL):
     return 0
 
 
-def merge_timings_after_green(sha, version, say, root=None):
-    """Best-effort: fold this round's measured proof costs into shard_timings.json. Never refuses the ship."""
-    try:
-        import shard_timings as ST
-        import proof_shard as PS
-        measured = PS.proof_costs()
-        if measured:
-            ST.merge_measured(measured, root=root, measured_on="%s %s" % (version, str(sha)[:9]))
-            say("ship: shard timings updated from this green round (%d measured)" % len(measured))
-    except Exception as e:
-        say("ship: shard timings not updated (%s)" % type(e).__name__)
-
-
 def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_s=240 * 60, remote="origin", preflight=None,
          watch=None, watch_publish_s=None, version_check=None, speed=None,
-         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None, timings=None):
+         box_rehearse=False, mac_ready=False, mac_rehearse=False, report_steps=None):
     """-> exit code: 0 main pushed (and, when watched, Publish green) · 1 GitHub said red / the main push refused /
     Publish red / a local rehearsal or readiness check was red · 2 timed out or unknown · 3 refused.
 
@@ -809,11 +796,10 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         say("ship: the main push was refused (exit %s) - read the pre-push lines above" % m.returncode)
         return 1
     say("ship: %s is on main" % version)
-    # v3895 - only the REAL ship folds this round's timings into the tracked file (main() hands it in, like speed): a law's
-    # fake ship() wrote its fixture version and sha ("v3862 aaaaaaaaa") into tv/shard_timings.json on every pre-flight,
-    # and the next launch refused a dirty tree. AFTER the main push, so the hook never grades a file the push does not send.
-    if timings is not None:
-        timings(sha, version, say)
+    # v3897 (REG-3690) - NOTHING IS WRITTEN INTO THE SHIPPED TREE AFTER MAIN. The old post-green "timings merge" read the
+    # Mac's COMMITTED price table (no round of GitHub's is on this machine), so MEASURED on v3895 it changed 0 values,
+    # relabelled 6 median rows "measured" and stamped "measuredOn v3895" over a measurement nobody took - into a worktree
+    # nothing commits (v3896 carried it by hand). A round's real prices travel on GitHub, round to round (REG-3274).
     post_land_status(version, run, say)
     if watch_publish_s:
         return watch_publish(sha, watch or CW.watch, sleep, clock, say, watch_publish_s, run=run)
@@ -845,7 +831,7 @@ def main(argv=None):
     return ship(a.version, wait_s=a.wait_min * 60, preflight=False if a.no_preflight else None, watch=_watch_authed,
                 watch_publish_s=None if a.no_watch else a.publish_wait_min * 60,
                 box_rehearse=not a.no_box_rehearse, mac_ready=not a.no_mac_ready,
-                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe, timings=merge_timings_after_green)
+                mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)
 
 
 #: card #200 guard 1 (REG-3665) - the plan a proof-key FORMAT change must bring (how its first round is seeded)

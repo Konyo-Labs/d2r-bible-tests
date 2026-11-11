@@ -190,23 +190,40 @@ class TheShipCancelsItsOptionalRunsOnceVouched(unittest.TestCase):
 
 
 
-class AFakeShipNeverWritesTheRealTimings(unittest.TestCase):
+class NoShipWritesTheShippedTree(unittest.TestCase):
     """v3895 - MEASURED 11-11: every pre-flight left tv/shard_timings.json dirty with a law's fixture version and sha
-    ("v3862 aaaaaaaaa", "v3875 0d4e24537"), because a fake ship() folded timings into the REAL file"""
+    ("v3862 aaaaaaaaa", "v3875 0d4e24537"), because a fake ship() folded timings into the REAL file. v3897 (REG-3690) - and
+    the REAL ship's fold was no measurement at all: it read the Mac's committed price table, changed 0 values, relabelled 6
+    median rows "measured" and stamped "measuredOn v3895", into a worktree nothing commits. No ship writes a tracked file
+    after main, real or fake."""
 
-    def test_only_the_cli_hands_the_ship_its_timings_writer(self):
-        src = open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8").read()
-        self.assertEqual(src.count("merge_timings_after_green(sha, version, say)"), 0,
-                         "ship() calls the real timings writer itself - a law's fake ship writes the tracked file")
-        self.assertIn("timings=merge_timings_after_green)", src, "the real CLI no longer hands the ship its timings writer")
-        self.assertIn("    if timings is not None:\n        timings(sha, version, say)\n", src)
+    def setUp(self):
+        with open(os.path.join(HERE, "ship_when_green.py"), encoding="utf-8") as fh:
+            self.src = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
+
+    def test_nothing_after_the_main_push_writes_the_tree(self):
+        i = self.src.index('    say("ship: %s is on main" % version)\n')
+        tail = self.src[i:self.src.index("\ndef main(", i)]
+        for w in ("shard_timings", "timings(", "merge_measured", ".write(", "io.open(", "json.dump("):
+            with self.subTest(writer=w):
+                self.assertNotIn(w, tail, "the ship writes the shipped tree after main again (%s)" % w)
+
+    def test_the_cli_hands_the_ship_no_tree_writer(self):
+        m = self.src[self.src.index("\ndef main("):]
+        self.assertEqual(m.count("speed=_CS.observe)"), 1, "PREMISE: the CLI's ship() call moved")
+        self.assertNotIn("timings=", m, "the CLI hands the ship a post-main writer again")
 
 
 RED_PROOF = [
-    {"why": "v3895 - a law's fake ship folds its fixture timings into the real tracked file again",
+    {"why": "v3897 (REG-3690) - the ship writes tv/shard_timings.json into the shipped tree after main again",
      "file": "tv/ship_when_green.py",
-     "find": "    if timings is not None:\n        timings(sha, version, say)\n",
-     "replace": "    merge_timings_after_green(sha, version, say)\n",
+     "find": "    say(\"ship: %s is on main\" % version)\n",
+     "replace": "    say(\"ship: %s is on main\" % version)\n    import shard_timings as _ST\n    _ST.write(_ST.load(None) or {}, None) if False else None\n",
+     "matches": 1},
+    {"why": "v3897 (REG-3690) - the CLI hands the ship a post-main tree writer again",
+     "file": "tv/ship_when_green.py",
+     "find": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe)",
+     "replace": "mac_rehearse=not a.no_mac_rehearse, speed=_CS.observe, timings=None)",
      "matches": 1},
     {"why": "card #200 guard 7 - the ship stops cancelling its optional runs once GitHub vouches",
      "file": "tv/ship_when_green.py",
