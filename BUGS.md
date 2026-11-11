@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3671 - A PC WHOSE PULL IS REFUSED READ "UPDATING" FOR DAYS (v3896)
+MEASURED 11-11 on Dean's PC: 181 commits behind, every pull refused by 65 tracked local edits (1,209 lines), while its Fleet
+row read UPDATING ("proving 67 checks") - proving bytes no ship would ever replace (cleared by backup + reset, his call).
+The open card had a dim "not pulling"; the word, the header and the State panel did not. _pcStatus now reads the row's pull
+report: refused (can false) with a behind count is BLOCKED, says "not updating: N behind and its pull is refused - <why>",
+and that it will not catch up on its own; a pinned PC (no behind count) and a clear pull still read updating. Law:
+test_each_pc_reads_in_a_few_words (APcThatCannotPullIsBlocked). Seen RED x2. Re-anchored: test_each_pc_reads_in_a_few_words[9],
+test_the_fleet_says_why_the_alt_waits[2]. Owed before ship: the render gate on the Fleet + a Grok look at the row.
+
 ### REG-3670 - A LAW'S PRIVATE CONSOLE LEFT ITS AGENT RUNNING FOR DAYS (v3896)
 MEASURED 11-11 on his Mac: three tv_diablo agents ran on as orphans (ppid 1) - 9 h and 2.7 days old, each listening on an
 ephemeral agent port and writing a btnmatrix-* fixture log, with 189 MB of those fixture dirs left behind (killed by PID,

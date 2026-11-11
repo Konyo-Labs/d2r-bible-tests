@@ -82,7 +82,7 @@ def _drive(cases):
           + fn + "\n" + block + "\n"
           "var OUT = {}, ALL = [];\n"
           "Object.keys(CASES).forEach(function (k) {\n"
-          "  var m = { machine: k, nickname: 'PC ' + k, system: { river: { heart: CASES[k].heart } } };\n"
+          "  var m = { machine: k, nickname: 'PC ' + k, system: { river: { heart: CASES[k].heart } }, pull: CASES[k].pull };\n"
           "  ALL.push(m);\n"
           "  OUT[k] = { status: _pcStatus(m, 1000), html: _pcStatusHtml(m, 1000, { name: m.nickname }) };\n"
           "});\n"
@@ -123,6 +123,20 @@ CASES = {
     "owed": {"parts": WELL + [_p("repairs", ["8 unknown faults"], warn=True)], "off": None, "heart": CURRENT},
     "tagged": {"parts": [x for x in WELL if x["k"] != "stuck"] + [_p("stuck", ["<b>x</b> & y"], warn=True)],
                "off": None, "heart": CURRENT},
+}
+
+
+PULL_CASES = {
+    # v3896 (REG-3671) - Dean's PC, 11-11: proving, its routing door open, and every pull refused by local edits
+    "pullstuck": {"parts": [x for x in WELL if x["k"] != "proved"] + [_p("proved", ["proof out of date", "0 blind", "67 laws owed"], warn=True)],
+                  "off": None, "heart": dict(PROVING, owed=67, locksShut=[]),
+                  "pull": {"can": False, "behind": 181, "why": "local tracked edits \u2014 a fast-forward would not be safe here"}},
+    "pinned": {"parts": [x for x in WELL if x["k"] != "proved"] + [_p("proved", ["proof out of date", "0 blind", "15 laws owed"], warn=True)],
+               "off": None, "heart": dict(PROVING, locksShut=[]),
+               "pull": {"can": False, "why": "pinned: TV_NO_AUTO_PULL is set on this machine"}},
+    "pullclear": {"parts": [x for x in WELL if x["k"] != "proved"] + [_p("proved", ["proof out of date", "0 blind", "15 laws owed"], warn=True)],
+                  "off": None, "heart": dict(PROVING, locksShut=[]),
+                  "pull": {"can": True, "behind": 3, "why": "3 commits behind and clear to pull"}},
 }
 
 
@@ -264,6 +278,31 @@ class TheOpenRowStaysBalanced(unittest.TestCase):
                       "the eyes stretch to the vault line's height again")
 
 
+@unittest.skipUnless(NODE, "node is required to drive the page's own _pcStatus - UNMEASURED here, not a pass")
+class APcThatCannotPullIsBlocked(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.out = _drive(PULL_CASES)
+
+    def _s(self, k):
+        return self.out[k]["status"]
+
+    def test_a_pc_whose_pull_is_refused_is_blocked_never_updating(self):
+        """v3896 (REG-3671) - Dean's PC sat 181 behind for days, every pull refused by local edits, and read UPDATING"""
+        s = self._s("pullstuck")
+        self.assertEqual((s["key"], s["word"]), ("wounded", "blocked"), "a PC that cannot pull read %r" % (s["word"],))
+        self.assertTrue(any(h.startswith("not updating: 181 behind and its pull is refused - local tracked edits")
+                            for h in s["hurt"]), s["hurt"])
+        self.assertIn("will not catch up on its own", s["next"])
+
+    def test_a_pinned_or_clear_pull_still_reads_updating(self):
+        for k in ("pinned", "pullclear"):
+            with self.subTest(k=k):
+                s = self._s(k)
+                self.assertEqual(s["key"], "healing", "%s read %r: %r" % (k, s["word"], s["hurt"]))
+                self.assertFalse(any("not updating" in h for h in s["hurt"]), s["hurt"])
+
+
 RED_PROOF = [
     {"why": "v3887 (REG-3476) - the Fleet header is one joined string again (a middot strands at a wrapped line's end)",
      "file": "tv/control_ui.html",
@@ -302,7 +341,8 @@ RED_PROOF = [
      "replace": "    } else if (false) {\n      key = 'lost';", "matches": 1},
     {"why": "v3880 - stuck while proving reads as healing (the wound hidden under the healing)",
      "file": "tv/control_ui.html",
-     "find": "    } else if (drainAlert || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n      key = \'wounded\';", "replace": "    } else if (hurt.length && !proving) {\n      key = 'wounded';",
+     "find": "    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n      key = \'wounded\';",   # v3896 re-anchor
+     "replace": "    } else if (pullStuck || (hurt.length && !proving)) {\n      key = 'wounded';",
      "matches": 1},
     {"why": "v3880 - the hover card stops leading with the PC's status",
      "file": "tv/control_ui.html",
@@ -322,6 +362,16 @@ RED_PROOF = [
     {"why": "v3880 - more than three wounds crowd the card",
      "file": "tv/control_ui.html",
      "find": "    s.hurt.slice(0, max).forEach(", "replace": "    s.hurt.forEach(", "matches": 1},
+    {"why": "v3896 (REG-3671) - a PC whose pull is refused is no longer read as one: it says UPDATING while it can never catch up",
+     "file": "tv/control_ui.html",
+     "find": "    if (_pl && typeof _pl === 'object' && _pl.can === false && typeof _pl.behind === 'number' && _pl.behind > 0) {\n",
+     "replace": "    if (false) {\n",
+     "matches": 1},
+    {"why": "v3896 (REG-3671) - a refused pull rides the line but proving with its routing door open still wins the word",
+     "file": "tv/control_ui.html",
+     "find": "    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",
+     "replace": "    } else if (drainAlert || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",
+     "matches": 1},
 ]
 
 

@@ -29465,6 +29465,16 @@ function escC(s) {
     /* its repair book's leftovers are CODE's to fix, not a wound and not his (GrokBot's "owed by code"): a dim line, never
        the word - else his own console reads WOUNDED for as long as any eagle fault lacks a known repair */
     var owed = by.repairs ? ['the code\u2019s to fix, not yours: ' + by.repairs.t] : [];
+    /* v3896 (REG-3671) - A PC THAT CANNOT PULL IS BLOCKED, NOT UPDATING. MEASURED 11-11 on Dean's PC: 181 commits behind
+       for days, every pull refused by 65 tracked local edits, while its row read UPDATING - proving bytes no ship would
+       ever replace. The open card's dim "not pulling" was there; the word was not. A pinned PC sends no behind count. */
+    var pullStuck = null;
+    var _pl = m && m.pull;
+    if (_pl && typeof _pl === 'object' && _pl.can === false && typeof _pl.behind === 'number' && _pl.behind > 0) {
+      pullStuck = 'not updating: ' + _pl.behind + ' behind and its pull is refused'
+                + (_pl.why ? ' - ' + _pcCut(_pl.why, 60) : '');
+      hurt.push(pullStuck);
+    }
     if (by.picker && by.picker.warn) hurt.push('item picker: ' + by.picker.t);
     if (by.readers && by.readers.warn) hurt.push('readers: ' + by.readers.t);
     var key, next;
@@ -29481,9 +29491,10 @@ function escC(s) {
       key = 'healing'; next = 'starting up - its first proof check lands about 5 minutes after a start';
     } else if (!parts || !known) {
       key = 'lost'; next = 'open the console on that PC once, so it can report';
-    } else if (drainAlert || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {
+    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {
       key = 'wounded';
-      next = proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do')
+      next = pullStuck ? 'it will not catch up on its own - its pull is refused until that clears'
+           : proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do')
                      : (drainAlert ? 'the drain released nothing — disk is at stake' : '');
     } else if (proving) {
       key = 'healing'; next = 'proving ' + eta + ' - nothing for you to do';
