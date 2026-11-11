@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_documented_loss_closes_out_as_documented",
+         [sys.executable, os.path.join(HERE, "test_a_documented_loss_closes_out_as_documented.py")], 60,
+         needs_app=False,
+         why="v3900 (#217, REG-3739) - 34 reels left his shelf 10-24 with no deleter's record and the river check stood red "
+             "for 18 days; a hunt can document a loss (NOT a deleter's record, said), every undocumented loss stays red"),
     Gate("test_a_fixed_console_home_is_not_old_scratch",
          [sys.executable, os.path.join(HERE, "test_a_fixed_console_home_is_not_old_scratch.py")], 60,
          needs_app=False,

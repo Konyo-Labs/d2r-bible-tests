@@ -588,6 +588,28 @@ def _deleter_records(hist):
             unread.append("the reap log would not read (%s)" % type(e).__name__)
         if torn:
             unread.append("%d line(s) of the reap log would not parse" % torn)
+    # REG-3739 (v3900, #217) - THE THIRD SOURCE IS DOCUMENTATION, AND IT SAYS SO. 34 reels left his Mac's shelf on 10-24
+    # with no deleter's record; the hand is still unnamed, and river-log-matches-the-shelf stood red over them for 18 days -
+    # a row that is always red hides the next real loss. A reel documented here (document(), after the hunt) closes out
+    # with words that say it was documented after the fact and is NOT a deleter's record. Gone-with-no-record stays red for
+    # every reel nobody documented.
+    try:
+        import reel_forensics as _RF
+        fp = _RF.forensics_path(hist)
+    except Exception as e:
+        fp = None
+        unread.append("the forensic record's path could not be resolved (%s)" % type(e).__name__)
+    if fp and os.path.exists(fp):
+        try:
+            with open(fp, encoding="utf-8") as fh:
+                d = json.load(fh)
+            for t in ((d or {}).get("reels") or []):
+                if isinstance(t, dict) and t.get("reel") and str(t["reel"]) not in recs:
+                    recs[str(t["reel"])] = ("NOT a deleter's record - documented after the fact by %s (%s): %s" % (
+                        t.get("by") or "UNKNOWN", time.strftime("%Y-%m-%d %H:%M", time.localtime(t["at"] / 1000.0))
+                        if isinstance(t.get("at"), (int, float)) else "time unrecorded", t.get("why") or "no reason given"))
+        except Exception as e:
+            unread.append("the forensic record would not read (%s)" % type(e).__name__)
     return recs, unread
 
 
@@ -663,6 +685,18 @@ def _p_census(c):
 
 def main(argv):
     print("\nRIVER STAMP — where each reel has BEEN, not where it is\n")
+    if argv and argv[0] == "--document":
+        # REG-3739 - python3 tv/river_stamp.py --document "<what the hunt found>" <author> reel_... [reel_...]
+        if len(argv) < 4:
+            print("  usage: --document \"<what the hunt found>\" <author> reel_... [reel_...]\n")
+            return 2
+        hist = os.environ.get("TV_HIST") or os.path.join(HERE, "frames", "hist")
+        import reel_forensics as _RF
+        r = _RF.document(argv[3:], argv[1], argv[2], hist)
+        print("  %s%s\n" % ("" if r["ok"] else "REFUSED - ", r["why"]))
+        for x in r["refused"]:
+            print("    refused %-40s %s" % (x["reel"][:40], x["why"]))
+        return 0 if r["ok"] else 2
     if argv and argv[0] == "--run":
         by = argv[1] if len(argv) > 1 else ""
         r = run(by)

@@ -1865,6 +1865,15 @@
     "purpose": "Which DOOR opened each reel - onair, shadow or mini - read once from the play journal so the river and the shelf quote the same answer instead of each rolling its own.",
     "territory": "river-reels"
   },
+  "reel_forensics.py": {
+    "entryPoints": [
+      "forensics_path",
+      "document"
+    ],
+    "gotcha": "Documentation, never a deleter: river_stamp reads it as a third source and every close-out says NOT a deleter's record. document() refuses a reel still on the shelf or already recorded. Per PC, gitignored (it names his reels).",
+    "purpose": "Documents what a hunt found about reels that left the shelf with no deleter's record, so the river check stays red only for undocumented losses",
+    "territory": "river-reels"
+  },
   "reel_index.py": {
     "entryPoints": [
       "ensure_reel_index"

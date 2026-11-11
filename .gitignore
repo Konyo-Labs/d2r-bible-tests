@@ -321,6 +321,7 @@ tv/disk_history.jsonl
 tv/river_stamp.jsonl
 # the recorder's own emergency disk-floor reaper log (tv_diablo.py, "reel_reaps.jsonl") - his runtime record, never code
 tv/reel_reaps.jsonl
+tv/reel_forensics.json
 .coldread.tmp.html
 
 # v2394 — the eagle's durable pass. A RUNTIME DECISION RECORD, like .second_eye.jsonl and
