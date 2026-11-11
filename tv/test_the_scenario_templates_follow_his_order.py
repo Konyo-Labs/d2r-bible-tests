@@ -48,7 +48,7 @@ class TheOrderIsTheOneHeNamed(unittest.TestCase):
         self.assertIsNone(DS.scenario_of_kind(None))
 
     def test_steps_without_real_frames_are_reported_not_invented(self):
-        for step in ("login", "connecting", "portal"):
+        for step in ("login", "portal"):   # v3898 (REG-3715) - connecting is measured now (test_the_connecting_screen_is_a_door)
             ev = DS.SCENARIO_EVIDENCE[step]
             self.assertTrue(ev.startswith("none"), (step, ev))
         self.assertIn("no act-1–5 town templates", DS.SCENARIO_EVIDENCE["town"])

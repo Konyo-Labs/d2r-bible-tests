@@ -13912,6 +13912,12 @@ GATES = [
          needs_app=False,
          why="v3898 (#184's four boxes) - repeat(4, 1fr) kept CHRONICLES' min-content: the row needed 290 px in a 237 px card "
              "and SETS was cut off at the card's edge (his font, measured); a card lays the boxes 2 x 2, no bare 1fr track"),
+    Gate("test_the_connecting_screen_is_a_door",
+         [sys.executable, os.path.join(HERE, "test_the_connecting_screen_is_a_door.py")], 60,
+         needs_app=False,
+         why="v3898 (#188, REG-3715, his 11-11 ruling: logo -> CONNECTING TO BATTLE.NET -> character select) - the classifier "
+             "called the real Connecting frame None; it names it now from a plaque-over-title signature (GrokBot's 3 frames + "
+             "a false-match count over all 44,818 reel frames on his Mac), never in a game, and Connecting witnesses the door"),
     Gate("test_one_game_in_hourly_parts",
          [sys.executable, os.path.join(HERE, "test_one_game_in_hourly_parts.py")], 120,
          why="v3898 (#188, REG-3713, his 11-11 ruling) - the hourly parts stay and the parts of one game are linked: a part "

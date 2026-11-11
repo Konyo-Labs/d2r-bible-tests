@@ -21,7 +21,7 @@ character select. Fire = R>=170, R-B>=90, G>=50, R>=G>=B, on the frame scaled to
 And the same day, from 07:41 to 12:30, that PC opened six "sessions" on GeForce NOW's "Your game session ended due to
 inactivity" page - the tab still titled "Diablo II: Resurrected" - none of which ever showed one of these screens.
 
-screen_of(src) -> ("logo" | "title" | "hud" | "char-select" | None, why) - "hud" is in a game (the two orbs). The
+screen_of(src) -> ("logo" | "title" | "connecting" | "hud" | "char-select" | "lobby" | None, why) - "hud" is in a game (the two orbs). The
 character select is char_select's own test, called, never copied. chain(marks) reads a reel's marks in order and names
 where the game was entered.
 """
@@ -45,6 +45,22 @@ CHAIN_GAP_S = 30 * 60            # he may sit at "Press Any Key" a long time; th
 # nearly empty read blue 0.0046 - a reel has thousands of frames, and one is enough.
 ORB_BAND = 0.78
 ORB_MIN = 0.015
+# v3898 (#188, REG-3715) - "CONNECTING TO BATTLE.NET": a dark stone plaque laid over the CENTRE of the fire title, so the
+# title test (centre fire) never fires on it and the frame read None - "not D2R" - on the one screen his 11-11 ruling
+# makes a trigger. MEASURED on GrokBot's 3 real frames (Mac native, #230 6798662136): the plaque's inner box is colourless
+# (saturation 0.008) and dark grey (brightness 0.084) where the title's fire reads 0.39-0.44 / 0.43-0.49; the fire D and O
+# still flank it; 91% of the frame is dark. Both halves must meet: GeForce NOW's own loading and queue pages pass the plaque
+# half alone (0.038-0.042 / 0.12-0.13) and fail the flanks (no fire). A frame is never called this on one half.
+PLAQUE = (0.36, 0.42, 0.64, 0.54)
+FLANKS = ((0.24, 0.40, 0.31, 0.56), (0.69, 0.40, 0.76, 0.56))
+# The false-match count over EVERY reel frame on his Mac (44,818): 17 matched at the first cut - 16 identical real CONNECTING
+# screens (saturation 0.008, brightness 0.084, dark 0.91, in 4 reels GrokBot had not packed) and ONE in-game River of Flame
+# frame (0.019 / 0.126 / 0.79: the fire ring and lava played the flanks). Tightened so each bound alone refuses it, and an
+# in-game frame (both orbs) is never this screen.
+PLAQUE_SAT_MAX = 0.015
+PLAQUE_L_MIN, PLAQUE_L_MAX = 0.06, 0.11
+FLANK_FIRE_MIN = 0.05
+CONNECT_DARK_MIN = 0.85
 
 
 def _chrome_trim(a):
@@ -109,16 +125,36 @@ def stats_of_array(a):
     def cx(m, off):
         xs = np.nonzero(m)[1]
         return round(float((xs.mean() + off) / W), 3) if len(xs) else None
-    return {"centre": round(float(fire[cen].mean()), 4), "corner": round(float(fire[cor].mean()), 4),
+    pl = a[int(H * PLAQUE[1]):int(H * PLAQUE[3]), int(W * PLAQUE[0]):int(W * PLAQUE[2])]
+    fl = np.concatenate([fire[int(H * y0_):int(H * y1_), int(W * x0_):int(W * x1_)].ravel()
+                         for (x0_, y0_, x1_, y1_) in FLANKS])
+    return {"plaqueL": round(float(pl.sum(axis=-1).mean() / 765.0), 4) if pl.size else None,
+            "plaqueSat": round(float((pl.max(axis=-1) - pl.min(axis=-1)).mean() / 255.0), 4) if pl.size else None,
+            "flank": round(float(fl.mean()), 4) if fl.size else None,
+            "centre": round(float(fire[cen].mean()), 4), "corner": round(float(fire[cor].mean()), 4),
             "rest": round(float(fire[rest].mean()), 4), "dark": round(float(dark.mean()), 4),
             "red": round(float(left.mean()), 4), "blue": round(float(right.mean()), 4),
             "redX": cx(left, 0), "blueX": cx(right, W // 2)}
+
+
+def is_connecting_stats(st):
+    """v3898 (#188, REG-3715) - BOTH halves: the plaque (colourless, dark grey) AND the fire title flanking it. -> bool"""
+    try:
+        return (st["plaqueSat"] is not None and st["plaqueSat"] < PLAQUE_SAT_MAX
+                and PLAQUE_L_MIN <= st["plaqueL"] <= PLAQUE_L_MAX
+                and st["flank"] is not None and st["flank"] >= FLANK_FIRE_MIN and st["dark"] >= CONNECT_DARK_MIN
+                and not (st.get("red", 0) >= ORB_MIN and st.get("blue", 0) >= ORB_MIN))
+    except (KeyError, TypeError):
+        return False
 
 
 def kind_of_stats(st):
     """-> ("logo" | "title" | None, why) from stats_of_array."""
     if not isinstance(st, dict):
         return None, "frame unreadable"
+    if is_connecting_stats(st):
+        return "connecting", ("CONNECTING TO BATTLE.NET: a colourless dark plaque (%.3f) over the fire title's centre, its fire "
+                              "letters flanking it (%.3f)" % (st["plaqueL"], st["flank"]))
     if (st["centre"] >= TITLE_CENTRE_MIN and st["rest"] <= TITLE_REST_MAX and st["dark"] >= TITLE_DARK_MIN):
         return "title", "the fire DIABLO II title fills the centre of a dark screen (centre %.3f)" % st["centre"]
     if (st["corner"] >= LOGO_CORNER_MIN and st["dark"] >= LOGO_DARK_MIN
@@ -131,7 +167,7 @@ def kind_of_stats(st):
 
 
 def screen_of(src, array=None):
-    """One frame -> ("logo" | "title" | "hud" | "char-select" | "lobby" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
+    """One frame -> ("logo" | "title" | "connecting" | "hud" | "char-select" | "lobby" | None, why). "frame unreadable" is UNKNOWN, never None-as-no.
     Decodes the frame once (v3894): logo/title/hud and the char-select/lobby look share that image.
     `array` (an RGB int array of the same frame) skips the file open entirely."""
     raw = None
@@ -211,24 +247,31 @@ def chain(marks, gap_s=CHAIN_GAP_S):
     "charTs", "witnessed": a title after the logo, "entered": character select after the title}. A title alone still
     starts it (the recorder may have begun on the title); a logo with no title after it within gap_s is not a start."""
     ms = sorted([(int(t), k) for t, k in (marks or []) if isinstance(t, (int, float)) and k], key=lambda x: x[0])
+    # v3898 (#188, REG-3715) - his 11-11 ruling: on every route the chain is the D2 logo -> CONNECTING TO BATTLE.NET ->
+    # character select, starting at the first. CONNECTING witnesses the door the way the title does (it is drawn OVER the
+    # title), so a reel whose title fell between two frames is still witnessed by it; the start stays the logo.
     for i, (t, k) in enumerate(ms):
-        if k not in ("logo", "title"):
+        if k not in ("logo", "title", "connecting"):
             continue
         logo = t if k == "logo" else None
         title = t if k == "title" else None
+        conn = t if k == "connecting" else None
         char = None
         for t2, k2 in ms[i + 1:]:
-            if t2 - (title or logo) > gap_s * 1000:
+            if t2 - (title or conn or logo) > gap_s * 1000:
                 break
             if k2 == "title" and title is None:
                 title = t2
-            elif k2 == "char-select" and title is not None:
+            elif k2 == "connecting" and conn is None:
+                conn = t2
+            elif k2 == "char-select" and (title is not None or conn is not None):
                 char = t2
                 break
-        if title is None:
+        if title is None and conn is None:
             continue
-        return {"startTs": logo if logo is not None else title, "logoTs": logo, "titleTs": title, "charTs": char,
-                "witnessed": logo is not None, "entered": char is not None}
+        return {"startTs": logo if logo is not None else (title if title is not None else conn), "logoTs": logo,
+                "titleTs": title, "connectingTs": conn, "charTs": char, "witnessed": logo is not None,
+                "entered": char is not None}
     return None
 
 
@@ -237,8 +280,8 @@ def chain(marks, gap_s=CHAIN_GAP_S):
 # (game name typed or seen, then chosen) → game-entry portal → in-game in a TOWN (act 1–5).
 # Only character names and game names vary across those screens. The D2R door in front of
 # CONNECTING is still the fire logo then the title ("Continue" / press any button) from REG-3514.
-# screen_of already names logo, title, char-select, lobby and hud (orbs = in a game). This tree
-# has no real Battle.net-login, CONNECTING... or game-entry-portal frames, and no act-1–5 town
+# screen_of names logo, title, connecting (v3898, REG-3715: measured on real Mac-native frames), char-select, lobby and hud
+# (orbs = in a game). This tree has no real Battle.net-login or game-entry-portal frames, and no act-1–5 town
 # templates, so those steps are not invented as pixel tests (see SCENARIO_EVIDENCE). Character
 # name+class reuse selected_of / logins; game names reuse game_name_of_row (run counting and
 # corner-text confluence are later slices).
@@ -263,7 +306,7 @@ SCENARIO_EVIDENCE = {
     "login": "none — no Battle.net Diablo II login frame on this tree",
     "logo": "measured fire-corner template (REG-3514)",
     "title": "measured fire-centre template (REG-3514)",
-    "connecting": "none — no CONNECTING... frame on this tree",
+    "connecting": "measured plaque-over-title template (REG-3715): GrokBot's 3 Mac-native frames + 16 on his reels; UNKNOWN on GeForce NOW and Boosteroid (no Connecting frame filmed there)",
     "char-select": "char_select.looks_like_char_select (called); selected_of / logins read name + class",
     "lobby": "char_select.looks_like_lobby (called); game name varies — game_name_of_row reads it",
     "portal": "none — no game-entry portal frame measured on this tree",
