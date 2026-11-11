@@ -83,7 +83,8 @@ def local_path(root=None):
     if not os.path.exists(os.path.join(r, ".git")):
         return None
     try:
-        p = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=r, capture_output=True, text=True, timeout=15)
+        p = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=r, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=15)
     except Exception:
         return None
     d = (p.stdout or "").strip()

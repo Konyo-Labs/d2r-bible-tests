@@ -663,6 +663,30 @@
       "s": 1.437,
       "src": "measured"
     },
+    "test_a_ship_skips_the_preflight_only_on_bytes_it_graded": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_lost_render_browser_is_asked_again_once": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_rehearsal_never_races_its_own_tree_lock": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_refused_rehearsal_never_writes_the_tree": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_uniques_cards_read_at_a_glance": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_private_console_takes_its_agent_with_it": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_leak_is_this_runs_not_his_consoles": {
       "s": 0.72,
       "src": "measured"

@@ -50,6 +50,7 @@ class ARefusedRehearsalNeverWritesTheTree(unittest.TestCase):
         with io.open(self.lessons, "w", encoding="utf-8") as fh:
             fh.write('{\n  "lessons": []\n}\n')
         self.assertEqual(_git(self.root, "init", "-q").returncode, 0)
+        _git(self.root, "config", "core.autocrlf", "false")    # REG-3626 - the fixture's LF stays LF on Windows
         _git(self.root, "add", "-A")
         self.assertEqual(_git(self.root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x").returncode, 0)
 

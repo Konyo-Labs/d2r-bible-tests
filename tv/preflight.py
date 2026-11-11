@@ -582,7 +582,7 @@ GREEN_LEDGER = "preflight_green.jsonl"
 
 def green_ledger_path(here=HERE, run=subprocess.run):
     try:
-        p = run(["git", "rev-parse", "--git-common-dir"], cwd=here, capture_output=True, text=True, timeout=15)
+        p = run(["git", "rev-parse", "--git-common-dir"], cwd=here, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
     except Exception:
         return None
     d = (p.stdout or "").strip()
@@ -595,9 +595,9 @@ def record_green(here=HERE, run=subprocess.run, path=None, version=None, now=Non
     """A full pre-flight came back GREEN: record the commit it graded. -> the sha recorded, or None (and why is said by the
     caller). A tracked edit means the pre-flight graded bytes that are not that commit, so nothing is recorded then."""
     try:
-        h = run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True, timeout=15)
+        h = run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
         st = run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=here, capture_output=True, text=True,
-                 timeout=30)
+                 encoding="utf-8", errors="replace", timeout=30)
     except Exception:
         return None
     sha = (h.stdout or "").strip()

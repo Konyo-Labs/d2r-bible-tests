@@ -12,6 +12,7 @@ that starts a child and sleeps - is spawned exactly as the private console is, a
 POSIX only: the group is the mechanism, and Windows has none (its proofs declare "posix").
 """
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -26,6 +27,9 @@ try:
 except Exception:
     pass
 
+import fixture_tmp as _fx_tmp   # noqa: E402
+_fx_tmp.contain()               # every scratch dir this law makes is removed at exit (test_a_test_run_leaves_no_scratch_dirs)
+import self_prove as SP         # noqa: E402
 import test_button_matrix as B   # noqa: E402
 
 _FAKE_CONSOLE = (
@@ -37,20 +41,15 @@ _FAKE_CONSOLE = (
 
 
 def _alive(pid):
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    # a zombie answers kill(0) until its parent reaps it; launchd reaps an orphan at once, so give it a moment
-    return True
+    """self_prove's probe - never os.kill(pid, 0), which is a Ctrl-C on Windows (this law is POSIX-only, the rule is not)"""
+    return SP.pid_alive(pid) is True
 
 
 @unittest.skipUnless(os.name == "posix", "the process group is the mechanism - POSIX only")
 class APrivateConsoleTakesItsAgentWithIt(unittest.TestCase):
     def _spawn(self):
         d = tempfile.mkdtemp(prefix="private-console-")
+        self.addCleanup(shutil.rmtree, d, True)
         pidfile = os.path.join(d, "agent.pid")
         proc, group = B.spawn_private([sys.executable, "-c", _FAKE_CONSOLE, pidfile], dict(os.environ))
         self.addCleanup(lambda: proc.poll() is None and proc.kill())
@@ -59,7 +58,7 @@ class APrivateConsoleTakesItsAgentWithIt(unittest.TestCase):
                 break
             time.sleep(0.05)
         child = int(open(pidfile).read().strip())
-        self.addCleanup(lambda: _alive(child) and os.kill(child, 9))
+        self.addCleanup(lambda: _alive(child) and os.kill(child, 9))   # a SIGKILL to a named pid, never a probe
         return proc, group, child
 
     def test_the_console_runs_in_a_group_of_its_own(self):

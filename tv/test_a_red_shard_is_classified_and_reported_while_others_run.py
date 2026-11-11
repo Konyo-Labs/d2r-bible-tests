@@ -120,7 +120,9 @@ class TheLawHolds(unittest.TestCase):
         for rel, body in tracked.items():
             with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
                 fh.write(body)
-        for args in (["init", "-q"], ["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
+        self.assertEqual(subprocess.run(["git", "init", "-q"], cwd=root, capture_output=True, env=env).returncode, 0)
+        subprocess.run(["git", "config", "core.autocrlf", "false"], cwd=root, capture_output=True, env=env)   # REG-3626 pin
+        for args in (["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
             self.assertEqual(subprocess.run(["git"] + args, cwd=root, capture_output=True, env=env).returncode, 0, args)
         jobs = [{"name": "agent-suite (2)", "databaseId": 2, "status": "completed", "conclusion": "failure"}]
         gh = _GH(jobs, logs={2: ATTEMPT9_LOG})

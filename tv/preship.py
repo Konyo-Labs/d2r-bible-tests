@@ -115,7 +115,7 @@ def auto_lessons_path(root=None):
     """-> the machine ledger's path, or None when git will not name its common dir (then nothing is remembered, and said)"""
     try:
         p = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=root_of(root), capture_output=True, text=True,
-                           timeout=15)
+                           encoding="utf-8", errors="replace", timeout=15)
     except Exception:
         return None
     d = (p.stdout or "").strip()
@@ -127,16 +127,17 @@ def auto_lessons_path(root=None):
 
 
 def load_auto_lessons(root=None):
-    """-> the machine's automatic lessons ([] when none were ever written; an unreadable ledger is [] and never a red)"""
+    """-> the machine's automatic lessons: [] when none were ever written (no ledger - a measurement), None when a ledger
+    exists and will not read (UNKNOWN - never the same as none)"""
     p = auto_lessons_path(root)
-    if not p:
+    if not p or not os.path.exists(p):
         return []
     try:
         with open(p, encoding="utf-8") as fh:
             rows = (json.load(fh) or {}).get("lessons")
     except (OSError, ValueError, AttributeError):
-        return []
-    return rows if isinstance(rows, list) else []
+        return None
+    return rows if isinstance(rows, list) else None
 
 
 def load_lessons(root=None):
@@ -874,7 +875,9 @@ def _lesson_checks(root, names, exclude=()):
         rows = list(load_lessons(root))
     except RuntimeError:
         rows = []
-    rows += load_auto_lessons(root)          # v3896 (REG-3674) - this machine's automatic lessons run here too
+    auto = load_auto_lessons(root)           # v3896 (REG-3674) - this machine's automatic lessons run here too
+    # an unreadable machine ledger (None, UNKNOWN) adds no check: the committed lessons still run, and the next refusal rewrites it
+    rows += auto if auto is not None else []
     for row in rows:
         c = (row or {}).get("check") if isinstance(row, dict) else None
         if c and c not in have and c not in skip and c in catalog():
