@@ -156,6 +156,35 @@ class TheReadinessAsksTheVersionMainShips(unittest.TestCase):
                 self.assertIsNone(P.ship_version(bad))
 
 
+class ReadinessTakesSecondsAndTheRehearsalCarriesTheLessons(unittest.TestCase):
+    """v3896 (REG-3679) - --mac-ready took 399 s: it ran every lesson (render_check, changed_tests, ...) at the ship's launch
+    and inside every main push's hook; readiness runs readiness, and the lessons run in the rehearsal"""
+
+    def _ran(self, fn):
+        ran = []
+        cat = {"mac_ready": {"cheap": True}, "render_check": {"cheap": False}, "changed_tests": {"cheap": False},
+               "encoding": {"cheap": True}}
+        from unittest import mock
+
+        def fake_run_one(name, root, **kw):
+            ran.append(name)
+            return {"name": name, "code": 0, "ms": 0, "say": "fixture"}
+        lessons = [{"check": "render_check"}, {"check": "changed_tests"}]
+        with mock.patch.object(P, "catalog", lambda: cat), mock.patch.object(P, "run_one", fake_run_one), \
+                mock.patch.object(P, "load_lessons", lambda root=None: lessons), \
+                mock.patch.object(P, "load_auto_lessons", lambda root=None: []), \
+                mock.patch.object(P, "READY_ORDER", ("mac_ready",)), mock.patch.object(P, "REHEARSE_ORDER", ("mac_ready", "encoding")):
+            fn("/nonexistent-root")
+        return sorted(ran)
+
+    def test_readiness_runs_readiness_only(self):
+        self.assertEqual(self._ran(P.mac_ready), ["mac_ready"], "readiness ran the lessons too - minutes, not seconds")
+
+    def test_the_rehearsal_still_runs_every_lesson(self):
+        self.assertEqual(self._ran(P.mac_rehearse), ["changed_tests", "encoding", "mac_ready", "render_check"],
+                         "PREMISE: the rehearsal must carry the lessons readiness no longer runs")
+
+
 
 RED_PROOF = [
     {"why": "v3895 - the rehearsal asks a changed law by its FILE name again (the registry refuses every renamed gate)",
@@ -183,6 +212,11 @@ RED_PROOF = [
      "find": "    for k in (\"ver\", \"version\", \"v\", \"build\"):\n",
      "replace": "    for k in (\"version\", \"v\", \"build\"):\n",
      "matches": 1},
+    {"why": "REG-3679 - readiness runs every lesson again (render_check and changed_tests at every launch and main push)",
+     "file": "tv/preship.py",
+     "find": "    kw.setdefault(\"include_lessons\", False)\n",
+     "replace": "",
+     "matches": 1}
 ]
 
 if __name__ == "__main__":

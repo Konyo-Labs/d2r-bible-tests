@@ -27,6 +27,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3679 - "MAC READINESS, A FEW SECONDS" TOOK 399 SECONDS, TWICE A SHIP (v3896, card #200 guard 9)
+MEASURED 11-11 05:31 on v3895's fixed tree: tv/preship.py --mac-ready ran 19 checks in 399 s - every lesson in the ledger
+(render_check 231 s, changed_tests 106 s, blueprint, integrity, ...) - at the ship's launch AND inside every main push's
+hook, which then runs its own render gate again. This file's own contract says readiness is "a few seconds". mac_ready now
+runs readiness only (0.6 s measured); the lessons still run once a ship, in mac_rehearse beside the CI wait and in the box
+rehearsal. Law: test_a_worktree_without_playwright_is_not_ready (ReadinessTakesSecondsAndTheRehearsalCarriesTheLessons).
+Seen RED.
+
 ### REG-3678 - THE CONSOLE'S PROOF GRADED BESIDE A SHIP (v3896, card #200 guard 9)
 MEASURED 11-11 on v3895's first box rehearsal (load 25): the console's `heart2 --prove test_control` slice ran beside the
 ship's own rehearsal and the agreement laws timed out. self_prove.push_grading stood the proof aside for a pre-push hook

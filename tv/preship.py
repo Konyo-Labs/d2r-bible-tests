@@ -1010,6 +1010,11 @@ def mac_ready(root=None, auto_fix=True, **kw):
     kw = dict(kw)
     kw["auto_fix"] = auto_fix
     # refuse_owed is implied by check_mac_ready
+    # v3896 (REG-3679) - READINESS IS READINESS, "a few seconds" (this file's own contract). MEASURED 11-11 05:31: --mac-ready
+    # took 399 s - it pulled in every lesson (render_check 231 s, changed_tests 106 s, ...), at the ship's launch AND inside
+    # every main push's hook, which then runs its own render gate again. The lessons run once a ship, in mac_rehearse beside
+    # the CI wait and in the box rehearsal.
+    kw.setdefault("include_lessons", False)
     return run_checks(list(READY_ORDER), root_of(root), parallel=False, fail_fast=True, **kw)
 
 
