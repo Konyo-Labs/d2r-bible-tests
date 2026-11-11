@@ -50,6 +50,9 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3721 - THE EVERY-SHIP LAW WENT RED ON GITHUB AS THE HISTORY GREW: IT COUNTED ONLY OLD-STYLE COMMITS (v3898's round)
+MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v3846 has a commit in reach (a shallow clone?)". The law counted a version as checked only through "vNNNN: " feature subjects; since ~v3880 fixes are written "fix: vNNNN - ...", so the newest old-style subject (v3889) fell to depth 203 - past CI's 200-commit clone - while v3897's and v3898's own stamps sat in reach. Reproduced locally on a 200-deep clone (the old law fails with GitHub's words). A version whose stamp is in reach now counts as checked (0 feature commits); a clone with no stamp in reach still fails. Law: test_every_ship_lists_all_its_items (+1 case, +1 red-proof).
+
 ### REG-3717 - THE NEVER-SAW ROW'S FOLLOW-UP COMMAND ASKED FOR A DIFFERENT SET THAN IT NAMED (v3898, the Grok CLI's look on v3897)
 second_eye_ledger.agreement printed `python3 tv/second_eye_run.py <v> --files` with the first six names joined by spaces: a seventh unseen file was dropped and a path with a space split into two arguments. The command now carries every name, shell-quoted (the prose may still stop at six with '+N more'). Law: test_a_partial_look_is_not_agreement (+1 case, +1 red-proof).
 

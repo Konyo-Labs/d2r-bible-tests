@@ -26,6 +26,16 @@ def feature_commits(ver):
     return list(dict.fromkeys(s for s in out.splitlines() if s.startswith(ver + ": ") and not TITLE.match(s)))
 
 
+def stamps_in_reach():
+    """v3898 (MEASURED 11-11 on GitHub, agent-suite (4) of v3898's round) - the versions whose own STAMP commit ("vNNNN: Two
+    Words") is in this clone. -> set. A version whose stamp is in reach WAS checked even with no "vNNNN: " feature commit:
+    since ~v3880 fixes are written "fix: vNNNN - ...", so the newest old-style subject (v3889) fell to depth 203 - past CI's
+    200-commit clone - and the law read "checked nothing" on a clone that held v3897's and v3898's stamps."""
+    out = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True,
+                         text=True, encoding="utf-8").stdout or ""
+    return set(s.split(":", 1)[0] for s in out.splitlines() if TITLE.match(s))
+
+
 def short(entry):
     n = len(feature_commits(entry["ver"]))
     return n if len(entry["items"]) < n else 0
@@ -35,11 +45,12 @@ class EveryShipListsAllItsItems(unittest.TestCase):
     def test_each_history_entry_covers_its_commits(self):
         log = json.load(open(os.path.join(HERE, "CHANGELOG.json"), encoding="utf-8"))
         bad, seen = [], 0
+        stamps = stamps_in_reach()
         for e in log:
             if int(e["ver"][1:]) < FROM:
                 continue
             n = len(feature_commits(e["ver"]))
-            seen += bool(n)
+            seen += bool(n) or e["ver"] in stamps     # v3898 - a stamp in reach is a version checked (0 feature commits)
             if len(e["items"]) < n:
                 bad.append("%s: %d lines for %d feature/fix commits" % (e["ver"], len(e["items"]), n))
         self.assertEqual(bad, [], "a version's history is missing items: %s" % bad)
@@ -49,9 +60,17 @@ class EveryShipListsAllItsItems(unittest.TestCase):
         print("checked %d version(s) with commits in reach" % seen)
 
     def test_a_clone_with_no_version_in_reach_is_not_a_pass(self):
-        with mock.patch(__name__ + ".feature_commits", lambda ver: []):
+        with mock.patch(__name__ + ".feature_commits", lambda ver: []), \
+                mock.patch(__name__ + ".stamps_in_reach", lambda: set()):
             with self.assertRaises(AssertionError):
                 self.test_each_history_entry_covers_its_commits()
+
+    def test_a_shallow_clone_holding_only_new_style_versions_is_checked(self):
+        """v3898 - only a stamp and fix commits in reach: the version is checked (0 feature commits), never 'nothing'"""
+        subjects = ["fix: v3898 - a thing", "v3898: One Game", "fix: v3897 - other", "v3897: Honest Rounds"]
+        with mock.patch("subprocess.run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "\n".join(subjects), "")):
+            self.assertEqual(stamps_in_reach(), {"v3898", "v3897"})
+            self.assertEqual(feature_commits("v3898"), [], "PREMISE: a fix commit is not an old-style feature subject")
 
     def test_the_rule_catches_a_thin_entry(self):
         # v3859: the rule is asked over a fixed log, not the clone's. CI clones 200 commits deep, and a 174-commit bundle
@@ -84,6 +103,11 @@ class EveryShipListsAllItsItems(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3898 - a version whose stamp is in reach counts as unchecked again (the 200-commit CI clone reads nothing)",
+     "file": "test_every_ship_lists_all_its_items.py",
+     "find": "    return set(s.split(\":\", 1)[0] for s in out.splitlines() if TITLE.match(s))\n",
+     "replace": "    return set()\n",
+     "matches": 1},
     {"why": "v3850 - a clone with no version in reach passes having checked nothing",
      "file": "test_every_ship_lists_all_its_items.py",
      "find": "seen, 0, \"no version since",
