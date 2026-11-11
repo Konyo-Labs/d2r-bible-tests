@@ -6662,7 +6662,7 @@ GATES = [
              "console with it (AST-checked)."),
     Gate("test_the_boards_link_follows_the_learned_port",
          [sys.executable, os.path.join(HERE, "test_the_boards_link_follows_the_learned_port.py")], 60,
-         why="v3896 (REG-3700) - the board's TV-D probe, /state poll and live picture kept http://127.0.0.1:17771 after v2224 "
+         why="v3896 (REG-3700) - the board's TV-D probe, /state poll and live picture kept his agent's fixed port after v2224 "
              "taught it the agent's real port, so a board whose agent runs anywhere else never went live and a board beside a "
              "law's private agent asked HIS (test_button_matrix's site half, red on his Mac on v3895's code too). One helper "
              "refreshes the link from the learned port before every probe and poll. Source-read, comments stripped."),

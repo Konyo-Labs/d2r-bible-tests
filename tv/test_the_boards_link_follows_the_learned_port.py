@@ -29,10 +29,9 @@ except Exception:
 
 
 def _code():
+    import js_strip
     with io.open(os.path.join(ROOT, "bible.html"), encoding="utf-8") as fh:
-        src = fh.read()
-    src = re.sub(r"/\*.{0,4000}?\*/", "", src, flags=re.S)                  # bounded, per source-reading-guard 4
-    return "\n".join(l for l in src.split("\n") if not l.lstrip().startswith("//"))
+        return js_strip.strip_js_comments(fh.read())                       # the one stripper the laws share
 
 
 def _body(code, head):
