@@ -875,6 +875,8 @@ def start_refusal(rows=None, prepush=None, self_pid=None):
     # push_grading, not tree_busy._prepush_running: a hook that is an ANCESTOR of this process is the push running it
     # (a law inside the pre-push gate), never one to refuse for - the asking-from-inside case tree_busy cannot tell apart
     running, detail = prepush if prepush is not None else _SP.push_grading(rows, self_pid=_pid)
+    if running and str(detail).startswith("a ship is running"):     # v3896 (REG-3678) - push_grading now sees ships too
+        return "another ship is running on this Mac (%s) - one ship at a time (card #200 guard 2)" % detail
     if running:
         return ("a pre-push hook is grading on this Mac (%s) - a ship never starts beside one: its pre-flight would grade "
                 "under that load and its laws would see a push grading (card #200 guard 2)" % detail)

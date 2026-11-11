@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3678 - THE CONSOLE'S PROOF GRADED BESIDE A SHIP (v3896, card #200 guard 9)
+MEASURED 11-11 on v3895's first box rehearsal (load 25): the console's `heart2 --prove test_control` slice ran beside the
+ship's own rehearsal and the agreement laws timed out. self_prove.push_grading stood the proof aside for a pre-push hook
+only; it now counts a running ship (tree_busy._is_ship_command: a python running tv/ship_when_green.py, never the shell
+that launched it, never the asker itself) and says "a ship is running on this PC", so the console's proof gives a ship
+the cores for its whole run - its readiness, its rehearsal beside the CI wait, and the main hook. The ship's own start
+refusal names another ship as a ship, never as a hook. Laws: test_a_proof_stands_aside_for_a_push,
+test_a_version_is_never_banked_into_a_graded_tree. Seen RED x2.
+
 ### REG-3677 - A RENDER WHOSE BROWSER WAS LOST STOPPED THE SHIP (v3896, card #200 guard 9e)
 MEASURED 11-11 on v3895's first box rehearsal: render_check answered UNKNOWN - "the browser connection was lost mid-render"
 - and the rehearsal stopped the ship. render_check itself says such a run established nothing and asks for a re-run.

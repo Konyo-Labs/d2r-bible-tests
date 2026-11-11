@@ -330,6 +330,8 @@ class OnePushAtATimeOnThisMac(unittest.TestCase):
         free = [("1", "0", 9, "launchd")]
         self.assertIsNone(SW.start_refusal(rows=free, prepush=(False, ""), self_pid="77"))
         self.assertIn("a pre-push hook is grading", SW.start_refusal(rows=free, prepush=(True, "pid 42"), self_pid="77") or "")
+        # v3896 (REG-3678) - push_grading sees a ship too; that refusal names the ship, never a hook
+        self.assertIn("another ship is running on this Mac", SW.start_refusal(rows=free, prepush=(True, "a ship is running on this PC (pid 9)")))
         other = free + [("88", "1", 30, self.SHIP)]
         self.assertIn("a ship is running", SW.start_refusal(rows=other, prepush=(False, ""), self_pid="77") or "")
         self.assertIn("UNKNOWN", SW.start_refusal(rows=free, prepush=(None, "x"), self_pid="77") or "")
@@ -420,6 +422,11 @@ RED_PROOF = [
         "replace": "    if False:\n        raise SystemExit(",
         "matches": 1,
     },
+    {"why": "v3896 (REG-3678) - another ship running here is refused as a pre-push hook",
+     "file": "tv/ship_when_green.py",
+     "find": "    if running and str(detail).startswith(\"a ship is running\"):     # v3896 (REG-3678) - push_grading now sees ships too\n",
+     "replace": "    if False:\n",
+     "matches": 1}
 ]
 
 

@@ -1350,9 +1350,14 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
         while p and p not in mine and p != "0":
             mine.add(p)
             p = parent.get(p)
-        hits = []
+        hits, ships = [], []
         for pid, cmd in cmd_of.items():
-            if not _tb._is_hook_invocation(cmd):
+            # v3896 (card #200 guard 9, REG-3678) - A SHIP COUNTS LIKE A PUSH. MEASURED 11-11 on v3895's first box
+            # rehearsal (load 25): the console's `heart2 --prove test_control` slice ran beside the ship's own rehearsal
+            # and the agreement laws timed out. A ship runs the main push's gates on this Mac (its readiness, its
+            # rehearsal beside the CI wait, then the hook), so the proof gives it the cores for its whole run.
+            ship = _tb._is_ship_command(cmd)
+            if not (ship or _tb._is_hook_invocation(cmd)):
                 continue
             if pid in mine:
                 continue                       # the push that is running THIS process (a law inside the gate)
@@ -1368,10 +1373,14 @@ def push_grading(rows, mark=PROVER_MARK[1], after_s=PUSH_GRADING_AFTER_S, self_p
                 p = parent.get(p)
             if not ours:
                 hits.append(pid)
+                if ship:
+                    ships.append(pid)
     except Exception as e:
         return None, "the process list could not be judged (%s)" % type(e).__name__
     if not hits:
         return False, ""
+    if ships and len(ships) == len(hits):
+        return True, "a ship is running on this PC (pid %s)" % ", ".join(sorted(ships, key=int)[:4])
     return True, "a push is grading on this PC (pid %s)" % ", ".join(sorted(hits, key=int)[:4])
 
 

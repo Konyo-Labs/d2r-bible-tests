@@ -57,6 +57,16 @@ class PushGrading(unittest.TestCase):
         got, why = SP.push_grading(rows)
         self.assertIs(got, False, "the prover's own law read as a push - the proof would end itself: %r" % why)
 
+    def test_a_ship_running_here_is_given_the_cores_and_its_launcher_is_not_one(self):
+        """v3896 (REG-3678) - a ship runs the main push's gates on this Mac; the console's proof stands aside for it"""
+        ship = ("900", "500", 600, "/Library/Python.app/Contents/MacOS/Python -u tv/ship_when_green.py v3895 --no-preflight")
+        launcher = ("899", "500", 600, "/bin/zsh -c nohup env python3 -u tv/ship_when_green.py v3895")
+        got, why = SP.push_grading(_table(ship, launcher))
+        self.assertIs(got, True, "a ship running for 10 minutes was not seen: %r" % why)
+        self.assertIn("a ship is running on this PC (pid 900)", why)
+        self.assertIs(SP.push_grading(_table(launcher))[0], False, "the shell that launched a ship was read as the ship")
+        self.assertIs(SP.push_grading(_table(ship), self_pid="900")[0], False, "a ship read itself as one to stand aside for")
+
     def test_a_ci_push_over_in_seconds_is_not_grading_yet(self):
         rows = _table(("800", "500", 5, "git push origin HEAD:ci/claude-v3861"), ("801", "800", 4, HOOK))
         self.assertEqual(SP.push_grading(rows)[0], False,
@@ -191,6 +201,11 @@ RED_PROOF = [
              "                r = dict(r, standAside=PUSH_STAND_ASIDE)\n",
      "replace": "",
      "matches": 1},
+    {"why": "v3896 (REG-3678) - a running ship is not seen, so the console's proof grades beside the ship's own gates",
+     "file": "tv/self_prove.py",
+     "find": "            ship = _tb._is_ship_command(cmd)\n",
+     "replace": "            ship = False\n",
+     "matches": 1}
 ]
 
 
