@@ -31,8 +31,8 @@ def stamps_in_reach():
     Words") is in this clone. -> set. A version whose stamp is in reach WAS checked even with no "vNNNN: " feature commit:
     since ~v3880 fixes are written "fix: vNNNN - ...", so the newest old-style subject (v3889) fell to depth 203 - past CI's
     200-commit clone - and the law read "checked nothing" on a clone that held v3897's and v3898's stamps."""
-    out = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True,
-                         text=True, encoding="utf-8").stdout or ""
+    git = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+    out = git.stdout or ""
     return set(s.split(":", 1)[0] for s in out.splitlines() if TITLE.match(s))
 
 
