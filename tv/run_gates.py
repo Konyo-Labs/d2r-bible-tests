@@ -1575,6 +1575,12 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_a_ship_skips_the_preflight_only_on_bytes_it_graded",
+         [sys.executable, os.path.join(HERE, "test_a_ship_skips_the_preflight_only_on_bytes_it_graded.py")], 60,
+         why="REG-3681 (card #200 guard 4, 2026-11-11) - v3895 round 1 was launched with --no-preflight on a commit no "
+             "pre-flight had graded, and GitHub spent 55 minutes finding a law red untampered and two invalid red-proofs. "
+             "A full green pre-flight on a clean tree records its commit; --no-preflight is honoured only for that commit "
+             "or when both ci branches already point at HEAD. Driven with a fake run and a throwaway ledger."),
     Gate("test_a_lost_render_browser_is_asked_again_once",
          [sys.executable, os.path.join(HERE, "test_a_lost_render_browser_is_asked_again_once.py")], 60,
          why="REG-3677 (card #200 guard 9e, 2026-11-11) - the box rehearsal stopped v3895 on render_check's UNKNOWN 'the "

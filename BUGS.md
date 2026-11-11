@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3681 - A SHIP SKIPPED THE PRE-FLIGHT ON BYTES NO PRE-FLIGHT HAD GRADED (v3896, card #200 guard 4)
+MEASURED 11-11, v3895 round 1: the pre-flight found four faults, they were fixed in a new commit (beaddcd35), and the ship was
+launched with --no-preflight on it. GitHub spent a 55-minute round finding a law already red untampered (the hook's new
+stage before its GIT_DIR scrub) and two red-proofs whose tampers did not parse - the pre-flight runs every non-browser law and
+proves the changed ones in minutes. Now a full green pre-flight on a clean tree records its commit (git's common dir,
+preflight_green.jsonl - the ship's pre-flight and the CLI both), and --no-preflight is refused unless HEAD was recorded green
+or both ci branches already point at HEAD (re-attaching to a round GitHub is grading, as v3895's relaunches did). Law:
+test_a_ship_skips_the_preflight_only_on_bytes_it_graded. Seen RED x3.
+
 ### REG-3680 - EVERY FRAME OF PLAY WAS DECODED TWICE FOR ITS SCREEN (v3896, card #197 finding 5)
 Claude's v3893 look: screen_of decoded each reel frame up to three times. v3894 made screen_of decode once and handed the
 closer's answer to the stash eye (screen=_skind), but stash_eye.classify_when_in_play read an answer of None ("no known

@@ -575,6 +575,59 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
     return 0, []
 
 
+#: v3896 (card #200 guard 4, REG-3681) - the commits a FULL pre-flight graded green, on a clean tree, in git's common dir (every
+#: checkout and worktree of this machine reads one ledger; never a tracked byte)
+GREEN_LEDGER = "preflight_green.jsonl"
+
+
+def green_ledger_path(here=HERE, run=subprocess.run):
+    try:
+        p = run(["git", "rev-parse", "--git-common-dir"], cwd=here, capture_output=True, text=True, timeout=15)
+    except Exception:
+        return None
+    d = (p.stdout or "").strip()
+    if p.returncode != 0 or not d:
+        return None
+    return os.path.join(d if os.path.isabs(d) else os.path.join(here, d), GREEN_LEDGER)
+
+
+def record_green(here=HERE, run=subprocess.run, path=None, version=None, now=None):
+    """A full pre-flight came back GREEN: record the commit it graded. -> the sha recorded, or None (and why is said by the
+    caller). A tracked edit means the pre-flight graded bytes that are not that commit, so nothing is recorded then."""
+    try:
+        h = run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True, timeout=15)
+        st = run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=here, capture_output=True, text=True,
+                 timeout=30)
+    except Exception:
+        return None
+    sha = (h.stdout or "").strip()
+    if h.returncode != 0 or not sha or st.returncode != 0 or (st.stdout or "").strip():
+        return None
+    p = path or green_ledger_path(here, run)
+    if not p:
+        return None
+    with io.open(p, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"sha": sha, "version": version, "at": int(now if now is not None else time.time())}) + "\n")
+    return sha
+
+
+def green_shas(path=None, here=HERE, run=subprocess.run):
+    """-> the set of commits a full pre-flight graded green on this machine (an unreadable ledger is an empty set)"""
+    p = path or green_ledger_path(here, run)
+    out = set()
+    try:
+        with io.open(p, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    out.add(str(json.loads(line).get("sha") or ""))
+                except (ValueError, AttributeError):
+                    continue
+    except (OSError, TypeError):
+        pass
+    out.discard("")
+    return out
+
+
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="run what GitHub would find first, here, before a version goes up")
@@ -584,6 +637,10 @@ def main(argv=None):
     ap.add_argument("--version", default=None, help="vNNNN - prove only what changed since GitHub last graded it")
     a = ap.parse_args(argv)
     code, _reds = preflight(a.cap, a.workers, not a.no_prove, version=a.version)
+    if code == 0 and not a.no_prove:
+        sha = record_green(version=a.version)
+        print("preflight: GREEN recorded for %s" % sha[:9] if sha else
+              "preflight: GREEN, but not recorded (a tracked edit, or git would not say) - a ship will run it again")
     return code
 
 

@@ -119,6 +119,10 @@ def _preflight(version, say):
     """v3865 (his ask 2026-11-05) - tv/preflight.py before the ci branches go up. -> its exit code (0 green, 1 red, 2 unknown)"""
     import preflight as _pf
     code, _reds = _pf.preflight(say=say, version=version)
+    if code == 0:
+        _sha = _pf.record_green(version=version)       # v3896 (REG-3681) - a later --no-preflight on these bytes may skip it
+        say("ship: pre-flight GREEN recorded for %s" % _sha[:9] if _sha else
+            "ship: pre-flight GREEN, not recorded (a tracked edit, or git would not say)")
     return code
 
 
@@ -821,7 +825,7 @@ def main(argv=None):
                     help="REG-3646 - do not run the Mac hook gates in parallel with the CI wait")
     a = ap.parse_args(argv)
     # card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC: never start beside a grading push or another ship
-    _beside = start_refusal() or key_format_refusal()
+    _beside = start_refusal() or key_format_refusal() or (preflight_skip_refusal(a.version) if a.no_preflight else None)
     if _beside:
         print("ship: REFUSED to start - %s" % _beside)
         return 2
@@ -834,6 +838,31 @@ def main(argv=None):
 
 #: card #200 guard 1 (REG-3665) - the plan a proof-key FORMAT change must bring (how its first round is seeded)
 RESEED_PLAN = os.path.join("tv", "proof_key_reseed.json")
+
+
+def preflight_skip_refusal(version, run=subprocess.run, green=None, remote="origin"):
+    """v3896 (card #200 guard 4, REG-3681) - may this ship skip the pre-flight? -> None, or why not.
+
+    MEASURED 11-11, v3895 round 1: the pre-flight found four faults, they were fixed in a new commit, and the ship was launched
+    with --no-preflight on that commit - bytes no pre-flight had graded. GitHub spent a 55-minute round finding a law already
+    red (the hook's new stage before its GIT_DIR scrub) and two red-proofs whose tampers would not parse. --no-preflight is
+    honoured only on a commit a full pre-flight graded GREEN on this machine (tv/preflight.py records it), or when both ci
+    branches already point at it (re-attaching to a round GitHub is grading). Anything git will not say refuses."""
+    import preflight as _pf
+    h = _git(run, "rev-parse", "HEAD")
+    sha = (h.stdout or "").strip()
+    if h.returncode != 0 or not sha:
+        return "--no-preflight: which commit this is could not be read - UNKNOWN, the pre-flight runs (card #200 guard 4)"
+    have = green if green is not None else _pf.green_shas()
+    if sha in have:
+        return None
+    ls = _git(run, "ls-remote", remote, "refs/heads/ci/claude-%s" % version, "refs/heads/ci/proof-keys-%s" % version)
+    heads = [l.split()[0] for l in (ls.stdout or "").splitlines() if l.strip()]
+    if ls.returncode == 0 and len(heads) == 2 and all(x == sha for x in heads):
+        return None
+    return ("--no-preflight refused: no full pre-flight graded %s green on this Mac, and its ci branches do not point at it "
+            "(a round GitHub is grading). Run the ship without --no-preflight - minutes here, not a 55-minute round (v3895 "
+            "round 1, card #200 guard 4)" % sha[:9])
 
 
 def key_format_refusal(tree_src=None, main_src=None, have_plan=None):
