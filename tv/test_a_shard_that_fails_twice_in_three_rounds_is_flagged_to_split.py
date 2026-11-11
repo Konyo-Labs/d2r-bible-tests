@@ -84,7 +84,12 @@ class TheLawHolds(unittest.TestCase):
                                                "failed": ["test_the_planner_spinner_stays_under_the_cursor"]},
                        k=2, n=5, root=root)
         gates = [RG.Gate("g%d" % i, ["true"], 10) for i in range(20)]
-        n_plain, _ = RG.choose_shards(target_s=10 ** 9, n_min=3, n_max=5, gates=gates, root=None)
+        # v3898 - the unflagged case asks an EMPTY store, never this tree's: root=None read the tree's own shard_watch store,
+        # and v3898's real ship had flagged agent-suite (4) after its red (the law read the host - REG-3709's class)
+        plain = tempfile.mkdtemp(prefix="shard-plain-")
+        self.addCleanup(shutil.rmtree, plain, ignore_errors=True)
+        os.makedirs(os.path.join(plain, "tv"), exist_ok=True)
+        n_plain, _ = RG.choose_shards(target_s=10 ** 9, n_min=3, n_max=5, gates=gates, root=plain)
         n_flag, why = RG.choose_shards(target_s=10 ** 9, n_min=3, n_max=5, gates=gates, root=root)
         # With a huge target, unflagged choose_shards returns n_min (3). A flag bumps n_min by 1.
         self.assertEqual(n_plain, 3, "premise: a light set stays at n_min without a flag")

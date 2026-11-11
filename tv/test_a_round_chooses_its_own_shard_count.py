@@ -383,8 +383,12 @@ class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
         costs = dict((n, 60.0) for n in names)
         gates = [self._G(n) for n in names]
 
+        empty = tempfile.mkdtemp(prefix="shard-empty-")      # v3898 - never this tree's shard-watch flags (the host)
+        self.addCleanup(shutil.rmtree, empty, ignore_errors=True)
+        os.makedirs(os.path.join(empty, "tv"), exist_ok=True)
+
         def choose():
-            return RG.choose_shards(target_s=240, n_min=1, n_max=60, gates=gates)
+            return RG.choose_shards(target_s=240, n_min=1, n_max=60, gates=gates, root=empty)
 
         n, why = self._with_costs(costs, choose)
         self.assertEqual(n, 25, why)                          # 6000 / 25 = 240; 24 would be 250

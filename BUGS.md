@@ -50,6 +50,9 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3723 - TWO SHARD LAWS READ THIS TREE'S REAL SHARD-WATCH FLAGS (v3898's pre-flight run d)
+test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split asked choose_shards(root=None) for its UNFLAGGED premise; root None reads the tree's own shard-watch store, and v3898's real ship had flagged agent-suite (4) after its GitHub red - the premise read 4 slices, not 3 (REG-3709's class: a law read the host). Both shard laws now ask an empty store of their own. Laws: test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split, test_a_round_chooses_its_own_shard_count.
+
 ### REG-3721 - THE EVERY-SHIP LAW WENT RED ON GITHUB AS THE HISTORY GREW: IT COUNTED ONLY OLD-STYLE COMMITS (v3898's round)
 MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v3846 has a commit in reach (a shallow clone?)". The law counted a version as checked only through "vNNNN: " feature subjects; since ~v3880 fixes are written "fix: vNNNN - ...", so the newest old-style subject (v3889) fell to depth 203 - past CI's 200-commit clone - while v3897's and v3898's own stamps sat in reach. Reproduced locally on a 200-deep clone (the old law fails with GitHub's words). A version whose stamp is in reach now counts as checked (0 feature commits); a clone with no stamp in reach still fails. Law: test_every_ship_lists_all_its_items (+1 case, +1 red-proof).
 
