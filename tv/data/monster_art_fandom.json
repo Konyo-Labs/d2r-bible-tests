@@ -615,9 +615,9 @@
    "file": "art/d2mon_Ismail_Vilehand.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.gif",
-   "sha1": "67361710499dd4ef27ceaae5c476e787f1795ce4",
-   "bytes": 29429,
-   "depicts": "In-game capture (200x150, static, framed close-up): a tight knot of grey-skinned Council Members in red loincloths and spiked dark shoulder-armour - Ismail among his three minions - on Travincal's stone floor. The Arreat Summit's Act III super-unique page names it 'Ismail Vilehand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Ismail Vilehand' and the mod line 'Extra Fast Cursed'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "31f7eca51b15ff5b4b1214dd3d479eac5934b47b",
+   "bytes": 12329,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a tight knot of grey-skinned Council Members in red loincloths and spiked dark shoulder-armour - Ismail among his three minions - on Travincal's stone floor. The Arreat Summit's Act III super-unique page names it 'Ismail Vilehand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Ismail Vilehand' and the mod line 'Extra Fast Cursed'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/ismail.gif",
@@ -629,7 +629,20 @@
     "bytes": 67113,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Ismail Vilehand' with 'Extra Fast Cursed' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "67361710499dd4ef27ceaae5c476e787f1795ce4",
+    "bytes": 29429,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   },
   {
    "name": "Toorc Icefist",
@@ -637,9 +650,9 @@
    "file": "art/d2mon_Toorc_Icefist.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.gif",
-   "sha1": "509d5cdd1a201544bb2daef487681b880a8cf0da",
-   "bytes": 29363,
-   "depicts": "In-game capture (200x150, static, framed close-up): a gaunt orange-tinted Council Member lunging, claw raised, at a dark-armoured hero wreathed in red-white lightning, on grey flagstones. The Arreat Summit's Act III super-unique page names it 'Toorc Icefist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Toorc Icefist' and the mod line 'Cold Enchanted Stone Skin'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "82bf5bc5415bf7e30396e32160eb2befe078e0da",
+   "bytes": 12088,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a gaunt orange-tinted Council Member lunging, claw raised, at a dark-armoured hero wreathed in red-white lightning, on grey flagstones. The Arreat Summit's Act III super-unique page names it 'Toorc Icefist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Toorc Icefist' and the mod line 'Cold Enchanted Stone Skin'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215658id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/toorc.gif",
@@ -651,7 +664,20 @@
     "bytes": 80617,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Toorc Icefist' with 'Cold Enchanted Stone Skin' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "509d5cdd1a201544bb2daef487681b880a8cf0da",
+    "bytes": 29363,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   },
   {
    "name": "Geleb Flamefinger",
@@ -659,9 +685,9 @@
    "file": "art/d2mon_Geleb_Flamefinger.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.gif",
-   "sha1": "4f0b53c44056e832953243d6e2128139ea99984a",
-   "bytes": 29475,
-   "depicts": "In-game capture (200x150, static, framed close-up): a Council Member in a red loincloth and spiked dark shoulder-armour hunched over a pool of blood, a dark hero standing at his side. The Arreat Summit's Act III super-unique page names it 'Geleb Flamefinger (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Geleb Flamefinger' and the mod line 'Extra Strong Fire Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "f21fe779ec5d6f3a71c79bfd1a82ae648dc47e7b",
+   "bytes": 12316,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a Council Member in a red loincloth and spiked dark shoulder-armour hunched over a pool of blood, a dark hero standing at his side. The Arreat Summit's Act III super-unique page names it 'Geleb Flamefinger (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Geleb Flamefinger' and the mod line 'Extra Strong Fire Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/geleb.gif",
@@ -673,7 +699,20 @@
     "bytes": 62984,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Geleb Flamefinger' with 'Extra Strong Fire Enchanted' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "4f0b53c44056e832953243d6e2128139ea99984a",
+    "bytes": 29475,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   },
   {
    "name": "Bremm Sparkfist",
@@ -681,9 +720,9 @@
    "file": "art/d2mon_Bremm_Sparkfist.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.gif",
-   "sha1": "fb8e300227ac6665c86d139e48855eb9d386bc9e",
-   "bytes": 26644,
-   "depicts": "In-game capture (200x150, static, framed close-up): a Council Member in a red loincloth striding forward on a blood-red floor with dark figures behind him. The Arreat Summit's Act III super-unique page names it 'Bremm Sparkfist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Bremm Sparkfist' and the mod line 'Aura Enchanted Lightning Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "ace5940f27c54826c678cec97bb659d9bdd3e310",
+   "bytes": 10172,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a Council Member in a red loincloth striding forward on a blood-red floor with dark figures behind him. The Arreat Summit's Act III super-unique page names it 'Bremm Sparkfist (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Bremm Sparkfist' and the mod line 'Aura Enchanted Lightning Enchanted'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215658id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/bremm.gif",
@@ -695,7 +734,20 @@
     "bytes": 55299,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Bremm Sparkfist' with 'Aura Enchanted Lightning Enchanted' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "fb8e300227ac6665c86d139e48855eb9d386bc9e",
+    "bytes": 26644,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   },
   {
    "name": "Wyand Voidbringer",
@@ -703,9 +755,9 @@
    "file": "art/d2mon_Wyand_Voidbringer.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.gif",
-   "sha1": "f6977f916e37ce3843eb65e60ac15702c3eeae30",
-   "bytes": 31354,
-   "depicts": "In-game capture (200x150, static, framed close-up): a lone gaunt Council Member standing upright with one arm raised, a brazier burning at the top left. The Arreat Summit's Act III super-unique page names it 'Wyand Voidbringer (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Wyand Voidbringer' and the mod line 'Mana Burn Teleportation'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "c0a258d2ccfa7e0eb42c2254884ba52c79b47227",
+   "bytes": 12954,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a lone gaunt Council Member standing upright with one arm raised, a brazier burning at the top left. The Arreat Summit's Act III super-unique page names it 'Wyand Voidbringer (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Wyand Voidbringer' and the mod line 'Mana Burn Teleportation'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/wyand.gif",
@@ -717,7 +769,20 @@
     "bytes": 56455,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Wyand Voidbringer' with 'Mana Burn Teleportation' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "f6977f916e37ce3843eb65e60ac15702c3eeae30",
+    "bytes": 31354,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   },
   {
    "name": "Maffer Dragonhand",
@@ -725,9 +790,9 @@
    "file": "art/d2mon_Maffer_Dragonhand.gif",
    "site": "classic.battle.net (The Arreat Summit, via web.archive.org)",
    "url": "https://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.gif",
-   "sha1": "0e66d64924604cb561ac777b853b8ab437682111",
-   "bytes": 31188,
-   "depicts": "In-game capture (200x150, static, framed close-up): a pale Council Member in a red loincloth crouched and swinging at a dark-armoured hero, blood splashed on the dark floor. The Arreat Summit's Act III super-unique page names it 'Maffer Dragonhand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Maffer Dragonhand' and the mod line 'Extra Strong Extra Fast'. Its own picture - not a council-member stock sprite, not Bartuc.",
+   "sha1": "6cb9800633d30d80b694aa7eb8d4d6366de6fbbb",
+   "bytes": 13038,
+   "depicts": "In-game capture (the centre 100x100 of the Arreat Summit's 200x150 framed close-up, frame removed in v3899; static): a pale Council Member in a red loincloth crouched and swinging at a dark-armoured hero, blood splashed on the dark floor. The Arreat Summit's Act III super-unique page names it 'Maffer Dragonhand (Council Member)' beside this picture; the full 640x480 capture (capture below) carries the in-game name plate 'Maffer Dragonhand' and the mod line 'Extra Strong Extra Fast'. Its own picture - not a council-member stock sprite, not Bartuc.",
    "page": "https://classic.battle.net/diablo2exp/monsters/act3-superuniques.shtml",
    "archived": "https://web.archive.org/web/20090329114553/http://classic.battle.net:80/diablo2exp/monsters/act3-superuniques.shtml",
    "fetchedFrom": "https://web.archive.org/web/20120626215659id_/http://classic.battle.net/images/battle/diablo2exp/images/superuniques/mafferdragonhand.gif",
@@ -739,7 +804,20 @@
     "bytes": 48459,
     "depicts": "In-game screenshot (640x480): D2 HUD at the bottom, red name plate 'Maffer Dragonhand' with 'Extra Strong Extra Fast' under it, the priest on screen."
    },
-   "opened": "2026-11-11 by GrokBot: all six close-ups on one contact sheet, all six full captures on a second, and the six name plates cropped and enlarged 2x before they entered art/ (v3899 #91b, REG-3963)"
+   "opened": {
+    "sha1": "0e66d64924604cb561ac777b853b8ab437682111",
+    "bytes": 31188,
+    "size": "200x150"
+   },
+   "crop": {
+    "box": [
+     50,
+     22,
+     150,
+     122
+    ],
+    "why": "v3899 (his 11-11 'each priest its own picture'): the centre 100x100 of the framed close-up - at row-icon size the Arreat Summit's stone frame read as a dark box; the frame is gone, the scene is the same pixels"
+   }
   }
  ],
  "rejected": [
