@@ -141,8 +141,8 @@ class AWindowsOwnerSendsItsKeyFrames(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3033 - the digest asks sips alone again (a Windows owner sends no picture)",
      "file": "shadow_sessions.py",
-     "find": "def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None):\n",
-     "replace": "def digest(rows, hist_dir, is_read, now_ms, make=_sips_thumb, witness_ids=None, chron_count=None, is_game=None):\n",
+     "find": "def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None,\n",
+     "replace": "def digest(rows, hist_dir, is_read, now_ms, make=_sips_thumb, witness_ids=None, chron_count=None, is_game=None,\n",
      "matches": 1},
     {"why": "REG-3033 - the default resizer never falls back to Pillow",
      "file": "shadow_sessions.py",
