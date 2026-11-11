@@ -2409,6 +2409,7 @@
   /* body */
   .shc-body { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px 13px; }
   .shc-when { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); color: #b9c9be; }
+  .sh-fleet-src { font: var(--fw-medium) var(--fs-2xs)/1.3 var(--mono); color: #8f8a78; margin: 2px 0 8px; }   /* v3899 (#213) */
   .shc-game { display: block; margin-top: 3px; color: #d8c27a; white-space: nowrap; }   /* v3898 (#188) - "part k of m · one game", its own line */
   .shc-when .shc-dur { color: #8a7e68; }
   /* ══ v2987 — THE RIVER AS FOUR LANES, named the way he names them ═══════════════════════
@@ -17351,13 +17352,49 @@ window._lockMark = function(isOpen, px, label){
     if (eEl && window.__onairSince){ var s = Math.max(0, Math.floor((Date.now() - window.__onairSince) / 1000));
       eEl.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   }
+  /* v3899 (#213, GrokBot #230 6798971834: his Mac's OWN Shelf header stopped at Nov 3 while the work ALT played on Nov 11) -
+     THE HEADER COUNTS EVERY PC. /api/roster-cache?shelf=fleet answers every other PC's published sessions, light, from the
+     copies this PC already keeps for the shadow lane, each PC with its copy's age. A fleet run is not openable here (no
+     film on this PC), so its card names its PC instead of a session number. No answer = this PC's own runs, as before. */
+  function _shFleetRuns(){
+    var f = window._shFleet;
+    if (!f || !Array.isArray(f.sessions)) return [];
+    return f.sessions.filter(function(x){ return x && x.t0; }).map(function(x){
+      return { t0: x.t0, t1: x.t1, reads: x.reads || 0, owner: x.owner, sessionId: x.sessionId, n: 0, fleet: true,
+               chron: (typeof x.chron === 'number') ? x.chron : 0 };
+    });
+  }
+  function _shFleetSay(){
+    var f = window._shFleet; if (!f || !f.owners) return '';
+    var parts = Object.keys(f.owners).map(function(o){
+      var r = f.owners[o] || {};
+      if (r.n == null) return o + ' UNKNOWN';
+      var m = (typeof r.ageMs === 'number') ? Math.round(r.ageMs / 60000) : null;
+      return o + ' ' + r.n + (m == null ? '' : ' (as of ' + (m < 120 ? m + ' min' : Math.round(m / 60) + ' h') + ' ago)');
+    });
+    return parts.length ? '<div class="sh-fleet-src" title="each PC is counted from the copy of its published sessions this PC keeps">counts every PC \u00b7 ' + esc(parts.join(' \u00b7 ')) + '</div>' : '';
+  }
+  function _shFleetLoad(){
+    try { if (window._shFleetAsked && Date.now() - window._shFleetAsked < 60000) return; } catch (e) {}
+    window._shFleetAsked = Date.now();
+    fetch(API + '/api/roster-cache?shelf=fleet', { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if (!j || !j.ok) return;
+        window._shFleet = j;
+        try { var w = $('sh-hi-wrap'); if (w) w.innerHTML = _shHighlights() + _shFleetSay(); } catch (e) {}
+        try { _shTimeline(); } catch (e) {}
+      }).catch(function(){});
+  }
   function _shHighlights(){
-    var runs = _cmpList(); if (!runs.length) return '';
+    var runs = _cmpList().concat(_shFleetRuns()); if (!runs.length) return '';
     var ms = runs.map(function(s){
       var spanS = (s.t0 && s.t1) ? Math.max(0, Math.round((s.t1 - s.t0) / 1000)) : 0;
       var reads = s.reads || 0;
       var grails = (s.finds || []).filter(function(f){ return f.tier === 'grail'; }).length;
-      return { n: s.n || 0, sid: s.sessionId || '', reads: reads, grails: grails,
+      if (s.fleet) grails = s.chron || 0;     /* v3899 (#213) - a fleet run carries its chronicles count, not finds */
+      return { n: s.n || 0, sid: s.sessionId || '', reads: reads, grails: grails, owner: s.owner || null,
+        when: s.t0 ? new Date(s.t0).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '',
         rph: (reads && spanS > 0) ? Math.round(reads / (spanS / 3600)) : null,
         cov: (s.coverage && s.coverage.total) ? Math.round((s.coverage.read || 0) / s.coverage.total * 100) : null };
     });
@@ -17368,15 +17405,16 @@ window._lockMark = function(isOpen, px, label){
     var dset = {}; runs.forEach(function(s){ if (s.t0){ var d = new Date(s.t0); dset[d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()] = 1; } });
     var dkeys = Object.keys(dset).map(function(k){ var p = k.split('-'); return new Date(+p[0], +p[1], +p[2]).getTime(); }).sort(function(a, b){ return b - a; });
     var streak = 0; if (dkeys.length){ streak = 1; for (var i = 1; i < dkeys.length; i++){ if (Math.round((dkeys[i - 1] - dkeys[i]) / 86400000) === 1) streak++; else break; } }
+    function _shRunName(m){ return m.n ? 'Session ' + m.n : esc(String(m.owner || 'another PC')) + ' \u00b7 ' + esc(m.when || ''); }
     function card(ic, lab, val, sub, n, sid){
       var clk = n ? (' class="sh-hi-card shi-clk" data-n="' + n + '" data-sid="' + esc(sid || '') + '" title="open session ' + n + '"') : ' class="sh-hi-card"';
       return '<div' + clk + '><div class="shi-ic">' + ic + '</div><div class="shi-body"><div class="shi-lab">' + lab + '</div>'
         + '<div class="shi-val">' + val + '</div>' + (sub ? '<div class="shi-sub">' + sub + '</div>' : '') + '</div></div>';
     }
     var cards = [];
-    if (bGrail && bGrail.grails > 0) cards.push(card('🏆', 'Best run', 'Session ' + bGrail.n, bGrail.grails + ' chronicle' + (bGrail.grails > 1 ? 's' : '') + ' · ' + _kpiFmt(bGrail.reads) + ' reads', bGrail.n, bGrail.sid));
-    if (bReads) cards.push(card('⚡', 'Most reads', 'Session ' + bReads.n, _kpiFmt(bReads.reads) + ' reads', bReads.n, bReads.sid));
-    if (bRph) cards.push(card('📈', 'Top reads/hr', 'Session ' + bRph.n, _kpiFmt(bRph.rph) + ' /hr', bRph.n, bRph.sid));
+    if (bGrail && bGrail.grails > 0) cards.push(card('🏆', 'Best run', _shRunName(bGrail), bGrail.grails + ' chronicle' + (bGrail.grails > 1 ? 's' : '') + ' · ' + _kpiFmt(bGrail.reads) + ' reads', bGrail.n, bGrail.sid));
+    if (bReads) cards.push(card('⚡', 'Most reads', _shRunName(bReads), _kpiFmt(bReads.reads) + ' reads', bReads.n, bReads.sid));
+    if (bRph) cards.push(card('📈', 'Top reads/hr', _shRunName(bRph), _kpiFmt(bRph.rph) + ' /hr', bRph.n, bRph.sid));
     if (bCov) cards.push(card('📊', 'Best coverage', 'Session ' + bCov.n, bCov.cov + '%', bCov.n, bCov.sid));
     cards.push(card('🔥', 'Streak', streak ? (streak + ' day' + (streak > 1 ? 's' : '')) : '—', runs.length + ' run' + (runs.length > 1 ? 's' : '') + ' logged'));
     return '<div class="sh-hi">' + cards.join('') + '</div>';
@@ -19582,6 +19620,7 @@ window._lockMark = function(isOpen, px, label){
     return '<span class="shc-game" title="' + esc(tip) + '">part ' + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
   }
   function thShelf(force){
+    try { _shFleetLoad(); } catch (eFl) {}   /* v3899 (#213) - every PC's published sessions for the header */
     var ov = $('th-shelfov'); if (!ov) return;
     var on = (force !== undefined) ? force : ov.hidden;
     if (!on){ ov.hidden = true; return; }
@@ -20144,7 +20183,7 @@ window._lockMark = function(isOpen, px, label){
          and _shHighlights/_shTimeline/_shLanesLoad/_shStoryRender each still find their block by
          getElementById. v3121's ruling is kept too — ACTIVITY still LEADS the analytic band, it
          just leads it from below the list where the band lives. */
-      + _shHighlights()
+      + '<div id="sh-hi-wrap">' + _shHighlights() + _shFleetSay() + '</div>'   /* v3899 (#213) - repainted when every PC answers */
       + timelineDiv
       + searchBar + body
       /* @@RULING v2985: the RIVER STRIP and the PIPELINE BOARD stay BELOW the reel list. Measured
@@ -21469,14 +21508,15 @@ window._lockMark = function(isOpen, px, label){
   // filtered set) — the bird's-eye above the shelf. Dark-surface styling (the console is a dark app).
   function _shTimeline(){
     var el = $('sh-timeline'); if (!el) return;
-    var runs = (TH.sessions || []).filter(function(s){ return !s.stub && s.t0; });
+    var runs = (TH.sessions || []).filter(function(s){ return !s.stub && s.t0; }).concat(_shFleetRuns());   /* v3899 (#213) */
     if (!runs.length){ el.hidden = true; el.innerHTML = ''; return; }
     var now = new Date(), startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     var DAYS = 14, DAY = 864e5, first = startToday - (DAYS - 1) * DAY;
     var buckets = []; for (var i = 0; i < DAYS; i++) buckets.push({ start: first + i * DAY, runs: 0, grails: 0 });
     runs.forEach(function(s){
       var idx = Math.floor((s.t0 - first) / DAY);
-      if (idx >= 0 && idx < DAYS){ buckets[idx].runs++; buckets[idx].grails += (s.finds || []).filter(function(f){ return f.tier === 'grail'; }).length; }
+      if (idx >= 0 && idx < DAYS){ buckets[idx].runs++; buckets[idx].grails += s.fleet ? (s.chron || 0)
+        : (s.finds || []).filter(function(f){ return f.tier === 'grail'; }).length; }
     });
     var max = 1; buckets.forEach(function(b){ if (b.runs > max) max = b.runs; });
     var totR = 0, totG = 0; buckets.forEach(function(b){ totR += b.runs; totG += b.grails; });

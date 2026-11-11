@@ -6425,6 +6425,103 @@ def _frames_view(owner):
     return _v
 
 
+#: v3899 (#213) - a PC's cached digest older than this is refreshed in the background when the Shelf asks
+SHELF_FLEET_STALE_S = 30 * 60
+_SHELF_FLEET_MEMO = {}            # {path: (mtime, summary)} - the cached digests are 1-12 MB each; parse a file once per write
+_SHELF_FLEET_LOCK = threading.Lock()
+_SHELF_FLEET_REFRESH = {"on": False, "lastTs": None, "refreshed": None, "why": None}
+
+
+def _shelf_fleet_refresh(stale):
+    """v3899 (#213) - re-read the named owners' published sessions through _frames_view (which writes this PC's copy), one
+    owner at a time, in ONE background thread. -> True when a refresh was started, False when one already runs."""
+    with _SHELF_FLEET_LOCK:
+        if _SHELF_FLEET_REFRESH["on"] or not stale:
+            return False
+        _SHELF_FLEET_REFRESH["on"] = True
+        _SHELF_FLEET_REFRESH["lastTs"] = int(time.time() * 1000)
+
+    def _run():
+        done = []
+        try:
+            for owner in stale:
+                try:
+                    _frames_view(owner)
+                    done.append(owner)
+                except Exception as e:
+                    _SHELF_FLEET_REFRESH["why"] = "%s: %s" % (owner, type(e).__name__)
+        finally:
+            with _SHELF_FLEET_LOCK:
+                _SHELF_FLEET_REFRESH["on"] = False
+                _SHELF_FLEET_REFRESH["refreshed"] = done
+
+    threading.Thread(target=_run, daemon=True, name="tvd-shelf-fleet").start()
+    return True
+
+
+def _shelf_fleet(refresh=True, now_ms=None):
+    """v3899 (#213, GrokBot #230 6798971834: his Mac's OWN Shelf header stopped at Nov 3 while the work ALT played on Nov 11) -
+    THE SHELF HEADER COUNTS EVERY PC. -> {ok, me, owners: {owner: {cachedAt, ageMs, n, why}}, sessions: [...], refreshing}
+
+    The header (best run, most reads, streak, the 14-day chart) read only this PC's own runs. Every other PC's published
+    sessions are already on this Mac as the shadow lane's cached copy (_frames_view writes it); this reads those copies -
+    never the site on the request - and returns each session light: {owner, sessionId, t0, t1, reads, chron}. A PC with no
+    copy says so (why), never as zero runs; each copy carries its own age (cachedAt), so a stale PC is said, not hidden.
+    Copies older than SHELF_FLEET_STALE_S are refreshed in the background for the next look."""
+    import console_snapshot as _cs
+    import shadow_sessions as _ss
+    now = int(time.time() * 1000) if now_ms is None else int(now_ms)
+    try:
+        me = _profile_owner()
+    except Exception:
+        me = None
+    cdir = _frames_cache_dir()
+    out = {"ok": True, "me": me, "owners": {}, "sessions": [], "refreshing": False}
+    stale = []
+    for owner in _cs.OWNERS:
+        if owner == me:
+            continue
+        path = _ss.cache_path(cdir, owner)
+        try:
+            mt = os.path.getmtime(path) if path else None
+        except OSError:
+            mt = None
+        if mt is None:
+            out["owners"][owner] = {"cachedAt": None, "ageMs": None, "n": None,
+                                    "why": "this PC holds no copy of their published sessions yet"}
+            stale.append(owner)
+            continue
+        memo = _SHELF_FLEET_MEMO.get(path)
+        if memo and memo[0] == mt:
+            summ = memo[1]
+        else:
+            rec = _ss.read_cache(cdir, owner)
+            if not isinstance(rec, dict):
+                out["owners"][owner] = {"cachedAt": None, "ageMs": None, "n": None,
+                                        "why": "this PC's copy of their sessions would not read"}
+                stale.append(owner)
+                continue
+            rows = []
+            for x in ((rec.get("digest") or {}).get("sessions") or []):
+                if not isinstance(x, dict) or not isinstance(x.get("t0"), (int, float)):
+                    continue
+                ch, rd = x.get("chroniclesFound"), x.get("reads")
+                rows.append({"owner": owner, "sessionId": x.get("sessionId"), "t0": x.get("t0"), "t1": x.get("t1"),
+                             "reads": rd if isinstance(rd, int) and not isinstance(rd, bool) else None,
+                             "chron": ch if isinstance(ch, int) and not isinstance(ch, bool) else None})
+            summ = {"cachedAt": rec.get("t"), "rows": rows}
+            _SHELF_FLEET_MEMO[path] = (mt, summ)
+        at = summ.get("cachedAt")
+        age = (now - int(at)) if isinstance(at, (int, float)) else None
+        out["owners"][owner] = {"cachedAt": at, "ageMs": age, "n": len(summ["rows"])}
+        out["sessions"].extend(summ["rows"])
+        if age is None or age > SHELF_FLEET_STALE_S * 1000:
+            stale.append(owner)
+    if refresh:
+        out["refreshing"] = _shelf_fleet_refresh(stale) or bool(_SHELF_FLEET_REFRESH.get("on"))
+    return out
+
+
 def _console_beacon_loop():
     _boot_beacon_wait()
     _console_beacon("boot")
@@ -51679,6 +51776,10 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/roster-cache") and "frames" in _rq:
             # #218 phase 3a (REG-2773) - the owner's summarized sessions for a shadow's Shelf / TV·D. GET only.
             self._json(200, _frames_view((_rq.get("frames") or [""])[0]))
+            return
+        if path.endswith("/roster-cache") and "shelf" in _rq:
+            # v3899 (#213) - every PC published sessions, light, from the cached copies on this PC (the Shelf header). GET only.
+            self._json(200, _shelf_fleet())
             return
         if path.endswith("/roster-cache") and "profile" in _rq:
             # Shadow mode - another console's profile on the roster door (?profile=<owner>), read only. GET only;

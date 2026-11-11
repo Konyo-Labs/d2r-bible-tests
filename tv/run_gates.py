@@ -13912,6 +13912,11 @@ GATES = [
          needs_app=False,
          why="v3898 (#184's four boxes) - repeat(4, 1fr) kept CHRONICLES' min-content: the row needed 290 px in a 237 px card "
              "and SETS was cut off at the card's edge (his font, measured); a card lays the boxes 2 x 2, no bare 1fr track"),
+    Gate("test_the_shelf_header_counts_every_pc",
+         [sys.executable, os.path.join(HERE, "test_the_shelf_header_counts_every_pc.py")], 120,
+         why="v3899 (#213, GrokBot #230 6798971834) - his Mac's own Shelf header (best run, most reads, streak, the 14-day "
+             "chart) counted only this PC's runs and stopped at Nov 3 while the work ALT played; it counts every PC from the "
+             "cached copies of their published sessions now, a fleet run named by its PC, each copy with its age"),
     Gate("test_the_connecting_screen_is_a_door",
          [sys.executable, os.path.join(HERE, "test_the_connecting_screen_is_a_door.py")], 60,
          needs_app=False,
