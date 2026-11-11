@@ -40737,6 +40737,34 @@ def shadow_watch_tick():
                     # REG-1681 (the v3544 eye) — only a RUNNING answer ends an absence. An unreadable one (a ps that
                     # timed out) neither seals nor erases the absence a False already confirmed: wiping it restarted the
                     # three-minute grace, and one failed read every couple of minutes meant the seal never came.
+                    # v3899 (#188, REG-3722) - ON A CLOUD ROUTE A FROZEN NON-D2R FILM IS THE EXIT, NOT A PAUSE. MEASURED on the
+                    # work ALT 11-11 12:00-12:39 (SSH, read-only): the reel opened on "Boosteroid is open" and filmed 638 frames of
+                    # Boosteroid's own page - d2r_screens.frozen_non_d2r reads them frozen - while this branch held it open as "a
+                    # pause" (the Boosteroid client runs) until an update closed it. His 11-11 ruling: an exit or an AFK drop ends
+                    # the session. A local D2R window minimized is still REG-1675's pause (its film may be frozen too), so only the
+                    # cloud routes seal here, on the same frozen clock the window-seen path keeps.
+                    try:
+                        _rt = (_capture_route_for_wire() or {}).get("route")
+                    except Exception:
+                        _rt = None
+                    if _rt in ("boosteroid", "geforce-now"):
+                        _fz = reel_film_is_frozen_non_d2r(now)
+                        if _fz is True:
+                            _fs = cur.get("frozenIdleSince")
+                            if not isinstance(_fs, (int, float)) or cur.get("frozenIdleFor") != _since:
+                                why = ("the %s window shows no D2R and its film is a frozen non-D2R screen - this shadow "
+                                       "reel seals if that holds for %d s" % (_rt, _SHADOW_AWAY_GRACE_S))
+                                _shadow_watch_note(lookedAt=now, frozenIdleSince=now, frozenIdleFor=_since, why=why)
+                                return {"ok": True, "away": True, "idle": True, "why": why}
+                            _held = (now - float(_fs)) / 1000.0
+                            if _held >= _SHADOW_AWAY_GRACE_S:
+                                return _seal_frozen_idle(now, held_s=_held)
+                            why = ("the %s film is still a frozen non-D2R screen (%d s of %d)"
+                                   % (_rt, int(_held), _SHADOW_AWAY_GRACE_S))
+                            _shadow_watch_note(lookedAt=now, why=why)
+                            return {"ok": True, "away": True, "idle": True, "why": why}
+                        if _fz is False and cur.get("frozenIdleSince") is not None:
+                            _shadow_watch_note(frozenIdleSince=None, frozenIdleFor=None)
                     _pn = dict(lookedAt=now, pausedSince=(cur.get("pausedSince") or now), why=why)
                     if _run is not None:
                         _pn["gameGoneSince"] = None

@@ -14,6 +14,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -92,7 +93,67 @@ class TheWatcherSealsAFrozenIdleReel(unittest.TestCase):
         self.assertIn("this is not a real session", src)
 
 
+class AFrozenCloudPageEndsTheSessionEvenWhenTheWindowIsAway(unittest.TestCase):
+    """v3899 (#188, REG-3722) - MEASURED on the work ALT 11-11 12:00-12:39: Boosteroid's own page filmed for 39 min, read frozen
+    by frozen_non_d2r, held open as 'a pause' because no D2R window was seen and the Boosteroid client ran. DRIVEN: the real
+    shadow_watch_tick, its inputs stubbed - a cloud route seals after the grace; a native route keeps REG-1675's pause."""
+
+    def _drive(self, route, looks):
+        import control_app as CA
+        store, sealed = {}, []
+        t0 = 1794391219365
+        def note(**kw):
+            store.update(kw)
+        stubs = {
+            "_agent_alive": lambda: True,
+            "_rolling_reel": lambda: {"door": "shadow", "since": t0},
+            "capture_preflight": lambda door, look_for_window=True: {"windowSeen": False},
+            "_game_verdict": lambda pre, hud, **k: (None, ""),
+            "_shadow_game_note": lambda *a, **k: None,
+            "_game_running": lambda: True,
+            "_shadow_watch_stored": lambda: dict(store),
+            "_shadow_watch_note": note,
+            "_shadow_hour_key": lambda ms: "h",
+            "_shadow_hour_end_ms": lambda since: since + 10 * 3600 * 1000,
+            "_shadow_rotate_after_s": lambda: 10 * 3600,
+            "_shadow_state": lambda: {},
+            "_capture_route_for_wire": lambda now_ms=None: {"route": route},
+            "reel_film_is_frozen_non_d2r": lambda now_ms=None: True,
+            "_seal_frozen_idle": lambda now, held_s=None: sealed.append(held_s) or {"ok": True, "cut": True},
+        }
+        outs = []
+        with mock.patch.multiple(CA, **stubs):
+            for dt in looks:
+                with mock.patch.object(CA, "_shadow_now_ms", lambda dt=dt: t0 + dt * 1000):
+                    outs.append(CA.shadow_watch_tick())
+        return outs, sealed
+
+    def test_a_frozen_boosteroid_page_seals_after_the_grace(self):
+        """* THE POINT"""
+        import control_app as CA
+        outs, sealed = self._drive("boosteroid", [600, 600 + CA._SHADOW_AWAY_GRACE_S + 20])
+        self.assertTrue(outs[0].get("idle"), "the first look did not start the frozen clock: %r" % outs[0])
+        self.assertEqual(len(sealed), 1, "a frozen Boosteroid page with the window away was held as a pause again: %r" % outs)
+
+    def test_a_native_window_away_is_still_a_pause(self):
+        """BASELINE - REG-1675: a local D2R window minimized never seals on a frozen film"""
+        import control_app as CA
+        outs, sealed = self._drive("native", [600, 600 + CA._SHADOW_AWAY_GRACE_S + 20])
+        self.assertEqual(sealed, [], "a local game minimized was sealed as an exit")
+        self.assertTrue(all(o.get("paused") for o in outs), outs)
+
+
 RED_PROOF = [
+    {"why": "v3899 (#188, REG-3722) - a frozen cloud page with the window away is held open as a pause again",
+     "file": "tv/control_app.py",
+     "find": "                    if _rt in (\"boosteroid\", \"geforce-now\"):\n",
+     "replace": "                    if False:\n",
+     "matches": 1},
+    {"why": "v3899 (#188, REG-3722) - a local window minimized is sealed as an exit (REG-1675 broken)",
+     "file": "tv/control_app.py",
+     "find": "                    if _rt in (\"boosteroid\", \"geforce-now\"):\n",
+     "replace": "                    if True:\n",
+     "matches": 1},
     {"why": "v3894 (#188) - a frozen idle page is treated as a live session",
      "file": "tv/d2r_screens.py",
      "find": "    return len(set(prints)) == 1\n",
