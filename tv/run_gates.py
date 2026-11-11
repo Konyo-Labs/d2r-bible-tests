@@ -1575,6 +1575,13 @@ GATES = [
              "the exclusion rule caught it. Pins the THIRD state — OURS -> WARN, UNATTRIBUTED -> "
              "UNKNOWN (not the rail's failure state), still REPORTED, never dismissed."),
 
+    Gate("test_a_private_console_takes_its_agent_with_it",
+         [sys.executable, os.path.join(HERE, "test_a_private_console_takes_its_agent_with_it.py")], 60,
+         why="REG-3670 (2026-11-11) - three tv_diablo agents ran on as orphans on his Mac (9 h and 2.7 days, each on "
+             "an ephemeral port writing a btnmatrix fixture log): test_button_matrix SIGTERMed its private console "
+             "alone and the SIM agent it had turned on was re-parented to launchd. The private console now runs in a "
+             "session of its own (POSIX) and its stop signals the whole group. Pins spawn_private/stop_private with a "
+             "fake console that starts a child: the child must go with it."),
     Gate("test_a_leak_is_this_runs_not_his_consoles",
          [sys.executable, os.path.join(HERE, "test_a_leak_is_this_runs_not_his_consoles.py")], 60,
          why="#31 (2026-09-26) - the end-of-run orphan check printed THIS RUN LEFT 1 PROCESS RUNNING about his "

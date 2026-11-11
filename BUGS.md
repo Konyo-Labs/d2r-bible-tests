@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3670 - A LAW'S PRIVATE CONSOLE LEFT ITS AGENT RUNNING FOR DAYS (v3896)
+MEASURED 11-11 on his Mac: three tv_diablo agents ran on as orphans (ppid 1) - 9 h and 2.7 days old, each listening on an
+ephemeral agent port and writing a btnmatrix-* fixture log, with 189 MB of those fixture dirs left behind (killed by PID,
+trashed). test_button_matrix turns its private console's SIM agent on and at exit SIGTERMed the console alone; control_app
+never setsids its agent on a Mac (v779), so the agent was re-parented to launchd. The private console now runs in a session
+of its own on POSIX and its stop asks /api/off, then signals the whole group (SIGTERM, then SIGKILL). Of the 8 laws that
+boot a private console only this one turns the agent on without a group kill (test_control already does both). Law:
+test_a_private_console_takes_its_agent_with_it. Seen RED x2.
+
 ### REG-3669 - THE GAME-START YIELD LAW ASKED THIS PC WHETHER A PUSH WAS GRADING (v3896, card #199)
 MEASURED 11-10 ~21:00 IST: v3894 attempt 4's pre-flight went red on 6 cases of TheNextSliceStartsTheMomentOneEnds (key
 'playing'/'busy', not the fixture's) because a real push had sat 85 min in its pre-push hook beside it - green 23/23 the

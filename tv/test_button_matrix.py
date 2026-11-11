@@ -51,6 +51,55 @@ def _free_port():
         return sk.getsockname()[1]
 
 
+def spawn_private(argv, env):
+    """REG-3670 - the private console in a session of its own on POSIX, so one killpg takes the agent it starts with it
+    (control_app never setsids its agent on a Mac - v779, the Screen Recording chain - so the agent shares the console's
+    group). -> (proc, group: bool)"""
+    group = os.name == "posix"
+    return subprocess.Popen(argv, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            start_new_session=group), group
+
+
+def stop_private(proc, base, group, ask_s=3.0, wait_s=5.0):
+    """REG-3670 - THE PRIVATE CONSOLE GOES, AND ITS AGENT WITH IT. MEASURED 11-11 on his Mac: three tv_diablo agents this
+    law's consoles had started (SIM agent up) ran on as orphans - 9 h and 2.7 days old, each on an ephemeral agent port and
+    writing a fixture log - because the teardown SIGTERMed the console alone and the agent was re-parented to launchd.
+    run_gates' end-of-run check names such leaks; this stops making them. Asks the console to turn its agent off, then
+    signals the whole group (POSIX), SIGTERM then SIGKILL. Never raises."""
+    try:
+        urllib.request.urlopen(urllib.request.Request(base + "/api/off", data=b"{}", method="POST",
+                                                      headers={"Content-Type": "application/json"}), timeout=ask_s).read()
+    except Exception:
+        pass
+    if group:
+        import signal as _sig
+        for sig in (_sig.SIGTERM, _sig.SIGKILL):
+            try:
+                os.killpg(proc.pid, sig)
+            except Exception:
+                break                                 # no such group: everything in it is gone
+            gone = False
+            for _ in range(int(wait_s / 0.1)):
+                proc.poll()                           # reap the leader, so only living members keep the group
+                try:
+                    os.killpg(proc.pid, 0)
+                except Exception:
+                    gone = True
+                    break
+                time.sleep(0.1)
+            if gone:
+                break
+    elif proc.poll() is None:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+    try:
+        proc.wait(timeout=10)
+    except Exception:
+        pass
+
+
 def _boot_control():
     """Start a private control_app and return its base URL, or None if it will not come up."""
     global _OWNED, AGENT
@@ -98,11 +147,10 @@ def _boot_control():
                TV_CHRON_READS=os.path.join(_sand, "chron_reads.json"),
                TV_SWEEP_LOCK=os.path.join(_sand, ".sweep.lock"))
     here = os.path.dirname(os.path.abspath(__file__))
-    proc = subprocess.Popen([sys.executable, os.path.join(here, "control_app.py"), "--no-open"],
-                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc, group = spawn_private([sys.executable, os.path.join(here, "control_app.py"), "--no-open"], env)
     _OWNED = proc
-    atexit.register(lambda: (proc.terminate(), proc.wait(timeout=10)) if proc.poll() is None else None)
     base = "http://127.0.0.1:%d" % port
+    atexit.register(stop_private, proc, base, group)
     for _ in range(60):                      # up to ~30s for first boot
         if proc.poll() is not None:
             return None                      # died on startup — report SKIP, never a false pass
