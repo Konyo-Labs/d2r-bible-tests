@@ -7,6 +7,17 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3963 - THE SIX TRAVINCAL COUNCIL PRIESTS WORE ONE SHARED PICTURE (v3899 #91b, GrokBot, his 11-11 "give each priest its own picture")
+Ismail Vilehand, Toorc Icefist, Geleb Flamefinger, Bremm Sparkfist, Wyand Voidbringer and Maffer Dragonhand all draw
+councilmember_graphic.png (diablo2.io's one Council Member picture; diablo.fandom/diablo-archive show one shared gif too), and
+rankedboost's six "<Name>.gif" are byte-for-byte Bartuc the Bloody's sprite. The Arreat Summit's Act III super-unique page
+names each priest beside its OWN in-game capture: art/d2mon_<Name>.gif (200x150 framed close-up, the card picture) plus
+art/d2cap_<Name>.jpg (the 640x480 screenshot with the priest's in-game name plate), each opened and pinned in
+tv/data/monster_art_fandom.json (sha1, bytes, page, URL, depicts). Twelve files, twelve different byte sets, none Bartuc's
+and none the shared graphic. Not wired here (bible.html untouched): D2IO_ART / the baked bind-row <img>s are Claude's. Law:
+test_every_boss_and_super_unique_wears_one_sprite_of_its_own::test_each_council_priest_wears_a_picture_of_its_own (a priest
+with no record, a priest wearing another priest's, Bartuc's or the council graphic's bytes, a capture that is another's, or a
+declared share for a priest is red). Seen RED.
 ### REG-3961 - FOUR BOSSES AND SUPER-UNIQUES WERE FILED "NO SPRITE ON EITHER SOURCE" OVER A FILE NAME'S CASE (v3899 #91, GrokBot)
 tv/data/monster_art_fandom.json's noSpriteFound named Bloodwitch the Wild, Lord De Seis, Treehead WoodFist and The Countess.
 rankedboost has all four: 'Blood Witch the Wild.gif', 'Lord de Seis.gif', 'Treehead Woodfist.gif' and 'The Countess.gif' (13

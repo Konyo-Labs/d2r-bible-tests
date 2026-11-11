@@ -12,6 +12,10 @@ hold the same bytes turns this red.
 
 The Countess's Boss card and The Summoner's are pinned in art/boss_portraits.manifest.json "_ready_to_wire" (opened, sha256
 pinned) so wiring BOSS_PORTRAIT is one edit in bible.html; art/verify_boss_portraits.py hashes those rows like any portrait.
+v3899 #91b (REG-3963, his 11-11 ruling "give each priest its own picture"): the six Travincal Council priests no longer
+share councilmember_graphic.png. Each wears its OWN in-game capture from The Arreat Summit's Act III super-unique page
+(named there; the full 640x480 capture, pinned beside it, carries the priest's in-game name plate). Six different byte
+sets, none Bartuc's (rankedboost serves Bartuc's GIF under all six names) and none the shared council graphic.
 RED_PROOF below.
 """
 import hashlib
@@ -29,6 +33,12 @@ MANIFEST = os.path.join(ROOT, "art", "boss_portraits.manifest.json")
 
 #: the four the record wrongly filed as spriteless (v3899 #91). A premise, not a census: each must carry its own sprite.
 FOUND_V3899 = ("The Countess", "Bloodwitch the Wild", "Lord De Seis", "Treehead WoodFist")
+
+#: his 11-11 ruling (#91b): each of the six Travincal Council priests wears a picture of its own.
+COUNCIL_PRIESTS = ("Ismail Vilehand", "Toorc Icefist", "Geleb Flamefinger", "Bremm Sparkfist", "Wyand Voidbringer",
+                   "Maffer Dragonhand")
+#: the bytes no priest may wear: Bartuc the Bloody's sprite (rankedboost's "council" GIFs) and the shared council graphic
+NOT_A_PRIEST_OWN = ("art/d2mon_Bartuc_the_Bloody.gif", "art/councilmember_graphic.png")
 
 
 def _rec():
@@ -85,6 +95,41 @@ class OneArtPerMonster(unittest.TestCase):
         stale = sorted(sorted(d) for d in declared if d not in shared)
         self.assertEqual(stale, [], "a declared shared sprite no longer shares (drop the declaration): %s" % stale)
 
+    def test_each_council_priest_wears_a_picture_of_its_own(self):
+        rec = _rec()
+        by = dict((r["name"], r) for r in rec["sprites"])
+        missing = [n for n in COUNCIL_PRIESTS if n not in by]
+        self.assertEqual(missing, [], "a Travincal Council priest has no picture of its own (his 11-11 ruling): %s" % missing)
+        banned = dict((_sha1(os.path.join(ROOT, f)), f) for f in NOT_A_PRIEST_OWN if os.path.isfile(os.path.join(ROOT, f)))
+        self.assertIn("art/d2mon_Bartuc_the_Bloody.gif", banned.values(), "PREMISE: Bartuc's sprite is not in art/")
+        others = dict((_sha1(os.path.join(ROOT, r["file"])), r["name"]) for r in rec["sprites"]
+                      if r["name"] not in COUNCIL_PRIESTS and os.path.isfile(os.path.join(ROOT, r["file"])))
+        seen, bad = {}, []
+        for n in COUNCIL_PRIESTS:
+            r = by[n]
+            self.assertIn(n, r.get("depicts") or "", "%s's record does not say the picture shows %s" % (n, n))
+            self.assertTrue((r.get("page") or "").startswith("https://"), "%s's picture names no source page" % n)
+            for kind, f, want, size in (("picture", r["file"], r.get("sha1"), r.get("bytes")),
+                                        ("capture", (r.get("capture") or {}).get("file"), (r.get("capture") or {}).get("sha1"),
+                                         (r.get("capture") or {}).get("bytes"))):
+                p = os.path.join(ROOT, f or "")
+                if not f or not os.path.isfile(p):
+                    bad.append("%s: its %s %r is not in art/" % (n, kind, f))
+                    continue
+                h = _sha1(p)
+                if h != want or os.path.getsize(p) != size:
+                    bad.append("%s: its %s %s is not the file that was opened (sha1/bytes)" % (n, kind, f))
+                if h in banned:
+                    bad.append("%s: its %s is %s's bytes" % (n, kind, banned[h]))
+                if h in others:
+                    bad.append("%s: its %s is %s's picture" % (n, kind, others[h]))
+                if h in seen:
+                    bad.append("%s: its %s is the same bytes as %s" % (n, kind, seen[h]))
+                seen[h] = "%s's %s" % (n, kind)
+        self.assertEqual(bad, [], "the six priests are not six pictures:\n  " + "\n  ".join(bad))
+        declared = sorted(set(x for d in rec.get("sharedSprite") or [] for x in d.get("names") or []) & set(COUNCIL_PRIESTS))
+        self.assertEqual(declared, [], "a priest is declared as sharing a picture - his ruling forbids it: %s" % declared)
+
     def test_the_boss_portraits_still_verify_with_the_ready_rows_pinned(self):
         with io.open(MANIFEST, encoding="utf-8") as fh:
             man = json.load(fh)
@@ -126,6 +171,31 @@ RED_PROOF = [
      "file": "art/boss_portraits.manifest.json",
      "find": "\"sha256\": \"75f1a1cf6a59b0251719ae9423af5bad22aa84b73f4d92ae4c8da934376deaab\"",
      "replace": "\"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\"",
+     "matches": 1},
+    {"why": "#91b - Toorc Icefist wears Ismail Vilehand's picture again (two priests, one picture)",
+     "file": "tv/data/monster_art_fandom.json",
+     "find": "\"file\": \"art/d2mon_Toorc_Icefist.gif\"",
+     "replace": "\"file\": \"art/d2mon_Ismail_Vilehand.gif\"",
+     "matches": 1},
+    {"why": "#91b - Maffer Dragonhand wears Bartuc the Bloody's bytes (rankedboost's 'council' GIF)",
+     "file": "tv/data/monster_art_fandom.json",
+     "find": "\"file\": \"art/d2mon_Maffer_Dragonhand.gif\"",
+     "replace": "\"file\": \"art/d2mon_Bartuc_the_Bloody.gif\"",
+     "matches": 1},
+    {"why": "#91b - Geleb Flamefinger falls back to the shared councilmember_graphic.png",
+     "file": "tv/data/monster_art_fandom.json",
+     "find": "\"file\": \"art/d2mon_Geleb_Flamefinger.gif\"",
+     "replace": "\"file\": \"art/councilmember_graphic.png\"",
+     "matches": 1},
+    {"why": "#91b - Wyand Voidbringer loses his picture record",
+     "file": "tv/data/monster_art_fandom.json",
+     "find": "\"name\": \"Wyand Voidbringer\",",
+     "replace": "\"name\": \"Wyand (renamed)\",",
+     "matches": 1},
+    {"why": "#91b - Bremm Sparkfist's name-plate capture is Geleb's capture",
+     "file": "tv/data/monster_art_fandom.json",
+     "find": "\"file\": \"art/d2cap_Bremm_Sparkfist.jpg\"",
+     "replace": "\"file\": \"art/d2cap_Geleb_Flamefinger.jpg\"",
      "matches": 1},
 ]
 
