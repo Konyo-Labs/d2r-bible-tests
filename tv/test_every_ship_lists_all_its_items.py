@@ -18,9 +18,14 @@ FROM = 3846
 TITLE = re.compile(r"^v\d+: [A-Z][a-z]+ [A-Z][a-z]+$")
 
 
+def _subjects():
+    """-> every commit subject in reach, decoded as utf-8 (one git call shared by the counts below)"""
+    return subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True,
+                          text=True, encoding="utf-8").stdout or ""
+
+
 def feature_commits(ver):
-    out = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True,
-                         text=True, encoding="utf-8").stdout or ""
+    out = _subjects()
     # v3849: a subject seen twice is one item - a branch carried both rebased and merged lists each commit twice
     # (68 subjects, 53 distinct). The bar is still one line per distinct feature/fix.
     return list(dict.fromkeys(s for s in out.splitlines() if s.startswith(ver + ": ") and not TITLE.match(s)))
@@ -34,6 +39,26 @@ def stamps_in_reach():
     git = subprocess.run(["git", "log", "--format=%s"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     out = git.stdout or ""
     return set(s.split(":", 1)[0] for s in out.splitlines() if TITLE.match(s))
+
+
+#: v3899 (REG-3731, his 11-11: "history reads only 4 fixes here, is this right?") - since ~v3880 a version's fixes are written
+#: "fix: vNNNN - ..." (and GrokBot's "feat: vNNNN ..."), which feature_commits never counted, so v3898 shipped 20 fixes over
+#: a 4-line history (the bump note split on commas) and this law passed with n = 0. From v3898 every REG a version's own
+#: fix commits name must stand in that version's history.
+FIX_FROM = 3898
+FIX = re.compile(r"^(?:fix|feat): (v\d+)\b")
+REG = re.compile(r"REG-(\d{3,5})")
+
+
+def fix_regs(ver):
+    """-> the REG numbers named by the "fix:"/"feat:" commits of version `ver` in reach of this clone"""
+    out = _subjects()
+    regs = set()
+    for s in out.splitlines():
+        m = FIX.match(s)
+        if m and m.group(1) == ver:
+            regs.update(REG.findall(s))
+    return regs
 
 
 def short(entry):
@@ -53,6 +78,11 @@ class EveryShipListsAllItsItems(unittest.TestCase):
             seen += bool(n) or e["ver"] in stamps     # v3898 - a stamp in reach is a version checked (0 feature commits)
             if len(e["items"]) < n:
                 bad.append("%s: %d lines for %d feature/fix commits" % (e["ver"], len(e["items"]), n))
+            if int(e["ver"][1:]) >= FIX_FROM:
+                missing = sorted(fix_regs(e["ver"]) - set(REG.findall(" ".join(e["items"]))))
+                if missing:
+                    bad.append("%s: its fix commits name REG-%s, which its history never lists" % (
+                        e["ver"], ", REG-".join(missing)))
         self.assertEqual(bad, [], "a version's history is missing items: %s" % bad)
         # v3850 (Grok CLI second eye on v3848, finding 2) - a clone with no listed version in reach checked nothing
         self.assertGreater(seen, 0, "no version since v%d has a commit in reach (a shallow clone?) - this checked "
@@ -103,6 +133,11 @@ class EveryShipListsAllItsItems(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3731 - v3899's history drops a fix its commits name (REG-3730), and the law must say which",
+     "file": "CHANGELOG.json",
+     "find": "The backfill stands aside when the age of the console price DB will not read (REG-3730)",
+     "replace": "The backfill stands aside when the age of the console price DB will not read",
+     "matches": 1},
     {"why": "v3898 - a version whose stamp is in reach counts as unchecked again (the 200-commit CI clone reads nothing)",
      "file": "test_every_ship_lists_all_its_items.py",
      "find": "    return set(s.split(\":\", 1)[0] for s in out.splitlines() if TITLE.match(s))\n",
@@ -120,8 +155,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3849 - git log is decoded in the console encoding and cp1255 dies on a subject",
      "file": "test_every_ship_lists_all_its_items.py",
-     "find": "                         text=True, encoding=\"utf-8\").stdout or \"\"\n",
-     "replace": "                         text=True).stdout or \"\"\n",
+     "find": "                          text=True, encoding=\"utf-8\").stdout or \"\"\n",
+     "replace": "                          text=True).stdout or \"\"\n",
      "matches": 1},
     {"why": "v3849 - a cp1255 console crashes while reporting a subject",
      "file": "test_every_ship_lists_all_its_items.py",
