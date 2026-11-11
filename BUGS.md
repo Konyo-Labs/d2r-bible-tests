@@ -50,6 +50,12 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3693 - THE SHIP STOPPED RED ON THE AGENT-TESTS RE-RUN IT HAD JUST ASKED FOR (v3897, card #200)
+MEASURED 11-11 09:13, v3896 try 2 (and again on try 3): the live shard watch (REG-3648) re-ran agent-suite (4) for a runner
+cut-off and recorded the ask; the next poll still read the run's old "completed, failure" because GitHub had not started the
+re-run, and the grace REG-3270 gives a re-run applied to the PROOF run only - so the ship stopped RED and had to be relaunched
+by hand. asked_moments_ago() now gives every required run's re-run the same MAKEUP_GRACE_S; a run still red past it is red.
+Law: test_a_round_cut_only_by_its_deadline_is_made_up (AReRunTheShipAskedIsNotRedYet).
 ### REG-3692 - THE MAC TOOK A SHARD SET CUT AT TWO SIZES AS ONE WHOLE ROUND (v3897, the Grok CLI's look on v3891)
 proof_keys_mac.shard_count_of answers None both when no manifest reads and when the manifests DISAGREE on n, and the import
 then sized the set by the workflow's fallback count - so caches cut as n=3, 3 and 30 passed whole_set as one 3-shard round.

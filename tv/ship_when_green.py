@@ -478,6 +478,20 @@ def suite_run(runs, sha, workflow):
     return rs[-1] if rs else None
 
 
+def asked_moments_ago(entry, runs, sha, made, clock):
+    """v3897 (REG-3693) - A RE-RUN THE SHIP ASKED A MOMENT AGO IS NOT RED YET, WHICHEVER REQUIRED RUN IT IS. MEASURED 11-11 09:13,
+    v3896 try 2: the live shard watch (REG-3648) re-ran agent-suite (4) for a runner cut-off and recorded the ask; the next
+    poll still read the run's old "completed, failure" (GitHub had not started the re-run), and the grace REG-3270 gives a
+    re-run applied to the PROOF run only - so the ship stopped RED on the re-run it had just asked for. -> True when `entry`
+    (a red_runs line) is a required workflow whose newest run on sha was asked to re-run under MAKEUP_GRACE_S ago. Pure."""
+    for wf in CV.REQUIRED:
+        if str(entry).startswith(wf):
+            r = proof_run(runs, sha) if wf == CV.REQUIRED[3] else suite_run(runs, sha, wf)
+            at = made.get((r or {}).get("databaseId"))
+            return at is not None and clock() - at < MAKEUP_GRACE_S
+    return False
+
+
 def suite_makeup(sha, runs, run, say, made, clock, root=None):
     """REG-3645 - a red agent-tests or Playwright run is re-run with `gh run rerun --failed` once when
     the flake ledger says the failed job is a known flake, or when the runner ended it (the same
@@ -721,6 +735,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
             alerted = True
             say(overrun_alert(sha, (clock() - t0) / 60.0, runs, watch=watch))
         red = red_runs(runs, sha) if runs is not None else []
+        red = [x for x in red if not asked_moments_ago(x, runs, sha, made, clock)]   # v3897 (REG-3693) - every required run
         if red and runs is not None:    # REG-3270 - a red that is only cut proofs is made up once, then waited on
             pr = proof_run(runs, sha) or {}
             asked = made.get(pr.get("databaseId"))

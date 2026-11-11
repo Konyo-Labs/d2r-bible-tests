@@ -298,6 +298,55 @@ class TheShipMakesUpARound(unittest.TestCase):
         self.assertIn(["git", "-c", "core.hooksPath=hooks", "push", "origin", "HEAD:main"], gh.calls)
 
 
+class _GhAgentRerun(_Gh):
+    """v3897 (REG-3693) - agent tests red on the first `red_polls` polls (GitHub has not started the re-run yet), then green;
+    every proof run green"""
+
+    def __init__(self, red_polls):
+        _Gh.__init__(self, CUT)
+        self.polls, self.red_polls = 0, red_polls
+
+    def runs(self):
+        self.polls += 1
+        rs = [{"workflowName": wf, "headSha": SHA, "status": "completed", "conclusion": "success",
+               "createdAt": "2026-11-06T10:00:00Z", "databaseId": 100 + i} for i, wf in enumerate(CV.REQUIRED)]
+        if self.polls <= self.red_polls:
+            rs[0]["conclusion"] = "failure"
+        return rs
+
+
+class AReRunTheShipAskedIsNotRedYet(unittest.TestCase):
+    """* v3897 (REG-3693) THE POINT - MEASURED 11-11 09:13, v3896 try 2: the live shard watch (REG-3648) re-ran agent-suite (4)
+    for a runner cut-off; the next poll still read the run's old "completed, failure", and the ship stopped RED on the re-run
+    it had just asked for - the grace a re-run gets applied to the proof run only."""
+
+    def _ship(self, gh):
+        import shard_watch as SHW
+
+        def watch(sha, runs, run, say, seen, made, clock, root=None):
+            if 100 not in made:
+                made[100] = clock()
+                say("ship: REG-3648 MAKE-UP - re-running only the failed jobs of agent tests run 100 (cutoff)")
+                return "rerun", {"name": "agent-suite (4)"}
+            return None, None
+        with mock.patch.object(SHW, "watch_jobs_live", watch):
+            return _ship(gh)
+
+    def test_a_run_the_live_watch_just_re_ran_is_waited_on_and_ships(self):
+        gh = _GhAgentRerun(red_polls=2)
+        code, said = self._ship(gh)
+        self.assertFalse(any("GitHub graded" in x and "RED" in x for x in said), "the ship stopped on its own re-run: %s" % said)
+        self.assertEqual(code, 0, "\n".join(said))
+        self.assertIn(["git", "-c", "core.hooksPath=hooks", "push", "origin", "HEAD:main"], gh.calls)
+
+    def test_a_re_run_that_never_starts_is_still_red_after_the_grace(self):
+        gh = _GhAgentRerun(red_polls=10 ** 6)
+        code, said = self._ship(gh)
+        self.assertEqual(code, 1, "a run still red past the grace was waited on forever: %s" % said[-3:])
+        self.assertTrue(any("GitHub graded" in x and "agent tests" in x for x in said), said[-3:])
+        self.assertNotIn(["git", "-c", "core.hooksPath=hooks", "push", "origin", "HEAD:main"], gh.calls)
+
+
 class ThePricesMeasureThemselves(unittest.TestCase):
     def test_a_gap_past_the_jobs_bound_is_not_one_proof(self):
         t0 = 1793960000000
@@ -592,6 +641,16 @@ RED_PROOF = [
      "file": "tv/ship_when_green.py",
      "find": "                if rid not in held:\n",
      "replace": "                if True:\n", "matches": 1},
+    {"why": "v3897 (REG-3693) - the ship stops RED on the agent-tests re-run it asked a moment ago (v3896 try 2)",
+     "file": "tv/ship_when_green.py",
+     "find": "        red = [x for x in red if not asked_moments_ago(x, runs, sha, made, clock)]   # v3897 (REG-3693) - every required run\n",
+     "replace": "",
+     "matches": 1},
+    {"why": "v3897 (REG-3693) - a re-run that never starts is waited on forever (the grace never ends)",
+     "file": "tv/ship_when_green.py",
+     "find": "            return at is not None and clock() - at < MAKEUP_GRACE_S\n",
+     "replace": "            return at is not None\n",
+     "matches": 1},
     {"why": "#146 - an unreadable attempt reads as a first attempt",
      "file": "tv/ship_when_green.py",
      "find": "        return int(a) if a is not None else None\n",
