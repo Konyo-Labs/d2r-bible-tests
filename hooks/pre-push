@@ -35,17 +35,6 @@ REPO="$(git rev-parse --show-toplevel)" || exit 1
 # a second trap would REPLACE it silently. The last stamped line already carries the total.
 _PP_T0=$SECONDS
 _pp_el() { local s=$((SECONDS - _PP_T0)); printf '%dm%02ds' $((s / 60)) $((s % 60)); }
-# card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC. MEASURED 11-10: a feature-branch push sat 85 min in this
-# hook beside v3894's ship pre-flight and turned two of its laws red (they saw a push grading). A ship's OWN main push is
-# this hook's ancestor and is allowed; any other push waits until the ship lands. UNKNOWN (no process list) only warns.
-_pp_beside="$(python3 "$REPO/tv/tree_busy.py" --ship-beside $$ 2>/dev/null)"
-_pp_beside_rc=$?
-if [ "$_pp_beside_rc" -eq 3 ]; then
-  echo "pre-push: [$(_pp_el)] REFUSED - $_pp_beside"
-  exit 1
-elif [ "$_pp_beside_rc" -ne 0 ]; then
-  echo "pre-push: [$(_pp_el)] ⚠ could not tell whether a ship runs beside this push ($_pp_beside) - going on"
-fi
 
 # REG-2395 - WHAT THIS PUSH SHIPS IS ASKED ONCE, HERE, BEFORE THE SCRUB BELOW, AND HANDED ON BY VALUE. The tv-suites lane
 # asked `git diff @{push}..` itself, with no fallback and no word when it failed. MEASURED on speed/push-a2 (upstream
@@ -92,6 +81,19 @@ for _pp_v in $(git rev-parse --local-env-vars 2>/dev/null) GIT_DIR GIT_WORK_TREE
   unset "$_pp_v"
 done
 # <<< scrub-git-env
+
+# card #200 guard 2 (REG-3664) - ONE PUSH AT A TIME ON THIS MAC. MEASURED 11-10: a feature-branch push sat 85 min in this
+# hook beside v3894's ship pre-flight and turned two of its laws red (they saw a push grading). A ship's OWN main push is
+# this hook's ancestor and is allowed; any other push waits until the ship lands. UNKNOWN (no process list) only warns.
+# It runs AFTER the scrub (test_a_leaked_git_dir_never_writes_the_real_repo): v3895 round 1 put it above, and that law went red.
+_pp_beside="$(python3 "$REPO/tv/tree_busy.py" --ship-beside $$ 2>/dev/null)"
+_pp_beside_rc=$?
+if [ "$_pp_beside_rc" -eq 3 ]; then
+  echo "pre-push: [$(_pp_el)] REFUSED - $_pp_beside"
+  exit 1
+elif [ "$_pp_beside_rc" -ne 0 ]; then
+  echo "pre-push: [$(_pp_el)] ⚠ could not tell whether a ship runs beside this push ($_pp_beside) - going on"
+fi
 
 # v3861 - THE REF LINES ARE READ HERE, before the overlap below, so a ci-only push starts nothing on this Mac. Until v3861
 # the overlap ran before the read: every ci/* push of tv/ python started a background test_agent here and then left by
