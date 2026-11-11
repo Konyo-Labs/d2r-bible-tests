@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3898",
+  "ver": "v3899",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3898: hourly parts link into one game, CONNECTING is a named door, d2jsp sellers read, Shelf boxes fit",
+  "note": "v3899: No reel leaves unrecorded, each priest its own picture, one d2jsp vote rule, the likely reds run first",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
