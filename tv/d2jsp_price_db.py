@@ -16,7 +16,7 @@ every PC (src), and prices an item from them:
     commutative union (newest seenAt wins per post), so PCs can trade their DBs without losing or doubling a post.
 No number is invented: an item with no weighted post prices as None (UNKNOWN), never 0.
 """
-import json, math, os, tempfile, time
+import json, math, os, re, tempfile, time
 
 SCHEMA = 1
 HALF_LIFE_DAYS = 30.0
@@ -117,24 +117,43 @@ def ingest(db, reading, src, now=None, key=None):
     for p in reading.get("posts") or []:
         if not isinstance(p, dict):
             continue
-        try:
-            fg = float(p.get("fg"))
-        except (TypeError, ValueError):
-            continue
-        if fg <= 0 or _day_ts(p.get("day")) is None:
+        fg = price_of(p.get("fg"))                  # REG-3791 - a post without a price is not a post: skipped whole
+        if fg is None or _day_ts(p.get("day")) is None:
             continue
         pk = _post_key(p)
         row = {"fg": fg, "day": str(p.get("day"))[:10], "link": p.get("link") or "", "w": float(p.get("w", 1)),
-               "perfect": p.get("perfect") is True, "src": str(src or "?"), "seenAt": now}
+               "perfect": p.get("perfect") is True, "src": str(src or "?"), "seenAt": now,
+               "author": author_of(p)}                # REG-3790 - every row says its seller; None = not read, never invented
         if p.get("out"):
             row["out"] = str(p["out"])[:80]
-        who = p.get("author")
-        if isinstance(who, str) and who.strip():
-            row["author"] = who.strip()[:32]
-        if pk not in it["posts"]:
+        old_row = it["posts"].get(pk)
+        if old_row is None:
             new += 1
+        elif row["author"] is None and author_of(old_row):
+            row["author"] = author_of(old_row)       # REG-3790 - a re-read that did not see the seller keeps the known one
         it["posts"][pk] = row
     return new
+
+
+def price_of(fg):
+    """REG-3791 (#151, his rule: "a post without a price is not a post") - the post's price as a finite fg > 0, or None.
+    ingest kept any float(fg) > 0: "inf", "nan" (nan <= 0 is False) and True (float(True) == 1.0) were stored as posts,
+    though counts() never priced them. One test for both, so the DB never holds a row the price would not weigh."""
+    if isinstance(fg, bool):
+        return None
+    try:
+        v = float(fg)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) and v > 0 else None
+
+
+def author_of(p):
+    """REG-3790 - the seller a stored or read row names, folded to its written form, or None (unknown; never invented)."""
+    who = p.get("author") if isinstance(p, dict) else None
+    if isinstance(who, str) and who.strip():
+        return who.strip()[:32]
+    return None
 
 
 def counts(p):
@@ -144,14 +163,7 @@ def counts(p):
     fg|day|roll - no topic id to recover a link from). Those stay ON RECORD - nothing is deleted - and out of the price."""
     if not isinstance(p, dict) or not is_post_link(p.get("link")):
         return False
-    fg = p.get("fg")
-    if isinstance(fg, bool):
-        return False                       # REG-3354 - float(True) is 1.0: a flag is not a price
-    try:
-        v = float(fg)
-    except (TypeError, ValueError):
-        return False
-    return math.isfinite(v) and v > 0      # REG-3354 - "inf" parses as a price and would own every median
+    return price_of(p.get("fg")) is not None   # REG-3354 - True / "inf" are not prices (one test with ingest, REG-3791)
 
 
 def is_post_link(link):
@@ -188,28 +200,101 @@ def wilson_low(ok, n, z=Z):
     return max(0.0, (c - m) / d)
 
 
-def _age_weight(p, now):
-    """The same age and weight _tier uses. One formula, so a proof cannot drift from the price."""
+def _age_weight(p, now, share=None):
+    """The same age and weight _tier uses. One formula, so a proof cannot drift from the price.
+    REG-3792 - `share` is the row's part of its one vote (vote_shares); None reads the stored w as before."""
     t = _day_ts(p["day"])
     age = max(0.0, (now - t) / 86400.0)
-    w = max(0.0, min(1.0, p.get("w", 1))) * 0.5 ** (age / HALF_LIFE_DAYS)
+    base = share if share is not None else max(0.0, min(1.0, p.get("w", 1)))
+    w = base * 0.5 ** (age / HALF_LIFE_DAYS)
     return age, w
+
+
+_TOPIC = re.compile(r"[?&;]t=(\d+)")
+
+
+def topic_of(link):
+    """The forum topic a post link opens (t=...), or None. Two posts in one topic are one listing."""
+    m = _TOPIC.search(str(link or ""))
+    return m.group(1) if m else None
+
+
+def vote_shares(posts):
+    """REG-3792 (#151 / #180, his rule: "the same seller is one post and one price"; a duplicate topic counts once) ->
+    [share per post, in order]. MEASURED 11-11 on his console DB: Enigma perfect weighed topic 110566436 at w 0.5 beside its
+    duplicate 110552180 at w 1.0 - 1.5 votes for one listing. The parser shares a vote only between rows on ONE page
+    (d2jspOneVotePerPost), and a seller's two topics are rarely on one page. The vote is cast here, over every stored row
+    of the tier: rows that share a seller (author), a topic (t=), or a topic declared the same listing (sameAs) are ONE
+    group, and a group never weighs more than one vote - when its rows' stored w add up to more than 1 they are scaled to
+    1, in proportion. A group at or under 1 keeps its stored w (a shop post's 1/28 row stays 1/28: its other rows were
+    other prices). A row set aside (w 0) stays 0. Unknown sellers in different topics stay a group each - never guessed.
+    Topics stay on record; nothing is deleted."""
+    parent = {}
+
+    def find(x):
+        while parent.setdefault(x, x) != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    base = []
+    for i, p in enumerate(posts):
+        try:
+            w = float(p.get("w", 1))
+        except (TypeError, ValueError):
+            w = 0.0
+        w = max(0.0, min(1.0, w)) if math.isfinite(w) else 0.0
+        base.append(w)
+        if w <= 0:
+            continue
+        me = "row:%d" % i
+        find(me)
+        who = author_of(p)
+        if who:
+            union(me, "seller:" + who.lower())
+        t = topic_of(p.get("link"))
+        if t:
+            union(me, "topic:" + t)
+        same = str(p.get("sameAs") or "").strip()
+        if same.isdigit():
+            union(me, "topic:" + same)
+    total = {}
+    for i, w in enumerate(base):
+        if w > 0:
+            r = find("row:%d" % i)
+            total[r] = total.get(r, 0.0) + w
+    out = []
+    for i, w in enumerate(base):
+        if w <= 0:
+            out.append(0.0)
+            continue
+        t = total[find("row:%d" % i)]
+        out.append(w / t if t > 1.0 else w)
+    return out
 
 
 def _tier(posts, now):
     pairs = []
-    for p in posts:
-        _age, w = _age_weight(p, now)
+    votes = 0.0
+    for p, share in zip(posts, vote_shares(posts)):
+        _age, w = _age_weight(p, now, share)
         if w > 0:
             pairs.append((p["fg"], w))
+            votes += share
     if not pairs:
-        return {"fg": None, "n": 0, "nEff": 0.0, "conf": 0.0}
+        return {"fg": None, "n": 0, "nEff": 0.0, "conf": 0.0, "votes": 0.0}
     mid = _wmedian(pairs)
     sw = sum(w for _, w in pairs)
     n_eff = sw * sw / sum(w * w for _, w in pairs)
     ok = sum(w for v, w in pairs if abs(v - mid) <= AGREE * mid) / sw * n_eff
     fg = int(mid) if mid == int(mid) else round(mid, 1)
-    return {"fg": fg, "n": len(pairs), "nEff": round(n_eff, 2), "conf": round(wilson_low(ok, n_eff), 3)}
+    return {"fg": fg, "n": len(pairs), "nEff": round(n_eff, 2), "conf": round(wilson_low(ok, n_eff), 3),
+            "votes": round(votes, 3)}
 
 
 def price(db, item, now=None, key=None):
@@ -236,8 +321,8 @@ def _band(fg, w, mid):
 
 def _median_of(posts, now):
     pairs = []
-    for p in posts:
-        _age, w = _age_weight(p, now)
+    for p, share in zip(posts, vote_shares(posts)):
+        _age, w = _age_weight(p, now, share)
         if w > 0:
             pairs.append((p["fg"], w))
     return _wmedian(pairs) if pairs else None
@@ -257,12 +342,16 @@ def explain(db, item, now=None, key=None):
     mid_n = _median_of(normal, now)
     mid_p = _median_of(perfect, now)
     rows = []
+    share_of = {}
+    for tier in (normal, perfect):
+        for p, share in zip(tier, vote_shares(tier)):
+            share_of[id(p)] = share
     for p in posts:
         try:
             fg = float(p.get("fg"))
         except (TypeError, ValueError):
             continue
-        age, w = _age_weight(p, now)
+        age, w = _age_weight(p, now, share_of.get(id(p)))
         perfect_row = bool(p.get("perfect"))
         seen = p.get("seenAt")
         try:
@@ -278,6 +367,8 @@ def explain(db, item, now=None, key=None):
             "src": source_name(p.get("src")),
             "seenAt": seen_n,
             "out": str(p.get("out") or "")[:80],
+            "author": author_of(p),                               # REG-3790 - None: the seller was not read
+            "vote": round(share_of.get(id(p), 0.0), 3),           # REG-3792 - its part of one seller/topic vote
             "ageDays": round(age, 2),
             "decayed": round(w, 4),
             "tier": "perfect" if perfect_row else "normal",
@@ -342,6 +433,99 @@ def merge(a, b):
                 if cur is None or (p.get("seenAt", 0), json.dumps(p, sort_keys=True)) > (cur.get("seenAt", 0), json.dumps(cur, sort_keys=True)):
                     o["posts"][pk] = p
     return out
+
+
+def import_backfill(db, other, now=None):
+    """REG-3790 (#151) - fold a backfill's price file (prices-shard*.json, schema 1) into the stored DB. -> stats dict.
+
+    IDEMPOTENT: a post already stored (same post key) is never added again and never re-stamped, so importing the same
+    file twice changes nothing (stats "new" 0, the DB byte-identical). The one thing a later file may add to a stored
+    row is its seller, when the stored row has none - a known seller is never replaced or cleared.
+    Every row carries "author": the seller, or None when the page did not name one (the 11-11 snapshot: 1,832 rows, 3
+    with an author) - None is kept as None, never filled from a guess.
+    A post without a price (or without its forum link - counts()) is not a post: it is skipped whole and counted.
+    readAt is the newer of the two, so an import never makes an item look fresher than its real last read."""
+    stats = {"items": 0, "new": 0, "authorFilled": 0, "kept": 0, "skippedNoPrice": 0, "skippedNoLink": 0}
+    if not isinstance(db, dict) or db.get("schema") != SCHEMA:
+        raise ValueError("the stored price DB is not schema %d" % SCHEMA)
+    if not isinstance(other, dict) or other.get("schema") != SCHEMA:
+        raise ValueError("the backfill file is not schema %d" % SCHEMA)
+    items = db.setdefault("items", {})
+    for k0, src_it in sorted((other.get("items") or {}).items()):
+        if not isinstance(src_it, dict):
+            continue
+        k = key_of(k0)
+        if not k:
+            continue
+        it = items.get(k)
+        touched = False
+        for pk, p in sorted((src_it.get("posts") or {}).items()):
+            if not isinstance(p, dict):
+                continue
+            fg = price_of(p.get("fg"))
+            if fg is None or _day_ts(p.get("day")) is None:
+                stats["skippedNoPrice"] += 1
+                continue
+            if not is_post_link(p.get("link")):
+                stats["skippedNoLink"] += 1
+                continue
+            if it is None:
+                it = items.setdefault(k, {"item": str(src_it.get("item") or k0), "posts": {}, "readAt": 0})
+            cur = it["posts"].get(pk)
+            if cur is not None:
+                if cur.get("author") is None and "author" not in cur:
+                    cur["author"] = None                  # an old row learns the field, with no seller invented
+                    touched = True
+                if author_of(cur) is None and author_of(p):
+                    cur["author"] = author_of(p)
+                    stats["authorFilled"] += 1
+                    touched = True
+                else:
+                    stats["kept"] += 1
+                continue
+            row = {"fg": fg, "day": str(p.get("day"))[:10], "link": str(p.get("link")), "w": float(p.get("w", 1)),
+                   "perfect": p.get("perfect") is True, "src": str(p.get("src") or "backfill"),
+                   "seenAt": float(p.get("seenAt") or 0), "author": author_of(p)}
+            if p.get("out"):
+                row["out"] = str(p["out"])[:80]
+            if str(p.get("sameAs") or "").strip().isdigit():
+                row["sameAs"] = str(p["sameAs"]).strip()
+            it["posts"][pk] = row
+            stats["new"] += 1
+            touched = True
+        if it is not None:
+            ra = max(float(it.get("readAt") or 0), float(src_it.get("readAt") or 0))
+            if ra != float(it.get("readAt") or 0):
+                it["readAt"] = ra
+                touched = True
+            if touched:
+                stats["items"] += 1
+    return stats
+
+
+def mark_same_listing(db, item, topic, of_topic, key=None):
+    """REG-3792 - declare that `topic` is the same listing as `of_topic` (a repost the forum shows, its seller unread).
+    Both rows stay on record; vote_shares makes them one vote. -> number of rows marked. Nothing is deleted or guessed:
+    the caller names both topic ids, and a topic the item does not hold marks nothing."""
+    topic, of_topic = str(topic).strip(), str(of_topic).strip()
+    if not (topic.isdigit() and of_topic.isdigit()) or topic == of_topic:
+        return 0
+    n = 0
+    have_of = False
+    for k in _keys(item, key):
+        it = ((db or {}).get("items") or {}).get(k)
+        for p in ((it or {}).get("posts") or {}).values():
+            if topic_of(p.get("link")) == of_topic:
+                have_of = True
+    if not have_of:
+        return 0
+    for k in _keys(item, key):
+        it = ((db or {}).get("items") or {}).get(k)
+        for p in ((it or {}).get("posts") or {}).values():
+            if topic_of(p.get("link")) == topic and p.get("sameAs") != of_topic:
+                p["sameAs"] = of_topic
+                n += 1
+    return n
 
 
 def load(path):
