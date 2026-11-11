@@ -3548,6 +3548,7 @@ def _reap_record(reel, frames, removed, shelf, by="recorder-disk-floor", names=N
     RECORDER took under disk pressure, so an emergency deletion can never again leave no trace.
     Joining it into the tombstone proper is the retention lane's job, not the recorder's.
     ⚠ `frames=-1` means the count could not be taken — never a confident 0.
+    -> True when the line was written, False (and said out loud) when it was not.
     """
     try:
         path = _reap_log_path()
@@ -3568,8 +3569,13 @@ def _reap_record(reel, frames, removed, shelf, by="recorder-disk-floor", names=N
             row["readOwed"] = river.get("readOwed")
         with open(path, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
+        return True
+    except Exception as _rec_e:
+        # REG-3726 (#217) - this runs AFTER the deletion it records; a failed line was swallowed, so a reel the disk floor
+        # took could leave no trace at all. Say it, loud, with the reel: the river's corroborator then names the gap.
+        _dbg("REAP RECORD NOT WRITTEN (%s: %s) - %s left the shelf with no reap-log line"
+             % (type(_rec_e).__name__, str(_rec_e)[:80], reel))
+        return False
 
 
 def _reel_capture_ms(name):

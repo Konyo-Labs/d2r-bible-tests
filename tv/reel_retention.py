@@ -1822,8 +1822,8 @@ def _tombstone(hist, cands):
     was pruned in August" became the same answer.
 
     Written BEFORE the delete and flushed to disk, so a crash mid-delete leaves a record of MORE
-    than was removed rather than less. Returns the rows it wrote; a failure here is reported and
-    does NOT block the delete he asked for — but it is never silent.
+    than was removed rather than less. Returns the rows it wrote. REG-3725 (#217): a failure here
+    now BLOCKS the delete - apply_plan removes nothing it could not record.
     """
     rows = []
     for c in cands or []:
@@ -2032,6 +2032,16 @@ def apply_plan(p, yes=False):
         tomb = _tombstone(p["hist"], go)
     except Exception as e:
         tomb_why = str(e)[:160]
+    if tomb is None and go:
+        # REG-3725 (#217) - NO RECORD, NO DELETE. A closure ledger that would not write used to be reported and the
+        # rmtree ran anyway, so a reel could leave the shelf with no row naming it - the shape of #217 (34 reels gone on
+        # 10-24, no deleter's record). Every reel stays; the next pass retries once the ledger writes again.
+        return {"ok": False, "why": "the closure ledger would not write (%s) - nothing deleted, so no reel leaves the "
+                                    "shelf unrecorded" % (tomb_why or "no reason given"),
+                "removed": [], "failed": [{"reel": c["reel"], "why": "HELD, nothing deleted - its closure-ledger row "
+                                                                     "could not be written"} for c in go] + failed,
+                "keptPictures": {}, "freedMb": 0.0, "trimmed": 0, "freedMbPlanned": p.get("freeMb", 0),
+                "tombstoned": None, "tombstonePath": _tombstone_path(p.get("hist")), "tombstoneWhy": tomb_why}
     freed_by = {}
     for c in go:
         path = os.path.join(p["hist"], c["reel"])

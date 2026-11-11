@@ -13917,6 +13917,11 @@ GATES = [
          needs_app=False,
          why="v3899 (#91, GrokBot #230 6803962990) - the Summoner wore his sprite on his Boss card and his old render in "
              "BOSS_PORTRAIT; the TV·D area art still gave the act bosses their stone-backed renders. One file per boss"),
+    Gate("test_no_reel_leaves_without_its_record",
+         [sys.executable, os.path.join(HERE, "test_no_reel_leaves_without_its_record.py")], 60,
+         needs_app=False,
+         why="v3899 (#217, REG-3725) - 34 reels left his Mac's shelf with no deleter's record; apply_plan kept a failed "
+             "closure-ledger write as tombstoneWhy and ran the rmtree anyway. No record, no delete: every reel is HELD"),
     Gate("test_the_shelf_header_counts_every_pc",
          [sys.executable, os.path.join(HERE, "test_the_shelf_header_counts_every_pc.py")], 120,
          why="v3899 (#213, GrokBot #230 6798971834) - his Mac's own Shelf header (best run, most reads, streak, the 14-day "
