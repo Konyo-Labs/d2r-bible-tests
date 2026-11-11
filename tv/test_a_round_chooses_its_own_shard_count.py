@@ -462,8 +462,11 @@ class TheAgentSuiteChoosesItsOwnSliceCount(unittest.TestCase):
             # twice. The default points into this case's temp dir while it runs, and a refused call writes nothing there.
             fake_table = os.path.join(tmp, "committed_gate_costs.json")
             with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(GC, "TABLE", fake_table):
+                # v3899 (the Grok CLI's second look on v3897) - a flag given twice, or one gate_costs does not read
                 for argv in (["gate_costs.py", log, "--out"], ["gate_costs.py", "--out", "--base", base, log],
-                             ["gate_costs.py", log, "--base"]):
+                             ["gate_costs.py", log, "--base"],
+                             ["gate_costs.py", "--out", "o1.json", "--out", "o2.json", log],
+                             ["gate_costs.py", "--frob", log]):
                     with self.subTest(argv=argv[1:]):
                         self.assertEqual(GC.main(argv), 2, "a flag with no path after it was read")
             self.assertFalse(os.path.exists(os.path.join(tmp, "--base")), "a refused call still wrote a table named --base")
@@ -529,6 +532,15 @@ class TheMacReadsTheSetsOwnSize(unittest.TestCase):
             with io.open(files[2], "w", encoding="utf-8") as fh:
                 json.dump({"entries": {}, "shard": {"k": 3, "n": 3}}, fh)
             self.assertIsNone(PKM.set_gap(files, 22), "a set whose manifests agree was refused, or sized by the fallback")
+            # v3899 (the Grok CLI's second look on v3897) - a manifest STATING an impossible size is corrupt, never filled in
+            for bad in (0, -1, True, "3"):
+                with self.subTest(n=bad):
+                    with io.open(files[2], "w", encoding="utf-8") as fh:
+                        json.dump({"entries": {}, "shard": {"k": 3, "n": bad}}, fh)
+                    self.assertIn("impossible set size", PKM.set_gap(files, 3) or "",
+                                  "a manifest naming n=%r was read as no size and the set sized by the fallback" % (bad,))
+            with io.open(files[2], "w", encoding="utf-8") as fh:
+                json.dump({"entries": {}, "shard": {"k": 3, "n": 3}}, fh)
             for f in files:
                 with io.open(f, "w", encoding="utf-8") as fh:
                     fh.write("{")
@@ -570,6 +582,16 @@ class TheProofKeyFormatIsDeclaredAndCarried(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3899 (the Grok CLI on v3897) - a manifest stating n=0 is read as no size and sized by the workflow's count",
+     "file": "tv/proof_keys_mac.py",
+     "find": "            return (\"a shard manifest states an impossible set size (n = %r) - a corrupt manifest, never sized by the \"\n",
+     "replace": "            continue\n            return (\"a shard manifest states an impossible set size (n = %r) - a corrupt manifest, never sized by the \"\n",
+     "matches": 1},
+    {"why": "v3899 (the Grok CLI on v3897) - a flag given twice is read again: its second copy becomes two CI logs",
+     "file": "tv/gate_costs.py",
+     "find": "    if _stray:\n        print(\"usage: %s left over",
+     "replace": "    if False:\n        print(\"usage: %s left over",
+     "matches": 1},
     {"why": "v3897 (REG-3691) - a flag with no path after it is read again (IndexError, or a table written to '--base')",
      "file": "tv/gate_costs.py",
      "find": "            if not val or val.startswith(\"--\"):\n",

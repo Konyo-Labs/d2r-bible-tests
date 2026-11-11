@@ -102,7 +102,8 @@ class TheJudge(unittest.TestCase):
         self.assertEqual(g["state"], "green", "the optional run the ship cancelled painted this version's CI red: %r" % (g,))
         # v3898 (the Grok CLI's look on v3897) - green, and the sentence never says a cancelled run succeeded
         self.assertNotIn("every run on", g["why"], "the green sentence says every run succeeded - one was cancelled: %r" % g["why"])
-        self.assertIn("the ship cancelled the optional %s" % beside[0], g["why"])
+        self.assertIn("the optional %s was cancelled" % beside[0], g["why"])
+        self.assertNotIn("the ship cancelled", g["why"], "v3899 - the row claims who cancelled a run it cannot know")
         ok = CW.judge([_run(PUBLISH, 30, "completed", "success", rid=6)], SHA, now=T0 + 99 * 60)
         self.assertIn("every run on", ok["why"], "BASELINE - with nothing cancelled the plain sentence stays")
         for name in ("📺 TV DIABLO — agent tests", PUBLISH):

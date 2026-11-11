@@ -111,6 +111,19 @@ def shard_sizes(files):
 def set_gap(files, fallback_n):
     """v3897 (REG-3692) - is this downloaded artifact ONE whole set? Its size is the one n its manifests name, the workflow's
     count (fallback_n) only when no manifest says; manifests that disagree are refused. -> None when whole, else why"""
+    # v3899 (the Grok CLI's second look on v3897) - a manifest that STATES a size it cannot have (0, negative, a bool, not
+    # a number) was read as 'no size' and the set sized by the workflow's count: a corrupt manifest passed as whole. It is
+    # refused now; a manifest that states no size at all still falls back.
+    for f in files or []:
+        try:
+            with io.open(f, encoding="utf-8") as fh:
+                sh = (json.load(fh) or {}).get("shard") or {}
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(sh, dict) and "n" in sh and not (isinstance(sh["n"], int) and not isinstance(sh["n"], bool)
+                                                       and sh["n"] > 0):
+            return ("a shard manifest states an impossible set size (n = %r) - a corrupt manifest, never sized by the "
+                    "workflow's count" % (sh["n"],))
     sizes = shard_sizes(files)
     if len(sizes) > 1:
         return ("the shard manifests disagree on the set's size (n = %s) - two rounds' caches, not one set"

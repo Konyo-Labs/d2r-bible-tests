@@ -55,6 +55,14 @@ test_a_shard_that_fails_twice_in_three_rounds_is_flagged_to_split asked choose_s
 
 ### REG-3721 - THE EVERY-SHIP LAW WENT RED ON GITHUB AS THE HISTORY GREW: IT COUNTED ONLY OLD-STYLE COMMITS (v3898's round)
 MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v3846 has a commit in reach (a shallow clone?)". The law counted a version as checked only through "vNNNN: " feature subjects; since ~v3880 fixes are written "fix: vNNNN - ...", so the newest old-style subject (v3889) fell to depth 203 - past CI's 200-commit clone - while v3897's and v3898's own stamps sat in reach. Reproduced locally on a 200-deep clone (the old law fails with GitHub's words). A version whose stamp is in reach now counts as checked (0 feature commits); a clone with no stamp in reach still fails. Law: test_every_ship_lists_all_its_items (+1 case, +1 red-proof).
+### REG-3720 - A SHARD MANIFEST STATING AN IMPOSSIBLE SIZE WAS READ AS 'NO SIZE' AND THE SET SIZED BY THE WORKFLOW (v3899, the Grok CLI's second look on v3897)
+proof_keys_mac.shard_sizes skipped a manifest whose shard.n was 0, negative, a bool or not a number, and set_gap then sized the set from the workflow's PROOF_SHARDS - a corrupt manifest passed as a whole set. set_gap refuses it now ("a shard manifest states an impossible set size"); a manifest that states no size still falls back. Law: test_a_round_chooses_its_own_shard_count (+4 subcases, +1 red-proof).
+
+### REG-3719 - gate_costs.py READ A REPEATED OR UNKNOWN FLAG AS A CI LOG (v3899, the Grok CLI's second look on v3897)
+`--out A --out B` consumed the first --out and left `--out B` in the log list, read as two CI logs; an unknown `--frob` was read as a log too. Anything left that starts with "--" is refused with usage and exit 2, nothing written. Law: test_a_round_chooses_its_own_shard_count (+2 subcases, +1 red-proof).
+
+### REG-3718 - THE CI ROW SAID THE SHIP CANCELLED A RUN IT CANNOT KNOW WHO CANCELLED (v3899, the Grok CLI's second look on v3897)
+REG-3716's green sentence said "the ship cancelled the optional <run>"; quota or a person can cancel that optional run too. It now says the optional run "was cancelled (not required - the ship cancels it once GitHub vouches, and GitHub may cancel it too)". Law: test_a_ci_run_past_75_minutes_alerts (+1 assertion).
 
 ### REG-3717 - THE NEVER-SAW ROW'S FOLLOW-UP COMMAND ASKED FOR A DIFFERENT SET THAN IT NAMED (v3898, the Grok CLI's look on v3897)
 second_eye_ledger.agreement printed `python3 tv/second_eye_run.py <v> --files` with the first six names joined by spaces: a seventh unseen file was dropped and a path with a space split into two arguments. The command now carries every name, shell-quoted (the prose may still stop at six with '+N more'). Law: test_a_partial_look_is_not_agreement (+1 case, +1 red-proof).

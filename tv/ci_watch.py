@@ -206,13 +206,15 @@ def judge(runs, sha, now=None, jobs=None, limit=OVERRUN_MIN):
         out.update(state="running", why="%d run(s) on %s still going, the longest %d min of %d: %s" % (
             len(going), sha[:9], int(out["minutes"] or 0), limit, ", ".join(going[:6])))
     else:
-        # v3898 (the Grok CLI's look on v3897, #231) - a run the ship cancelled did NOT succeed: the sentence names it. MEASURED:
+        # v3899 (the Grok CLI's second look on v3897, #231 6800396866) - and it never says WHO cancelled it: quota or a
+        # person can cancel the optional run too. v3898 (its first look) - a cancelled run did NOT succeed: the sentence names it. MEASURED:
         # required runs green + the optional Windows run cancelled read "every run on <sha> succeeded" - green is right
         # (REG-3687), the words were not.
         out.update(state="green", why=("every run on %s succeeded inside %d min (the longest %d min)" % (
             sha[:9], limit, int(out["minutes"] or 0))) if not beside else (
-            "every required run on %s succeeded inside %d min (the longest %d min); the ship cancelled the optional %s "
-            "once GitHub vouched" % (sha[:9], limit, int(out["minutes"] or 0), ", ".join(beside))))
+            "every required run on %s succeeded inside %d min (the longest %d min); the optional %s was cancelled "
+            "(not required - the ship cancels it once GitHub vouches, and GitHub may cancel it too)"
+            % (sha[:9], limit, int(out["minutes"] or 0), ", ".join(beside))))
     return out
 
 

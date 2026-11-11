@@ -207,6 +207,14 @@ def main(argv):
             else:
                 base = val
             rest = rest[:i] + rest[i + 2:]
+    # v3899 (the Grok CLI's second look on v3897) - a flag given twice left its second copy in the log list, read as two
+    # CI logs ("--out" and its path), and an unknown flag was read as a log too: anything left that starts with "--" is
+    # refused, never guessed
+    _stray = [w for w in rest if w.startswith("--")]
+    if _stray:
+        print("usage: %s left over - a flag given twice, or one gate_costs does not read - nothing written"
+              % ", ".join(_stray))
+        return 2
     costs = from_logs(rest)
     if not costs:
         print("no per-gate rows found in %s — nothing written (a table of nothing is not a table)" % rest)
