@@ -110,7 +110,35 @@ class AChallengeStopsTheBackfill(unittest.TestCase):
         self.assertEqual(os.path.dirname(os.path.abspath(R.__file__)), HERE)
 
 
+class AnUnreadableConsoleDbAgeStandsAside(unittest.TestCase):
+    """REG-3730 (v3899's pre-flight, the swallow ratchet) - the runner stands aside while the console just wrote its price
+    DB. An age that will not read was "0 s waited"; it is UNKNOWN now, and UNKNOWN waits the whole gap. No DB at all
+    (nothing to collide with) still waits nothing."""
+
+    def _wait(self, exc):
+        from unittest import mock
+        slept = []
+        with mock.patch.object(R.os.path, "getmtime", side_effect=exc), \
+                mock.patch.object(R.time, "sleep", side_effect=lambda s: slept.append(s)), \
+                mock.patch.object(R, "log", lambda *a, **k: None):
+            got = R.wait_if_console_just_asked("/nowhere", gap=60)
+        return got, slept
+
+    def test_an_unreadable_age_waits_the_whole_gap(self):
+        got, slept = self._wait(PermissionError("denied"))
+        self.assertEqual((got, slept), (60, [60]), "an unreadable DB age was read as quiet - the run did not stand aside")
+
+    def test_baseline_no_db_waits_nothing(self):
+        got, slept = self._wait(FileNotFoundError("absent"))
+        self.assertEqual((got, slept), (0, []))
+
+
 RED_PROOF = [
+    {"why": "REG-3730 - an unreadable console DB age reads as quiet again, and the backfill runs beside a console write",
+     "file": "tv/d2jsp_backfill_run.py",
+     "find": "        age = 0.0\n",
+     "replace": "        age = None\n",
+     "matches": 1},
     {"why": "REG-3795 - a challenge page is folded and the run goes on searching",
      "file": "tv/d2jsp_backfill_run.py",
      "find": "            write_flag(challenge_path(root), why)\n            log(\"CHALLENGE/RATE-LIMIT: %s - stopping this shard\" % why)\n            return 2\n",

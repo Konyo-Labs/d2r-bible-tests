@@ -389,7 +389,14 @@ def wait_if_console_just_asked(repo, gap=CONSOLE_DB_QUIET_S):
     path = console_db_path(repo)
     try:
         age = time.time() - os.path.getmtime(path)
-    except OSError:
+    except FileNotFoundError:
+        age = None          # no price DB at all: nothing the console wrote can collide with this run
+    except OSError as e:
+        # REG-3730 (v3899's pre-flight, the swallow ratchet) - an age that will not read is UNKNOWN, never "0 s waited":
+        # the console may have written a moment ago, so stand aside the whole gap rather than guess it is quiet
+        log("the console's price DB age is UNKNOWN (%s) - standing aside the full %ds" % (type(e).__name__, gap))
+        age = 0.0
+    if age is None:
         return 0
     if age < gap:
         wait = gap - age
