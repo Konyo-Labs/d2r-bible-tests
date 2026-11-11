@@ -102,7 +102,7 @@ class TestTheShelfShowsReelsBeforeItShowsCharts(unittest.TestCase):
                              "over it means nothing" % (marker, n))
 
 
-RED_PROOF = [{'why': 'duplicating a marker inside the assembly makes every index comparison over it meaningless — the uniqueness case is the only thing standing between this law and a verdict computed from whichever copy .index() happened to find first. ⚠ v3359: the two proofs this replaces defeated ORDER cases that his v3289 ruling superseded, and they were retired with them', 'file': 'control_ui.html', 'find': '      + _shHighlights()\n      + timelineDiv\n', 'replace': '      + _shHighlights()\n      + timelineDiv\n      + _shHighlights()\n', 'matches': 1}]
+RED_PROOF = [{'why': 'duplicating a marker inside the assembly makes every index comparison over it meaningless — the uniqueness case is the only thing standing between this law and a verdict computed from whichever copy .index() happened to find first. ⚠ v3359: the two proofs this replaces defeated ORDER cases that his v3289 ruling superseded, and they were retired with them', 'file': 'control_ui.html', 'find': '      + \'<div id="sh-hi-wrap">\' + _shHighlights() + _shFleetSay() + \'</div>\'   /* v3899 (#213) - repainted when every PC answers */\n      + timelineDiv\n', 'replace': '      + \'<div id="sh-hi-wrap">\' + _shHighlights() + _shFleetSay() + \'</div>\'   /* v3899 (#213) - repainted when every PC answers */\n      + timelineDiv\n      + _shHighlights()\n', 'matches': 1}]
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

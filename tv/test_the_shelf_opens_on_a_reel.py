@@ -128,8 +128,8 @@ RED_PROOF = [
     {
         "why": "putting the strip back below the list un-does what he asked for twice",
         "file": "tv/control_ui.html",
-        "find": "      + _shHighlights()\n      + timelineDiv\n      + searchBar + body",
-        "replace": "      + searchBar + body\n      + timelineDiv\n      + _shHighlights()",
+        "find": "      + '<div id=\"sh-hi-wrap\">' + _shHighlights() + _shFleetSay() + '</div>'   /* v3899 (#213) - repainted when every PC answers */\n      + timelineDiv\n      + searchBar + body",
+        "replace": "      + searchBar + body\n      + timelineDiv\n      + '<div id=\"sh-hi-wrap\">' + _shHighlights() + _shFleetSay() + '</div>'\n",
         "matches": 1,
     },
     {

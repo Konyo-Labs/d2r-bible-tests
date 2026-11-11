@@ -183,7 +183,7 @@ RED_PROOF = [
     {"why": "v3849 - no age decay", "file": "d2jsp_price_db.py",
      "find": " * 0.5 ** (age / HALF_LIFE_DAYS)", "replace": "", "matches": 1},
     {"why": "v3849 - an outlier (w 0) weighs like any post", "file": "d2jsp_price_db.py",
-     "find": "w = max(0.0, min(1.0, p.get(\"w\", 1)))", "replace": "w = 1.0", "matches": 1},
+     "find": "    base = share if share is not None else max(0.0, min(1.0, p.get(\"w\", 1)))", "replace": "    base = 1.0", "matches": 1},
     {"why": "v3849 - perfect posts priced with the normal ones", "file": "d2jsp_price_db.py",
      "find": "\"normal\": _tier([p for p in priced if not p.get(\"perfect\")], now)",
      "replace": "\"normal\": _tier(priced, now)", "matches": 1},
