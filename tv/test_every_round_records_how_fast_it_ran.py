@@ -46,6 +46,31 @@ class EveryRoundRecordsHowFastItRan(unittest.TestCase):
         self.assertEqual((r["queueMaxMin"], r["slowestJob"], r["slowestMin"], r["wallMin"]), (2.0, "shard 2/14", 20.0, 23.0))
         self.assertEqual(r["queueAvgMin"], 1.0)
 
+    def test_a_job_our_own_cancel_cut_short_is_never_a_speed(self):
+        """v3896 (REG-3683) - the ship cancels the optional Windows run once GitHub vouches; that run is not a timing"""
+        t = "2026-11-11T02:%02d:00Z"
+        cut = {"workflow": "proof-keys windows", "jobs": [
+            {"name": "w1", "conclusion": "cancelled", "created_at": t % 0, "started_at": t % 1, "completed_at": t % 43}]}
+        mixed = {"workflow": "agent tests", "jobs": [
+            {"name": "a", "conclusion": "success", "created_at": t % 0, "started_at": t % 1, "completed_at": t % 21},
+            {"name": "b", "conclusion": "cancelled", "created_at": t % 0, "started_at": t % 1, "completed_at": t % 50}]}
+        rows = S.measure([cut, mixed])
+        self.assertEqual([r["workflow"] for r in rows], ["agent tests"], "a run our own cancel cut short became a speed")
+        self.assertEqual((rows[0]["slowestMin"], rows[0]["cancelled"]), (20.0, 1), rows)
+
+    def test_the_fetch_asks_each_jobs_conclusion(self):
+        seen = []
+
+        def run(cmd, **k):
+            seen.append(cmd)
+            import subprocess as _sp
+            if cmd[:3] == ["gh", "run", "list"]:
+                return _sp.CompletedProcess(cmd, 0, '[{"databaseId": 1, "name": "w"}]', "")
+            return _sp.CompletedProcess(cmd, 0, "", "")
+        S.fetch("abc", "o/r", run=run)
+        jq = [c[c.index("-q") + 1] for c in seen if "-q" in c]
+        self.assertTrue(jq and "conclusion" in jq[0], "the job fetch does not ask whether a job was cancelled: %r" % jq)
+
     def test_the_trend_compares_earlier_rounds_never_its_own_commit(self):
         row = dict(S.measure(RUN)[0], sha="aaa")
         past = [{"workflow": "Routine I", "sha": "old1", "slowestMin": 30.0},
@@ -131,6 +156,16 @@ RED_PROOF = [
      "file": "tv/ci_speed.py",
      "find": "        cmp = (\"the same as\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
      "replace": "        cmp = (\"the same than\" if word == \"the same\" else \"%s %.1f min than\" % (word, abs(delta)))\n",
+     "matches": 1},
+    {"why": "v3896 (REG-3683) - a job our own cancel cut short is timed as a speed again",
+     "file": "tv/ci_speed.py",
+     "find": "            if str(j.get(\"conclusion\") or \"\").lower() in (\"cancelled\", \"skipped\"):\n",
+     "replace": "            if False:\n",
+     "matches": 1},
+    {"why": "v3896 (REG-3683) - the job fetch stops asking each job's conclusion, so no cancel can be seen",
+     "file": "tv/ci_speed.py",
+     "find": "                 \"-q\", \".jobs[] | {name, conclusion, created_at, started_at, completed_at}\"],\n",
+     "replace": "                 \"-q\", \".jobs[] | {name, created_at, started_at, completed_at}\"],\n",
      "matches": 1}
 ]
 

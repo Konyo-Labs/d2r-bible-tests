@@ -44,11 +44,19 @@ def _t(s):
 def measure(runs):
     """runs: [{"workflow": name, "jobs": [{"name", "created_at", "started_at", "completed_at"}]}] -> one row per workflow:
     {workflow, jobs, queueMaxMin, queueAvgMin, slowestJob, slowestMin, wallMin}. A job with no start or finish (skipped,
-    still queued) is left out of the times and counted in `unfinished`. Pure."""
+    still queued) is left out of the times and counted in `unfinished`. Pure.
+
+    v3896 (REG-3683) - A JOB CUT SHORT IS NOT A SPEED. MEASURED 11-11 on v3895 round 2: the ship cancelled the optional
+    Windows proof run once GitHub vouched (card #200 guard 7), then measured that run and said "slowest job 42.4 min (FASTER
+    3.5 min than the last 5 rounds')" - the time our own cancel cut it at. A job whose conclusion is cancelled or skipped is
+    counted in `cancelled` and never timed; a workflow with no job that finished on its own is not a row."""
     out = []
     for r in runs or []:
-        waits, slow, first, last, done, unfinished = [], (None, -1.0), None, None, 0, 0
+        waits, slow, first, last, done, unfinished, cancelled = [], (None, -1.0), None, None, 0, 0, 0
         for j in r.get("jobs") or []:
+            if str(j.get("conclusion") or "").lower() in ("cancelled", "skipped"):
+                cancelled += 1
+                continue
             c, s, e = _t(j.get("created_at")), _t(j.get("started_at")), _t(j.get("completed_at"))
             if c is None or s is None or e is None or e < s:
                 unfinished += 1
@@ -61,7 +69,7 @@ def measure(runs):
             last = e if last is None or e > last else last
         if not done:
             continue
-        out.append({"workflow": r.get("workflow"), "jobs": done, "unfinished": unfinished,
+        out.append({"workflow": r.get("workflow"), "jobs": done, "unfinished": unfinished, "cancelled": cancelled,
                     "queueMaxMin": round(max(waits), 1), "queueAvgMin": round(sum(waits) / len(waits), 1),
                     "slowestJob": slow[0], "slowestMin": round(slow[1], 1), "wallMin": round((last - first) / 60.0, 1)})
     return out
@@ -89,7 +97,7 @@ def fetch(sha, slug, run=subprocess.run):
     out = []
     for w in json.loads(r.stdout or "[]"):
         j = run(["gh", "api", "--paginate", "repos/%s/actions/runs/%s/jobs?per_page=100" % (slug, w["databaseId"]),
-                 "-q", ".jobs[] | {name, created_at, started_at, completed_at}"],
+                 "-q", ".jobs[] | {name, conclusion, created_at, started_at, completed_at}"],
                 capture_output=True, text=True, encoding="utf-8", errors="replace")
         if j.returncode != 0:
             continue

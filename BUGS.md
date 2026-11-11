@@ -27,6 +27,13 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3683 - THE SPEED LEDGER TIMED A RUN THE SHIP HAD CANCELLED (v3896, #194)
+MEASURED 11-11 on v3895 round 2: the ship cancelled the optional Windows proof run once GitHub vouched (card #200 guard 7),
+then the speed ledger measured that run and printed "slowest job 42.4 min (FASTER 3.5 min than the last 5 rounds')" - the
+time our own cancel cut it at, recorded as a measurement and trended as "faster". ci_speed now asks each job's conclusion;
+a cancelled or skipped job is counted in `cancelled` and never timed, and a workflow with no job that finished on its own is
+not a row. Law: test_every_round_records_how_fast_it_ran. Seen RED x2.
+
 ### REG-3682 - A RED THE MAIN HOOK CANNOT PRODUCE STOPPED A SHIP (v3896, card #200 guard 9)
 MEASURED 11-11 05:51: v3895 attempt 3's Mac rehearsal (beside the CI wait) went red on failed_shards (a tree lock) and
 changed_tests (render shots rewritten mid-law) and the ship stopped with main unpushed - the same checks had passed 19/19
