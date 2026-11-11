@@ -18,7 +18,8 @@
       "A ship skips the pre-flight only on bytes a pre-flight graded (#200, REG-3681)",
       "A red seen only beside the others is asked again alone before it stops a ship (#200, REG-3682)",
       "The speed ledger never times a run the ship cancelled (#194, REG-3683)",
-      "The shard watcher never writes the tracked files of the tree it ships (#200, REG-3684)"
+      "The shard watcher never writes the tracked files of the tree it ships (#200, REG-3684)",
+      "A board law keeps its focus when another law shares its browser (REG-3685)"
     ]
   },
   {

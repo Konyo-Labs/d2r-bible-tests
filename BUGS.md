@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3685 - A BOARD LAW LOST ITS FOCUS TO ANOTHER LAW'S TAB IN THE SHARED CHROME (v3896)
+MEASURED 11-11: v3895 round 3's agent-suite slice 3 went red twice on test_a_board_field_takes_keys_after_a_click
+("#d2jsp-price-q took no keys after a click that gave no focus: ['', '', True, 'visible']") - green alone 3 of 3 on the same
+bytes, green in round 2 where the plan put it in another slice. Reproduced on the Mac by running the law twice at once (1 of 6
+red, the same words): Board() opens a tab on render_check's ONE Chrome and a slice runs gates side by side, so another law's
+tab can take the input between this click and these keys. Each try now brings this tab to the front and starts clean; only a
+click that never gives focus in 3 tries is red (the red-proof - the board's focus rescue removed - still fails every try).
+8 of 8 green run two at once. Law: test_a_board_field_takes_keys_after_a_click. Seen RED.
+
 ### REG-3684 - THE SHIP'S SHARD WATCHER WROTE THE TRACKED FILES OF THE TREE IT WAS SHIPPING (v3896, card #200 guard 9)
 MEASURED 11-11 ~06:01, v3895 round 3: a flaky slice (test_a_board_field_takes_keys_after_a_click, green in round 2 on the
 same UI bytes) went red; the live watcher recorded it into the TRACKED tv/shard_history.json and appended a lesson to the

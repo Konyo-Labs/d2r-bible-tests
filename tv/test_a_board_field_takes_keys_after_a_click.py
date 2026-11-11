@@ -23,6 +23,10 @@ from test_a_sweep_never_reticks_what_he_unticked import Board  # noqa: E402
 import test_found_ever_never_files_to_a_mule as _H  # noqa: E402
 
 
+#: v3896 (REG-3685) - how many times a stolen focus is tried again before the law is red
+TRIES = 3
+
+
 @unittest.skipUnless(os.path.exists(_H.RC.CHROME), "no Chrome on this machine (declared skip)")
 class ABoardFieldTakesKeysAfterAClick(unittest.TestCase):
     def test_click_then_type_lands_in_both_d2jsp_fields(self):
@@ -32,37 +36,45 @@ class ABoardFieldTakesKeysAfterAClick(unittest.TestCase):
         b.run("window.fetch = (function(f){ return function(u, o){ if (String(u).indexOf('/api/ui_fault') >= 0) return Promise.resolve(new Response('{}')); return f.apply(this, arguments); }; })(window.fetch);"
               "switchTab('d2jsp'); document.addEventListener('mousedown', function(e){ if (e.target.closest && e.target.closest('input')) e.preventDefault(); }, true);")
         for sel in ("#d2jsp-price-q", "#d2jsp-find"):
-            # v3881 (REG-3391) - THE FIELD MUST HOLD STILL, AND BE WHAT IS UNDER THE POINT, BEFORE THE CLICK. Red untampered on
-            # v3878 shard 17 and again on v3879's second round (run 42394365352, shard 21), green on the same bytes between: the
-            # D2JSP tab paints parts of itself after switchTab (the quote refresh, the lamp, the read line between the two
-            # fields), so under a loaded runner the rect read here could move before the click and the click landed beside the
-            # field. Now the point is read only once the rect is the same on two reads 50 ms apart AND elementFromPoint at its
-            # centre is the field; a field that never settles is said, never clicked blind, and a miss names what was hit.
-            r = b.run("var el = document.querySelector('%s'); el.value = ''; el.scrollIntoView({block:'center', behavior:'instant'}); document.body.focus();"
-                      "var prev = null, q = null, hit = null, tries = 0;"
-                      "for (; tries < 60; tries++) {"
-                      "  await new Promise(function(res){ setTimeout(res, 50); });"
-                      "  q = el.getBoundingClientRect();"
-                      "  var key = [q.left, q.top, q.width, q.height].map(Math.round).join(',');"
-                      "  hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);"
-                      "  if (key === prev && hit && (hit === el || el.contains(hit))) break;"
-                      "  prev = key;"
-                      "}"
-                      "OUT.x = q.left + q.width / 2; OUT.y = q.top + q.height / 2; OUT.tries = tries;"
-                      "OUT.hit = hit ? (hit.id ? '#' + hit.id : hit.tagName + '.' + String(hit.className || '')) : 'nothing';"
-                      "OUT.settled = tries < 60;" % sel)
-            self.assertTrue(r["settled"], "%s never held still under its own point (last hit %s after %d reads) - nothing was "
-                                          "clicked blind" % (sel, r["hit"], r["tries"]))
-            for ty in ("mousePressed", "mouseReleased"):
-                t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
-            for ch in "ann":
-                t.send("Input.dispatchKeyEvent", type="keyDown", text=ch, key=ch)
-                t.send("Input.dispatchKeyEvent", type="keyUp", key=ch)
-            # REG-3391 - a miss says what the page knew: does it have focus at all, is it visible, who holds focus
-            got = json.loads(t.ev("JSON.stringify([document.querySelector('%s').value, document.activeElement && document.activeElement.id,"
-                                  " document.hasFocus(), document.visibilityState])" % sel))
-            self.assertEqual(got[0], "ann", "%s took no keys after a click that gave no focus: %r (the point was %s after %d "
-                                            "read(s))" % (sel, got, r["hit"], r["tries"]))
+            # v3896 (REG-3685) - THIS LAW SHARES A BROWSER, SO ITS TAB IS BROUGHT TO THE FRONT AND A STOLEN FOCUS IS TRIED AGAIN.
+            # MEASURED 11-11: v3895 round 3 went red here twice on GitHub ("#d2jsp-price-q took no keys after a click that gave
+            # no focus: ['', '', True, 'visible']") and green alone 3 of 3 on the same bytes; reproduced on the Mac by running
+            # this law twice at once (1 of 6 red, the same words). Board() opens a tab on render_check's ONE Chrome, and a slice
+            # runs gates side by side: another law's tab can take the input between this click and these keys. Each try
+            # brings this tab to the front and starts clean; only a click that never gives focus in TRIES tries is red - the
+            # red-proof (the board's own focus rescue removed) fails every try.
+            tries_said = []
+            for attempt in range(TRIES):
+                t.send("Page.bringToFront")
+                r = b.run("var el = document.querySelector('%s'); el.value = ''; el.scrollIntoView({block:'center', behavior:'instant'}); document.body.focus();"
+                          "var prev = null, q = null, hit = null, tries = 0;"
+                          "for (; tries < 60; tries++) {"
+                          "  await new Promise(function(res){ setTimeout(res, 50); });"
+                          "  q = el.getBoundingClientRect();"
+                          "  var key = [q.left, q.top, q.width, q.height].map(Math.round).join(',');"
+                          "  hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);"
+                          "  if (key === prev && hit && (hit === el || el.contains(hit))) break;"
+                          "  prev = key;"
+                          "}"
+                          "OUT.x = q.left + q.width / 2; OUT.y = q.top + q.height / 2; OUT.tries = tries;"
+                          "OUT.hit = hit ? (hit.id ? '#' + hit.id : hit.tagName + '.' + String(hit.className || '')) : 'nothing';"
+                          "OUT.settled = tries < 60;" % sel)
+                self.assertTrue(r["settled"], "%s never held still under its own point (last hit %s after %d reads) - nothing "
+                                              "was clicked blind" % (sel, r["hit"], r["tries"]))
+                for ty in ("mousePressed", "mouseReleased"):
+                    t.send("Input.dispatchMouseEvent", type=ty, x=r["x"], y=r["y"], button="left", clickCount=1)
+                for ch in "ann":
+                    t.send("Input.dispatchKeyEvent", type="keyDown", text=ch, key=ch)
+                    t.send("Input.dispatchKeyEvent", type="keyUp", key=ch)
+                # REG-3391 - a miss says what the page knew: does it have focus at all, is it visible, who holds focus
+                got = json.loads(t.ev("JSON.stringify([document.querySelector('%s').value, document.activeElement && document.activeElement.id,"
+                                      " document.hasFocus(), document.visibilityState])" % sel))
+                if got[0] == "ann":
+                    break
+                tries_said.append("try %d: %r (point %s after %d read(s))" % (attempt + 1, got, r["hit"], r["tries"]))
+            self.assertEqual(got[0], "ann", "%s took no keys after a click that gave no focus, in %d tries: %s"
+                                            % (sel, TRIES, "; ".join(tries_said)))
+
 
 
 RED_PROOF = [
