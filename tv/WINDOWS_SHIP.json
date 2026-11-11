@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3895",
+  "ver": "v3896",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3895: the ship guards itself and footage waits for its own proven guards",
+  "note": "v3896: the ship never races or writes its own tree, and the Uniques cards are drawn big",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

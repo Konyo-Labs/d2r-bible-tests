@@ -92,7 +92,7 @@ if sys.platform == "win32":
         except Exception:
             pass
 
-VERSION = "v3895"   # Ship Guards
+VERSION = "v3896"   # Clean Ship
 HERE   = os.path.dirname(os.path.abspath(__file__))
 FRAMES = os.environ.get("TV_FRAMES_DIR") or os.path.join(HERE, "frames")   # v752 — replay feeds its own watch dir
 

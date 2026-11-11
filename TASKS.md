@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3895** | `(this commit)` | v3895 — the ship guards itself and footage waits for its own proven guards |
+| **v3896** | `(this commit)` | v3896 — the ship never races or writes its own tree, and the Uniques cards are drawn big |
+| **v3895** | `db82b9a4` | v3895 — the ship guards itself and footage waits for its own proven guards |
 | **v3894** | `3b60faf1` | v3894 — every PC films at 1920x1080, and every character-window cell opens |
 | **v3893** | `bc8facc4` | v3893 — the Fleet middle eye stays dark unless a reel is recording |
 | **v3892** | `c8c8ae3b` | v3892 — shadow sessions share the four boxes, a press outside closes the card |
