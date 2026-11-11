@@ -50,6 +50,14 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3699 - ON A LARGE VERSION THE SECOND EYE COULD NEVER BE SHOWN bible.html (v3897, card #196)
+MEASURED 11-11: the Grok CLI's look on v3892 came back CANNOT-TELL - in its own words the payload "omitted bible.html,
+control_ui.html, run_gates.py" - and the doctor says v3895's one look "NEVER SAW a SUBSTANTIVE part of the change (bible.html
+...)". second_eye_run.payload_for adds *.html only when the code diff is already under the cap, so on any large version the
+page is left out by construction, and asking again answers the same. `second_eye_run.py vNNNN --files PATH...` now makes a
+follow-up look at only the named paths (*.html included): the eye is told it is a follow-up of N named files, and the row's
+reach note names them. Law: test_a_follow_up_look_shows_the_files_it_names (a throwaway repo whose code diff starves the
+page). Owed: the doctor's never-saw row could point at the command; the follow-up looks on v3892 and v3895 are owed.
 ### REG-3698 - A CUT-OFF THAT REPEATED ON EVERY RE-RUN WAS RE-RUN AS A FLAKE EACH TIME (v3897, card #200)
 MEASURED 11-11 on v3896: agent-suite (4) died "The runner has received a shutdown signal" on attempts 1, 2 and 3 of run
 42970634968, each about 40 s after the same gate - the cause was v3896's own os.killpg(0) (REG-3694), not GitHub - and the

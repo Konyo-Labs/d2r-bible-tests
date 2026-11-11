@@ -374,7 +374,7 @@ def eye_snapshot(sha, max_bytes=None):
     """
     lim = EYE_SNAPSHOT_MAX_BYTES if max_bytes is None else max_bytes
     out = {"ok": False, "included": [], "skipped": [], "why": ""}
-    names, why = _sh(_changes(sha, "--name-only"), timeout=60)
+    names, why = _sh(_changes(sha, "--name-only") + _pathspec([]), timeout=60)
     if names is None:
         out["why"] = "could not list the %s's files: %s" % ("range" if REVIEW_BASE else "commit", why)
         return out
@@ -831,6 +831,14 @@ def commit_for(version):
 #: and re-asking it could only ever answer the same. `--base REV` widens the look to every change between
 #: REV and the bound commit (`git diff REV sha`), and the row says so; without it nothing changes.
 REVIEW_BASE = None
+#: v3897 (REG-3699, card #196) - a FOLLOW-UP look names its files (`--files`): only those paths, *.html included, so a file
+#: the budget dropped from a version's look can be shown on its own. None: the version's whole change, as before.
+REVIEW_FILES = None
+
+
+def _pathspec(default):
+    """v3897 (REG-3699) - the git pathspec a look reads: the named files of a follow-up look, else `default`. -> list"""
+    return (["--"] + list(REVIEW_FILES)) if REVIEW_FILES else list(default)
 #: ⚠⚠ v3526 (#42) — AND WITHOUT --base EVERY VERSION WAS LOOKED AT THROUGH ITS BUMP ALONE. v3523, v3524 and v3525 each
 #: came back cannot-tell on their first ask (a bump commit is version strings), and a re-ask only gambles on the same
 #: keyhole. v3525 with `--base 47a5ac37` returned FIVE findings, four of them real. So the default look is now the
@@ -1005,8 +1013,8 @@ def absent_from(sha, body):
     [[unknown-stays-unknown]] [[the-unjoined-end]]
     """
     names, why = _sh(_changes(sha, "--name-only") +
-                     ["--", "*.py", "*.js", "*.mjs", "*.sh", "*.html",
-                      ":(exclude)_archive/*"], timeout=90)
+                     _pathspec(["--", "*.py", "*.js", "*.mjs", "*.sh", "*.html",
+                                ":(exclude)_archive/*"]), timeout=90)
     if names is None:
         return None, (why or "the changed-file roster could not be read")
     sent = set(re.findall(r"(?m)^diff --git a/(\S+)", body or ""))
@@ -1300,8 +1308,8 @@ def payload_for(sha):
     # it is v3387. My first count said 60 of 60; that was my own broken loop, not the defect.
     # [[the-unjoined-end]] [[zero-needs-a-denominator]] [[feedback-suspect-the-instrument]]
     out, why = _sh(_changes(sha, "--unified=3") +
-                   ["--", "*.py", "*.js", "*.mjs", "*.sh",
-                    ":(exclude)_archive/*"], timeout=90)
+                   _pathspec(["--", "*.py", "*.js", "*.mjs", "*.sh",
+                              ":(exclude)_archive/*"]), timeout=90)
     if out is None:
         return None, why
     # ⚠⚠ v3360 — THE SHIP NOTES GO BEFORE THE CAP DOES. run_gates.py carries one `why=` per gate
@@ -1334,7 +1342,7 @@ def payload_for(sha):
 
     body = _prep(out)
     _full_len_holder = [body]
-    if len(body) < _cap():
+    if len(body) < _cap() and not REVIEW_FILES:       # v3897 (REG-3699) - a follow-up look already named its html
         _more, _ = _sh(_changes(sha, "--unified=3") + ["--", "*.html"],
                        timeout=90)
         if _more:
@@ -1410,6 +1418,11 @@ def payload_for(sha):
                  % (_span, REVIEW_BASE[:8], sha[:8]))
         dropped = ((dropped + " - ") if dropped else "") + (
             "covers %s..%s (%s commits), not the bound commit alone" % (REVIEW_BASE[:8], sha[:8], _span))
+    if REVIEW_FILES:
+        note += ("\nTHIS IS A FOLLOW-UP LOOK AT %d NAMED FILE(S) ONLY (%s): the version's other changes were shown to an "
+                 "earlier look. Judge these files.\n" % (len(REVIEW_FILES), ", ".join(REVIEW_FILES)))
+        dropped = ((dropped + " - ") if dropped else "") + (
+            "a follow-up look at %d named file(s) only: %s" % (len(REVIEW_FILES), ", ".join(REVIEW_FILES)))
     if _cut:
         note += ("\nAND IT IS ALSO TRUNCATED — it stops part-way through, mid-file at a line "
                  "boundary. Do not report a function, statement or block as incomplete, "
@@ -2313,9 +2326,18 @@ def main(argv):
                     help="the model that produced --answer-in, when the answer does not say")
     ap.add_argument("--base", help="widen the look to every change from this commit to the version's "
                                    "bound commit (a batch whose code landed before its stamp)")
+    ap.add_argument("--files", nargs="+", default=None,
+                    help="v3897 (REG-3699) - a follow-up look at only these paths (*.html included): the files a "
+                         "version's look was not shown")
     ap.add_argument("--bump-only", action="store_true",
                     help="look at the bound commit alone (the pre-v3526 keyhole); the default is the version's range")
     a = ap.parse_args(argv)
+    if a.files:
+        global REVIEW_FILES
+        REVIEW_FILES = [f for f in a.files if f and not f.startswith("-")]
+        if not REVIEW_FILES:
+            print("  --files named no path - NOT asked")
+            return 2
     if a.bump_only:
         global BUMP_ONLY
         BUMP_ONLY = True

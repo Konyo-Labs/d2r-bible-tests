@@ -6710,6 +6710,12 @@ GATES = [
              "taught it the agent's real port, so a board whose agent runs anywhere else never went live and a board beside a "
              "law's private agent asked HIS (test_button_matrix's site half, red on his Mac on v3895's code too). One helper "
              "refreshes the link from the learned port before every probe and poll. Source-read, comments stripped."),
+    Gate("test_a_follow_up_look_shows_the_files_it_names",
+         [sys.executable, os.path.join(HERE, "test_a_follow_up_look_shows_the_files_it_names.py")], 60,
+         why="v3897 (REG-3699, card #196) - the Grok CLI's look on v3892 came back cannot-tell because the payload omitted "
+             "bible.html (payload_for adds *.html only when the code diff is under the cap), and the doctor says v3895's look "
+             "never saw it either. --files PATH... makes a follow-up look at only the named paths, html included; the eye "
+             "is told it is a follow-up and the row names the files. Driven on a throwaway repo."),
     Gate("test_a_look_can_cover_a_batch",
          [sys.executable, os.path.join(HERE, "test_a_look_can_cover_a_batch.py")], 60,
          why="2026-09-27 - v3515-v3517 shipped as bump-only commits over code built on an integration "
