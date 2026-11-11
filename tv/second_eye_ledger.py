@@ -1528,6 +1528,9 @@ def agreement(version, path=None):
                   % (len(_partial), len(reached),
                      ", ".join(_names[:6]) +
                      (" +%d more" % (len(_names) - 6) if len(_names) > 6 else "")))
+        # v3897 (REG-3699) - and the row names the look that shows them: a follow-up at only those files
+        _pnote += (" - `python3 tv/second_eye_run.py %s --files %s` shows them on their own"
+                   % (version, " ".join(_names[:6])))
     # ⚠ THE DENOMINATOR TRAVELS WITH THE VERDICT: how many looks there were, and how many of
     # them the model id could attribute at all. A state that says AGREE while nobody knows who
     # looked is the confident number this file argues against on every other axis.

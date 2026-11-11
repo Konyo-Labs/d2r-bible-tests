@@ -118,6 +118,9 @@ class AgreementSaysWhenNobodySawIt(unittest.TestCase):
             "NEVER SAW", a["say"],
             "the sentence a human reads does not mention that both looks missed part of the "
             "change: %r. A count nobody surfaces is the same as no count." % a["say"])
+        # v3897 (REG-3699) - the sentence names the follow-up look that shows the unseen files
+        self.assertIn("tv/second_eye_run.py v9001 --files tv/subject.py", a["say"],
+                      "the row says a file was never seen and not how to show it: %r" % a["say"])
 
     def test_complete_looks_are_left_alone(self):
         """⚠ THE BASELINE, or the clause above would fire on everything and mean nothing.
@@ -245,6 +248,11 @@ if __name__ == "__main__":
 
 
 RED_PROOF = [
+    {"why": "v3897 (REG-3699) - the never-saw row stops naming the follow-up look that shows the unseen files",
+     "file": "tv/second_eye_ledger.py",
+     "find": "\" - `python3 tv/second_eye_run.py %s --files %s` shows them on their own\"",
+     "replace": "\"%.0s%.0s\"",
+     "matches": 1},
     {
         "why": "dropping the list at the record call puts the row back to a truncated sentence",
         "file": "tv/second_eye_run.py",

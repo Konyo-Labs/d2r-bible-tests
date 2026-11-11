@@ -57,7 +57,8 @@ control_ui.html, run_gates.py" - and the doctor says v3895's one look "NEVER SAW
 page is left out by construction, and asking again answers the same. `second_eye_run.py vNNNN --files PATH...` now makes a
 follow-up look at only the named paths (*.html included): the eye is told it is a follow-up of N named files, and the row's
 reach note names them. Law: test_a_follow_up_look_shows_the_files_it_names (a throwaway repo whose code diff starves the
-page). Owed: the doctor's never-saw row could point at the command; the follow-up looks on v3892 and v3895 are owed.
+page) and test_a_partial_look_is_not_agreement (the ledger's NEVER SAW row now names the follow-up command). Used at once on
+v3892: 7 findings, 6 checked and rejected against today's tree (#231). Owed: a follow-up on v3895's unseen files.
 ### REG-3698 - A CUT-OFF THAT REPEATED ON EVERY RE-RUN WAS RE-RUN AS A FLAKE EACH TIME (v3897, card #200)
 MEASURED 11-11 on v3896: agent-suite (4) died "The runner has received a shutdown signal" on attempts 1, 2 and 3 of run
 42970634968, each about 40 s after the same gate - the cause was v3896's own os.killpg(0) (REG-3694), not GitHub - and the
