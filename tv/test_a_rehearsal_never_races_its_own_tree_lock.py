@@ -60,10 +60,10 @@ class ARehearsalNeverRacesItsOwnTreeLock(unittest.TestCase):
 
     def test_the_real_catalog_marks_both_run_gates_checks(self):
         cat = P.catalog()
-        for name in ("changed_tests", "failed_shards"):
+        for name in ("changed_tests", "failed_shards", "render_check"):   # render_check writes tv/.render_shots (guard 9d)
             with self.subTest(check=name):
                 self.assertTrue((cat.get(name) or {}).get("locks_tree"),
-                                "%s runs tv/run_gates.py and is not marked locks_tree" % name)
+                                "%s runs tv/run_gates.py or writes the tree, and is not marked locks_tree" % name)
 
 
 RED_PROOF = [
@@ -77,6 +77,11 @@ RED_PROOF = [
      "find": "        (\"changed_tests\",  {\"run\": check_changed, \"cheap\": False, \"timeout\": CHANGED_TIMEOUT_S, \"locks_tree\": True,\n",
      "replace": "        (\"changed_tests\",  {\"run\": check_changed, \"cheap\": False, \"timeout\": CHANGED_TIMEOUT_S,\n",
      "matches": 1},
+    {"why": "REG-3676 (guard 9d) - render_check rewrites tv/.render_shots beside the laws that watch the tree again",
+     "file": "tv/preship.py",
+     "find": "        (\"render_check\",   {\"run\": check_render, \"cheap\": False, \"timeout\": RENDER_TIMEOUT_S, \"locks_tree\": True,\n",
+     "replace": "        (\"render_check\",   {\"run\": check_render, \"cheap\": False, \"timeout\": RENDER_TIMEOUT_S,\n",
+     "matches": 1}
 ]
 
 if __name__ == "__main__":

@@ -27,6 +27,15 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3680 - EVERY FRAME OF PLAY WAS DECODED TWICE FOR ITS SCREEN (v3896, card #197 finding 5)
+Claude's v3893 look: screen_of decoded each reel frame up to three times. v3894 made screen_of decode once and handed the
+closer's answer to the stash eye (screen=_skind), but stash_eye.classify_when_in_play read an answer of None ("no known
+screen" - the answer for every frame of play) as "the caller never asked" and decoded the frame again. "Unasked" is now its
+own value (SCREEN_UNASKED): a caller that asked passes its answer, None included, and only an unasked frame is decoded.
+#197's findings 2, 3 and 4 (d2jsp seller carried across topics, a mention made the seller, the closer's silent play_after)
+were already fixed in v3894 - checked in the code, not assumed. Law: test_the_stash_reader_runs_only_in_play
+(AFrameIsDecodedOnceForItsScreen). Seen RED.
+
 ### REG-3679 - "MAC READINESS, A FEW SECONDS" TOOK 399 SECONDS, TWICE A SHIP (v3896, card #200 guard 9)
 MEASURED 11-11 05:31 on v3895's fixed tree: tv/preship.py --mac-ready ran 19 checks in 399 s - every lesson in the ledger
 (render_check 231 s, changed_tests 106 s, blueprint, integrity, ...) - at the ship's launch AND inside every main push's
@@ -49,15 +58,17 @@ MEASURED 11-11 on v3895's first box rehearsal: render_check answered UNKNOWN - "
 - and the rehearsal stopped the ship. render_check itself says such a run established nothing and asks for a re-run.
 preship.check_render now asks that re-run once (keyed on render_check's own two lost-browser sentences); a second UNKNOWN
 stays UNKNOWN, a red is never asked again, and a missing Chrome is not retried. Law:
-test_a_lost_render_browser_is_asked_again_once. Seen RED x2. (Guard 9d - changed_tests flagging .render_shots - did not
-reproduce: the folder is gitignored and changed_tests lists tv/test_*.py only; a full readiness run passed both 11-11 05:39.)
+test_a_lost_render_browser_is_asked_again_once. Seen RED x2. (Guard 9d is REG-3676: it reproduced only in PARALLEL.)
 
-### REG-3676 - THE REHEARSAL RACED ITS OWN TREE LOCK (v3896, card #200 guard 9c)
+### REG-3676 - THE REHEARSAL RACED ITS OWN TREE (v3896, card #200 guards 9c + 9d)
 MEASURED 11-11 01:47-02:30, the box rehearsal's first real use on v3895: failed_shards and changed_tests both run
 tv/run_gates.py, which takes the tree's flock; started together the second was refused by the first's lock and the
-rehearsal stopped the ship on a red about itself. A catalog check marked locks_tree now runs in one serial lane while the
-other checks still run beside it. Law: test_a_rehearsal_never_races_its_own_tree_lock (stub checks record when they ran; the
-baseline shows two free checks do overlap). Seen RED x2.
+rehearsal stopped the ship on a red about itself. MEASURED AGAIN 11-11 05:51: v3895 attempt 3's parallel Mac rehearsal
+stopped the ship on the same refusal AND on changed_tests red over ".render_shots/advanced-fleet_*.png" hashes - render_check
+was rewriting the shots beside the laws that watch the tree (guard 9d, which earlier did not reproduce run serially). A
+catalog check marked locks_tree (changed_tests, failed_shards, render_check) now runs in one serial lane while the other
+checks still run beside it. Law: test_a_rehearsal_never_races_its_own_tree_lock (stub checks record when they ran; the
+baseline shows two free checks do overlap). Seen RED x3.
 
 ### REG-3675 - TWO SHIP LINES SAID THE WRONG THING IN PLAIN WORDS (v3896)
 Read on every ship, 11-11: the speed ledger's tie read "slowest job 0.5 min (the same than the last 5 rounds' 0.6)" - now

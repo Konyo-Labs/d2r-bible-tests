@@ -172,7 +172,7 @@ def catalog():
                             "why": "the heart map matches the code"}),
         ("second_eye",     {"run": check_second_eye, "cheap": True,  "timeout": 30,
                             "why": "the previous version's second-eye look is present or owed"}),
-        ("render_check",   {"run": check_render, "cheap": False, "timeout": RENDER_TIMEOUT_S,
+        ("render_check",   {"run": check_render, "cheap": False, "timeout": RENDER_TIMEOUT_S, "locks_tree": True,
                             "why": "the page is rendered at every target and viewport"}),
         ("console_demos",  {"run": check_demos, "cheap": False, "timeout": DEMOS_TIMEOUT_S,
                             "why": "node tv/demo_console.mjs (needs playwright in this tree)"}),
@@ -912,10 +912,12 @@ def run_checks(names, root, parallel=True, fail_fast=True, include_lessons=True,
     if not rest:
         return worst, results
 
-    # v3896 (card #200 guard 9c, REG-3676) - CHECKS THAT RUN run_gates SHARE ONE LANE. MEASURED 11-11 01:47-02:30, the box
-    # rehearsal's first real use: failed_shards and changed_tests started together on one tree and the second was refused by
-    # the first's run_gates tree lock - a red about the rehearsal, never about the push. A check marked locks_tree runs after
-    # the one before it in a single lane; every other check still runs beside them.
+    # v3896 (card #200 guard 9c+9d, REG-3676) - CHECKS THAT WRITE OR LOCK THE TREE SHARE ONE LANE. MEASURED 11-11 01:47-02:30,
+    # the box rehearsal's first real use: failed_shards and changed_tests started together and the second was refused by the
+    # first's run_gates tree lock. MEASURED AGAIN 11-11 05:51 in v3895's Mac rehearsal (it stopped the ship): the same refusal,
+    # and changed_tests red on ".render_shots/advanced-fleet_1280x720.png (909fd... -> 110e...)" - render_check was rewriting
+    # the shots beside the laws that watch the tree. A check marked locks_tree runs after the one before it in a single lane;
+    # every other check still runs beside them.
     tree = [n for n in rest if (cat.get(n) or {}).get("locks_tree")]
     free = [n for n in rest if n not in tree]
 
