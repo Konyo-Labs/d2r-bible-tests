@@ -111,13 +111,34 @@ class BestRunsReadsAtAGlance(unittest.TestCase):
 
     def test_the_name_and_the_numbers_are_drawn_from_those_tokens(self):
         for sel, tok in (("#tab-funi .forge-sec-pipe .f-pipe .f-atomact .f-rwbig", "--fs-br-title"),
-                         ("#tab-funi .forge-sec-pipe .f-pipe .f-atomsubrow b", "--fs-br-num")):
+                         # v3898 - the run's numbers stand on the right as stats (his 11-11 15:25)
+                         ("#tab-funi .forge-sec-pipe .f-pipe .f-runstats .qw-stat b", "--fs-br-num"),
+                         ("#tab-funi .forge-sec-pipe .f-pipe .f-runstats .qw-stat .qw-sub", "--fs-br-label")):
             with self.subTest(sel=sel):
                 self.assertEqual(self.src.count(sel + "{font-size:var(%s)" % tok), 1,
                                  "%s is not drawn from %s" % (sel, tok))
 
+    def test_the_numbers_stand_on_the_right_as_quick_wins_does(self):
+        """v3898 (his 11-11 15:25: "its using only the left side the whole right is blank ... the data like hour can be on the
+        right side like it is on the quickwins") - a two-column card body, the stats in the right column, built by _qwStat"""
+        self.assertIn("#tab-funi .forge-sec-pipe .f-pipe .f-cardtitle{display:grid;grid-template-columns:minmax(0,1fr) auto;",
+                      self.src, "the Best runs card body is one column again - the right half is blank")
+        self.assertIn("#tab-funi .forge-sec-pipe .f-pipe .f-cardtitle > .f-runstats{grid-column:2;", self.src,
+                      "the run's numbers are not in the right column")
+        import js_strip
+        code = js_strip.strip_js_comments(self.src)
+        self.assertEqual(code.count("+'<div class=\"f-runstats\">'+_qwStat(String(r.items.length), 'of your missing uniques', 'br-drops')"), 1,
+                         "the Best runs card does not build its numbers as Quick wins' stats")
+        self.assertEqual(code.count("_qwStat('~' + c.t, 'to find ' + c.word, 'br-hours'"), 1,
+                         "the run's clock is not a stat - or it is printed twice (v1740 one number per farm)")
+
 
 RED_PROOF = [
+    {"why": "v3898 (his 11-11) - the Best runs numbers fall back into the left column and the right half is blank again",
+     "file": "bible.html",
+     "find": "#tab-funi .forge-sec-pipe .f-pipe .f-cardtitle > .f-runstats{grid-column:2;",
+     "replace": "#tab-funi .forge-sec-pipe .f-pipe .f-cardtitle > .f-runstats{grid-column:1;",
+     "matches": 1},
     {"why": "#198 (REG-3673) - Quick wins' numbers are set at the body size again, the size of their own labels",
      "file": "bible.html",
      "find": "#tab-funi .qw-card{--fs-qw-num:calc(var(--fs-display)*1.3);",
