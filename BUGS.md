@@ -7,6 +7,22 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3961 - FOUR BOSSES AND SUPER-UNIQUES WERE FILED "NO SPRITE ON EITHER SOURCE" OVER A FILE NAME'S CASE (v3899 #91, GrokBot)
+tv/data/monster_art_fandom.json's noSpriteFound named Bloodwitch the Wild, Lord De Seis, Treehead WoodFist and The Countess.
+rankedboost has all four: 'Blood Witch the Wild.gif', 'Lord de Seis.gif', 'Treehead Woodfist.gif' and 'The Countess.gif' (13
+frames, 38x87) - only the exact-case guesses 404. Each was downloaded, opened (frames enlarged on grey) and shipped as
+art/d2mon_<Name>.gif with its sha1, bytes and what it depicts; Hell Bovine stays sprite-less (no file on either source). Found
+beside it: art/d2mon_Pindleskin.gif is byte-for-byte art/d2mon_Bonesaw_Breaker.gif (rankedboost serves one GIF for both; both
+are Reanimated Horde) - no distinct picture exists on either source, so the pair is DECLARED in sharedSprite with its reason
+instead of hidden. Not wired here (bible.html untouched): D2IO_ART/_QW_SU_ART entries for the four are Claude's. Law:
+test_every_boss_and_super_unique_wears_one_sprite_of_its_own (any undeclared shared sprite, a sprite filed as spriteless, or a
+record that names other bytes is red). Seen RED.
+### REG-3962 - THE COUNTESS'S AND THE SUMMONER'S BOSS CARDS WEAR STILLS WHILE THE BOARD DRAWS THEIR SPRITES (v3899 #91, GrokBot)
+BOSS_PORTRAIT serves countess01_graphic.png and summoner_graphic.png while every other act boss card wears its animated sprite
+(REG-3321) and D2IO_ART/Quick wins draw d2mon_The_Summoner.gif. art/boss_portraits.manifest.json gains "_ready_to_wire":
+d2mon_The_Countess.gif and d2mon_The_Summoner.gif, each OPENED and sha256-pinned before any wiring; art/verify_boss_portraits.py
+hashes those rows like portraits[] and accepts BOSS_PORTRAIT[id] serving either file, so the wiring is one bible.html edit.
+Law: the same gate (the ready rows must verify; a ready row whose bytes changed is red). Seen RED.
 ### REG-3700 - THE BOARD'S TV-D LINK KEPT :17771 AFTER IT LEARNED THE AGENT'S REAL PORT (v3896 round 2, the Mac rehearsal)
 MEASURED 11-11 10:10: v3896's Mac rehearsal went RED on changed_tests - test_button_matrix (changed by REG-3670) failed on his
 Mac first for a missing browser (Python Playwright 1.55 wants Chromium 1187, which a Node Playwright install had removed -
