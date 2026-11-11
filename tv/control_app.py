@@ -9819,7 +9819,7 @@ def _equipped_ledger_nudge():
         return {"ok": None, "why": "equipped_ledger will not import (%s) — nothing filed, UNKNOWN"
                                    % type(e).__name__}
     try:
-        return _el.ingest(_journal_ring(), HIST_DIR)
+        return _el.ingest(_journal_ring(), HIST_DIR, is_game=_reel_is_the_game)   # v3898 (#188) a non-game part ends the chain
     except Exception as e:
         return {"ok": False, "why": "the equipped ledger raised %s: %s" % (type(e).__name__, str(e)[:80])}
 
@@ -25126,6 +25126,38 @@ def _session_is_the_game(sess):
     except Exception:
         return None
     return False
+
+
+def _reel_is_the_game(sid):
+    """v3898 (#188, REG-3713) - the film's answer for one reel, the same lane _session_is_the_game asks first. -> True |
+    False | None. False only when chronicle_line walked the reel to its end and saw no D2R screen."""
+    try:
+        import chronicle_line as _chl
+        return _chl.reel_shows_d2r("reel_" + str(sid))
+    except Exception:
+        return None
+
+
+def _shelf_games():
+    """v3898 (#188, REG-3713) - his 11-11 ruling: the hourly parts stay (the retro readers and the FIFO river need them),
+    and parts of ONE game are linked. -> {sid: {id, part, parts, character}} for reels whose game has 2+ parts, from the
+    equipped ledger's chain (the ONE rule: a character select starts a game, a part with no login continues it across the
+    hourly hand-off, a part that never showed the game ends it). {} when the ledger cannot be read - no link is guessed."""
+    try:
+        import equipped_ledger as _el
+        d, _why = _el.load()
+    except Exception:
+        return {}
+    if not isinstance(d, dict):
+        return {}
+    gs, out = d.get("gameSessions") or {}, {}
+    for sid, gid in (d.get("reelGame") or {}).items():
+        g = gs.get(gid) if isinstance(gs, dict) else None
+        reels = [str(x) for x in ((g or {}).get("reels") or [])]
+        if len(reels) > 1 and str(sid) in reels:
+            out[str(sid)] = {"id": gid, "part": reels.index(str(sid)) + 1, "parts": len(reels),
+                             "character": (g or {}).get("character") or None}
+    return out
 
 
 def _game_sessions(sessions):
@@ -51058,6 +51090,14 @@ class Handler(BaseHTTPRequestHandler):
                     _sid = str((_r or {}).get("sessionId") or "")
                     if _sid and ("reel_" + _sid) in _fixtures or _sid in _fixtures:
                         _r["fixture"] = True
+            # v3898 (#188, REG-3713) - AFTER the row cache: a game grows a part every hour, a cached row must not freeze it
+            _games = _shelf_games()
+            for _r in out:
+                _g = _games.get(str((_r or {}).get("sessionId") or ""))
+                if _g:
+                    _r["game"] = _g
+                elif isinstance(_r, dict):
+                    _r.pop("game", None)
             return out
         except Exception as e:
             return {"error": str(e)}

@@ -2409,6 +2409,7 @@
   /* body */
   .shc-body { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px 13px; }
   .shc-when { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); color: #b9c9be; }
+  .shc-game { color: #d8c27a; white-space: nowrap; }   /* v3898 (#188) - "part k of m · one game" */
   .shc-when .shc-dur { color: #8a7e68; }
   /* ══ v2987 — THE RIVER AS FOUR LANES, named the way he names them ═══════════════════════
      Konyo, 2026-09-12: "i want it down a river lane. from top to bottom intake/WHATEVER IS REALLY
@@ -19563,6 +19564,18 @@ window._lockMark = function(isOpen, px, label){
     }
     n.textContent = 'the console did not answer (' + String(why || 'no reason given') + ') — these runs are ' + age;
   }
+  /* v3898 (#188, REG-3713) - HIS 11-11 RULING: the hourly parts stay on the Shelf (the retro readers and the FIFO river work
+     on them) and the parts of ONE game are linked. The server's row carries `game` {part, parts, character} only for a
+     reel whose game has 2+ parts (the equipped ledger's chain: a character select starts a game, a part with no login
+     continues it across the hourly hand-off, a part that never showed the game ends it). No `game` -> nothing is said. */
+  function shGamePart(g, after){
+    if (!g || !(g.parts > 1) || !(g.part >= 1)) return '';
+    var who = g.character ? ' as ' + esc(String(g.character)) : '';
+    var tip = 'One game in hourly parts' + who + ': no character select between these parts, and each starts within the '
+      + 'hourly hand-off of the last one\'s seal. A part that never showed the game, or a new character select, starts a new game.';
+    return (after ? ' ' : '') + '<span class="shc-game" title="' + esc(tip) + '">' + (after ? '· ' : '') + 'part '
+      + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
+  }
   function thShelf(force){
     var ov = $('th-shelfov'); if (!ov) return;
     var on = (force !== undefined) ? force : ov.hidden;
@@ -19881,6 +19894,7 @@ window._lockMark = function(isOpen, px, label){
       var _shcWhen  = (!_cnm.name && d0)
             ? (durTxt ? '<span class="shc-dur">' + durTxt + '</span>' : '')
             : (whenTxt + (durTxt ? ' <span class="shc-dur">· ' + durTxt + '</span>' : ''));
+      _shcWhen += shGamePart(sm.game, !!_shcWhen);   /* v3898 (#188) - one game in hourly parts */
       return '<div class="sh-card' + (n === TH.sn ? ' cur' : '') + (sm.stub ? ' stub' : '') + (_chronN > 0 ? ' chronicle' : '') + (_pin ? ' pinned' : '') + '" data-pin="' + (_pin ? '1' : '0') + '" data-sid="' + esc(sm.sessionId || '') + '" data-n="' + n
         + '" data-stub="' + (sm.stub ? '1' : '0') + '" data-grail="' + _hasGrail + '" data-verdict="' + _verd + '" data-t0="' + (sm.t0 || 0)
         + '" data-t1="' + (sm.t1 || 0) + '" data-reads="' + (sm.reads || 0) + '" data-found="' + _foundN

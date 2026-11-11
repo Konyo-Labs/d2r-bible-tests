@@ -350,7 +350,7 @@ def char_spans(reel):
     return spans
 
 
-def game_sessions(reels, gap_ms=None, named_at=None):
+def game_sessions(reels, gap_ms=None, named_at=None, is_game=None):
     """Chain reels' spans into game sessions. -> (sessions, by_span)
 
     sessions: [{id, character, characterVia, reels, spans, t0, t1, joins}] ; by_span: {(sid, t0): session}
@@ -362,11 +362,23 @@ def game_sessions(reels, gap_ms=None, named_at=None):
     span source: character select, the lobby and the C panel, through the learner's fold), or None. A span it names takes
     that character, said in `named`; a span it holds UNKNOWN (two screens named two characters) is UNKNOWN here too, and
     files nothing - never the login's name over the doubt. A span it does not name keeps the login and the chain.
+
+    v3898 (#188, REG-3713) - `is_game(sid)` -> False when the reel's film walked to its end and never showed D2R (a
+    streaming service's own page, the AFK drop). His 11-11 ruling: hourly parts with no new trigger between them are ONE
+    game, and an exit ends it. MEASURED 11-11 on the work ALT: this chain ran 15 parts from 01:03 to 13:50 straight
+    through the 12:00 part that filmed only Boosteroid's page, and his 12:40 new game was glued onto the night's AFK
+    game. Such a reel never joins the previous game and the next reel never joins it. True / None (not known) chain as
+    before - nothing is cut on a guess.
     """
     gap = int(ROLLOVER_GAP_MS if gap_ms is None else gap_ms)
     sessions, by_span, prev_reel, cur = [], {}, None, None
+    prev_not_game = False
     for reel in reels:
         spans = char_spans(reel)
+        try:
+            not_game = is_game is not None and is_game(reel["sid"]) is False
+        except Exception:
+            not_game = False
         for i, sp in enumerate(spans):
             ns = None
             if named_at is not None:
@@ -386,7 +398,10 @@ def game_sessions(reels, gap_ms=None, named_at=None):
             else:
                 # the reel's pre-login span: continue the previous session across a rollover gap only
                 joined, gap_why = False, None
-                if i == 0 and cur is not None and prev_reel is not None:
+                if i == 0 and cur is not None and prev_reel is not None and (not_game or prev_not_game):
+                    gap_why = ("this reel never showed the game, so it is no part of one" if not_game else
+                               "%s never showed the game - that ended the game before it" % prev_reel["sid"])
+                elif i == 0 and cur is not None and prev_reel is not None:
                     seal = prev_reel["sealedTs"] if prev_reel["sealedTs"] is not None else prev_reel["t1"]
                     if seal is None or reel["t0"] is None:
                         # REG-1558 — a gap nobody can measure is not a rollover-sized gap. Chaining on a
@@ -434,6 +449,7 @@ def game_sessions(reels, gap_ms=None, named_at=None):
             by_span[(reel["sid"], sp["t0"])] = cur
         reel["spans"] = spans
         prev_reel = reel
+        prev_not_game = not_game
     return sessions, by_span
 
 
@@ -712,7 +728,8 @@ def _unfile_unattributed(d, reel, hist_dir):
     u["reels"] = [s for s in (u.get("reels") or []) if s != reel["sid"]]
 
 
-def ingest(journals, hist_dir, now_ms=None, store=None, gap_ms=None, logins=_UNSET, cs=_UNSET, sessions=_UNSET):
+def ingest(journals, hist_dir, now_ms=None, store=None, gap_ms=None, logins=_UNSET, cs=_UNSET, sessions=_UNSET,
+           is_game=None):
     """Read the journals, file every worn item of every SEALED reel not yet ingested. -> receipt
 
     receipt = {ok, why, ingested: [sid], rolling: [sid], waiting: [sid], logins, filed, unattributed, characters,
@@ -748,9 +765,15 @@ def ingest(journals, hist_dir, now_ms=None, store=None, gap_ms=None, logins=_UNS
             _named = lambda _sid, _ts: _cs.session_span_at(sessions, _sid, _ts)   # REG-2911 the one span source
     except Exception:
         _named = None
-    gsessions, _by = game_sessions(reels, gap_ms=gap_ms, named_at=_named)
+    gsessions, _by = game_sessions(reels, gap_ms=gap_ms, named_at=_named, is_game=is_game)
     for s in gsessions:
         d["gameSessions"][s["id"]] = {k: v for k, v in s.items()}
+    # v3898 (#188, REG-3713) - which game each reel's opening span belongs to, so the Shelf can say "part k of m"
+    rg = d.setdefault("reelGame", {})
+    for reel in reels:
+        sp0 = (reel.get("spans") or [None])[0]
+        if isinstance(sp0, dict) and sp0.get("session"):
+            rg[reel["sid"]] = sp0["session"]
     done = set(d["lane"].get("ingested") or [])
     ingested, rolling, waiting, filed, unatt = [], [], [], 0, 0
     refiled = []
