@@ -67,6 +67,34 @@ class APrivateConsoleTakesItsAgentWithIt(unittest.TestCase):
         self.assertEqual(os.getpgid(proc.pid), proc.pid, "the private console does not lead its own group")
         self.assertEqual(os.getpgid(child), proc.pid, "the fixture's 'agent' is not in the console's group")
 
+    def test_a_child_with_no_real_pid_never_signals_our_own_group(self):
+        """* v3896 (REG-3694) - MEASURED on GitHub, agent-suite (4) x3: a fake child with pid 0 reached stop_private at exit, and
+        os.killpg(0, SIGTERM) took down the law's own process group - on a runner, the runner. killpg is replaced here, so a
+        regression is a red case, never a real signal."""
+        from unittest import mock
+
+        class _Dead(object):
+            def __init__(self, pid):
+                self.pid = pid
+
+            def poll(self):
+                return 1
+
+            def terminate(self):
+                pass
+
+            def wait(self, timeout=None):
+                return 1
+        sent = []
+        with mock.patch.object(B.os, "killpg", lambda g, s: sent.append(g)):
+            for pid in (0, 1, -1, None, "x", os.getpgrp()):
+                with self.subTest(pid=pid):
+                    B.stop_private(_Dead(pid), "http://127.0.0.1:9", True, ask_s=0.1, wait_s=0.2)
+        self.assertEqual(sent, [], "stop_private signalled a group that is ours, init's, or no group at all: %r" % sent)
+        self.assertFalse(B.may_signal_group(os.getpgrp()), "our own group may be signalled")
+        self.assertTrue(B.may_signal_group(os.getpgrp() + 1 if os.getpgrp() > 1 else 2),
+                        "PREMISE: a real child's group may be signalled - the guard refuses everything")
+
     def test_stopping_the_console_stops_its_agent(self):
         proc, group, child = self._spawn()
         self.assertTrue(_alive(child), "the fixture's 'agent' never started - the case could not distinguish")
@@ -79,6 +107,16 @@ class APrivateConsoleTakesItsAgentWithIt(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3896 (REG-3694) - stop_private signals os.killpg(0) again: a fake child's pid 0 is the runner's own group",
+     "file": "tv/test_button_matrix.py",
+     "find": "    if group and may_signal_group(getattr(proc, \"pid\", None)):     # v3896 (REG-3694) - never killpg(0): that is our own group\n",
+     "replace": "    if group:\n",
+     "matches": 1, "needs": "posix-signals"},
+    {"why": "v3896 (REG-3694) - our own process group may be signalled",
+     "file": "tv/test_button_matrix.py",
+     "find": "    return pid > 1 and pid != own\n",
+     "replace": "    return pid != 0\n",
+     "matches": 1, "needs": "posix-signals"},
     {"why": "REG-3670 - the private console shares the law's group again, so a group signal cannot reach only its agent",
      "file": "test_button_matrix.py",
      "find": "    group = os.name == \"posix\"\n",

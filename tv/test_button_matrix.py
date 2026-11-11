@@ -60,6 +60,23 @@ def spawn_private(argv, env):
                             start_new_session=group), group
 
 
+def may_signal_group(pid):
+    """v3896 (REG-3694) - may stop_private signal the process group `pid` names? Only a real child's: never 0 (os.killpg(0)
+    is the CALLER's own group), never 1, never a pid that is not a number, never our own group. MEASURED 11-11 on GitHub,
+    v3896 agent-suite (4), three attempts out of three: test_a_private_console_never_shares_his_ports hands _boot_control a
+    fake child whose pid is 0; the atexit stop then sent SIGTERM to os.killpg(0) - the law's own group, which on a runner is
+    the runner itself ("The runner has received a shutdown signal", exit 143) - and the slice died 3 minutes in. -> bool"""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    try:
+        own = os.getpgrp()
+    except Exception:
+        return False
+    return pid > 1 and pid != own
+
+
 def stop_private(proc, base, group, ask_s=3.0, wait_s=5.0):
     """REG-3670 - THE PRIVATE CONSOLE GOES, AND ITS AGENT WITH IT. MEASURED 11-11 on his Mac: three tv_diablo agents this
     law's consoles had started (SIM agent up) ran on as orphans - 9 h and 2.7 days old, each on an ephemeral agent port and
@@ -71,7 +88,7 @@ def stop_private(proc, base, group, ask_s=3.0, wait_s=5.0):
                                                       headers={"Content-Type": "application/json"}), timeout=ask_s).read()
     except Exception:
         pass
-    if group:
+    if group and may_signal_group(getattr(proc, "pid", None)):     # v3896 (REG-3694) - never killpg(0): that is our own group
         import signal as _sig
         for sig in (_sig.SIGTERM, _sig.SIGKILL):
             try:

@@ -7,6 +7,17 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3694 - THE PRIVATE CONSOLE'S NEW GROUP STOP SENT SIGTERM TO os.killpg(0) - THE RUNNER ITSELF (v3896 round 1)
+MEASURED 11-11 on GitHub, v3896 agent-suite (4), three attempts out of three: the slice died about 3 minutes in with "The
+runner has received a shutdown signal" (exit 143), each time ~40 s after test_console_fleet. Reproduced the slice exactly
+from the round's own cost table (356 gates) and its serial order: the gate at that moment is
+test_a_private_console_never_shares_his_ports, which hands test_button_matrix._boot_control a fake child whose pid is 0.
+REG-3670 (this version) registers stop_private at boot, and at exit stop_private called os.killpg(0, SIGTERM) - the
+CALLER's own process group, which on a runner holds the runner, the step's shell and run_gates. On his Mac the hook would
+have signalled the push's own group the same way. may_signal_group() now refuses 0, 1, a pid that is not a number and our
+own group; only a real child's group is signalled. Law: test_a_private_console_takes_its_agent_with_it (killpg replaced, so a
+regression is a red case, never a real signal). Seen RED x2.
+
 ### REG-3654 - OUR OWN CI NEVER MAKES A SHIP OR PUBLISH QUEUE (v3895, the ship system)
 MEASURED on v3893: Publish sat ~21 min queued behind our own dry runs. tv/ship_yield.py cancels our dry/ and grok/ runs that
 hold runners while a ship or Publish waits, after ~2 minutes, and names the lesson. Law: test_own_ci_never_queues_a_ship_or_publish.
