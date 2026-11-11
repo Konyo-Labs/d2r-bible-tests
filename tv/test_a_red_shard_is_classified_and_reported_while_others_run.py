@@ -107,6 +107,37 @@ class TheLawHolds(unittest.TestCase):
         # siblings were still running — we did not wait for the workflow conclusion
         self.assertEqual(_suite(jobs)["status"], "in_progress")
 
+    def test_a_red_seen_from_a_checkout_never_writes_its_tracked_files(self):
+        """v3896 (REG-3684) - MEASURED 11-11 ~06:01: the watcher wrote the red slice into the TRACKED shard history and lessons
+        of the ship's own tree, and the relaunch on the same commit refused - "the tree is not clean". From a checkout the
+        history and the lesson go to the machine ledger (git's common dir); the tracked files stay as committed."""
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        root = tempfile.mkdtemp(prefix="shard-checkout-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        os.makedirs(os.path.join(root, "tv"))
+        tracked = {"tv/shard_history.json": '{\n  "rounds": [],\n  "flags": []\n}\n',
+                   "tv/preship_lessons.json": '{\n  "lessons": []\n}\n'}
+        for rel, body in tracked.items():
+            with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
+                fh.write(body)
+        for args in (["init", "-q"], ["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
+            self.assertEqual(subprocess.run(["git"] + args, cwd=root, capture_output=True, env=env).returncode, 0, args)
+        jobs = [{"name": "agent-suite (2)", "databaseId": 2, "status": "completed", "conclusion": "failure"}]
+        gh = _GH(jobs, logs={2: ATTEMPT9_LOG})
+        from unittest import mock
+        with mock.patch.dict(os.environ, env, clear=True):
+            kind, _info = SHW.watch_jobs_live("a" * 40, [_suite(jobs)], gh, [].append, set(), {}, clock=lambda: 1.0,
+                                              root=root)
+            local = SHW.local_path(root)
+            history = SHW.load(root)
+        self.assertEqual(kind, "real", "PREMISE: the planted red was not seen")
+        for rel, body in tracked.items():
+            with open(os.path.join(root, rel), encoding="utf-8") as fh:
+                self.assertEqual(fh.read(), body, "the watcher wrote the TRACKED %s of the ship's own tree" % rel)
+        self.assertTrue(local and os.path.isfile(local), "the red slice was recorded nowhere")
+        self.assertEqual([j["name"] for r in history["rounds"] for j in r["jobs"]], ["agent-suite (2)"],
+                         "the machine's own round is not read back with the tracked history")
+
     def test_a_cutoff_is_queued_when_github_refuses_a_mid_run_rerun(self):
         root = tempfile.mkdtemp(prefix="shard-cut-")
         self.addCleanup(shutil.rmtree, root, ignore_errors=True)
@@ -152,6 +183,21 @@ RED_PROOF = [
      "find": "watch_jobs_live",
      "replace": "watch_jobs_never",
      "matches": 1},
+    {"why": "v3896 (REG-3684) - the live watcher writes the TRACKED shard history of the ship's own tree again",
+     "file": "tv/shard_watch.py",
+     "find": "    p = local_path(root) or path(root)\n    os.makedirs(os.path.dirname(p), exist_ok=True)\n",
+     "replace": "    p = path(root)\n    os.makedirs(os.path.dirname(p), exist_ok=True)\n",
+     "matches": 1},
+    {"why": "v3896 (REG-3684) - the watcher's lesson lands in the tracked lessons file of the ship's own tree again",
+     "file": "tv/shard_watch.py",
+     "find": "                        shard=info[\"name\"], local=True)      # v3896 (REG-3684) - never the tracked lessons of the ship's tree\n",
+     "replace": "                        shard=info[\"name\"])\n",
+     "matches": 1},
+    {"why": "v3896 (REG-3684) - the machine's own rounds are not read back with the tracked history",
+     "file": "tv/shard_watch.py",
+     "find": "    for src in (tracked or {}, local or {}):\n",
+     "replace": "    for src in (tracked or {},):\n",
+     "matches": 1}
 ]
 
 if __name__ == "__main__":

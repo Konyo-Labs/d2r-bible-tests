@@ -27,6 +27,16 @@ origin/main:tv/WINDOWS_SHIP.json, which says "ver"; the ledger was asked `--chec
 readiness read the refusal as a look owed - so it could never pass. ship_version() reads the real key first, the old names
 still accepted, nothing guessed. Law: test_a_worktree_without_playwright_is_not_ready (TheReadinessAsksTheVersionMainShips,
 which reads the tree's own WINDOWS_SHIP.json through it). Seen RED.
+### REG-3684 - THE SHIP'S SHARD WATCHER WROTE THE TRACKED FILES OF THE TREE IT WAS SHIPPING (v3896, card #200 guard 9)
+MEASURED 11-11 ~06:01, v3895 round 3: a flaky slice (test_a_board_field_takes_keys_after_a_click, green in round 2 on the
+same UI bytes) went red; the live watcher recorded it into the TRACKED tv/shard_history.json and appended a lesson to the
+TRACKED tv/preship_lessons.json of the ship's own worktree. The relaunch on the same commit then refused - "the tree is not
+clean" - and had the ship gone on, the main hook would have graded those uncommitted bytes. REG-3674 had moved only the
+CLI's automatic lesson; this is the same class from the watcher. A checkout's shard history and the watcher's lesson now go
+to the machine ledger (git's common dir); load() reads the committed history with the machine's rounds folded in by run;
+a fixture's temp root (no .git of its own) keeps its tracked-path file. Law:
+test_a_red_shard_is_classified_and_reported_while_others_run. Seen RED x3.
+
 ### REG-3683 - THE SPEED LEDGER TIMED A RUN THE SHIP HAD CANCELLED (v3896, #194)
 MEASURED 11-11 on v3895 round 2: the ship cancelled the optional Windows proof run once GitHub vouched (card #200 guard 7),
 then the speed ledger measured that run and printed "slowest job 42.4 min (FASTER 3.5 min than the last 5 rounds')" - the

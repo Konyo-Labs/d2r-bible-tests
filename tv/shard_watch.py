@@ -21,6 +21,7 @@ from __future__ import print_function
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -70,24 +71,65 @@ def path(root=None):
     return os.path.join(root or REPO, "tv", NAME)
 
 
-def load(root=None):
-    p = path(root)
+#: v3896 (REG-3684) - what a LIVE ship's watcher learns lives in git's common dir, never in the tracked tv/shard_history.json
+LOCAL_NAME = "shard_history_local.json"
+
+
+def local_path(root=None):
+    """The machine's own shard history beside the speed and second-eye ledgers. -> path, or None when `root` is not itself a
+    git checkout or worktree (a fixture's temp root keeps its tracked-path file, as before). Never asks git from inside a
+    directory that is not a checkout: a GIT_DIR leaked from a hook would answer for the real repo."""
+    r = os.path.abspath(root or REPO)
+    if not os.path.exists(os.path.join(r, ".git")):
+        return None
+    try:
+        p = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=r, capture_output=True, text=True, timeout=15)
+    except Exception:
+        return None
+    d = (p.stdout or "").strip()
+    if p.returncode != 0 or not d:
+        return None
+    return os.path.join(d if os.path.isabs(d) else os.path.join(r, d), LOCAL_NAME)
+
+
+def _read(p):
+    if not p:
+        return None
     try:
         with open(p, encoding="utf-8") as fh:
             data = json.load(fh)
-    except FileNotFoundError:
-        return None  # missing ledger is UNKNOWN, not an empty history
     except (OSError, ValueError):
         return None
-    if not isinstance(data, dict):
-        return None
-    data.setdefault("rounds", [])
-    data.setdefault("flags", [])
+    return data if isinstance(data, dict) else None
+
+
+def load(root=None):
+    """The tracked history (committed) with this machine's own rounds folded in, by run. -> dict | None (neither ledger
+    reads: UNKNOWN, not an empty history)"""
+    tracked, local = _read(path(root)), _read(local_path(root))
+    if tracked is None and local is None:
+        return None  # missing ledger is UNKNOWN, not an empty history
+    data = dict(tracked or {})
+    rounds = {}
+    for src in (tracked or {}, local or {}):
+        for r in (src.get("rounds") or []):
+            if isinstance(r, dict):
+                rounds[str(r.get("run"))] = r          # the machine's copy of a run wins: it is the later read
+    data["rounds"] = list(rounds.values())
+    flags = list((tracked or {}).get("flags") or [])
+    for f in ((local or {}).get("flags") or []):
+        if f not in flags:
+            flags.append(f)
+    data["flags"] = flags
     return data
 
 
 def save(data, root=None):
-    p = path(root)
+    """v3896 (REG-3684) - MEASURED 11-11 ~06:01: v3895 round 3's watcher recorded a red slice into the TRACKED
+    tv/shard_history.json (and a lesson into tv/preship_lessons.json) of the ship's own tree; the relaunch on the same commit
+    then refused - "the tree is not clean" - and the main hook would have graded those uncommitted bytes. A checkout's
+    history is written to the machine ledger (local_path); a fixture's temp root keeps the tracked path."""
+    p = local_path(root) or path(root)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False)
@@ -604,7 +646,7 @@ def watch_jobs_live(sha, runs, run, say, seen, made, clock, root=None):
                     P.remember_refusal(
                         "shard %s went red: %s" % (info["name"], info.get("why")),
                         "failed_shards", root=root, cls="shard-failure",
-                        shard=info["name"])
+                        shard=info["name"], local=True)      # v3896 (REG-3684) - never the tracked lessons of the ship's tree
                 except Exception:
                     pass
                 return "real", info
