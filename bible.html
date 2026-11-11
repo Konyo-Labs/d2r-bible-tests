@@ -77700,7 +77700,22 @@ select.cb-roll{width:auto;height:1.5em;font-family:var(--sans);font-size:var(--f
 :root{--ff-game:"D2 Exocet",var(--serif-display)}
 .qw-name,.f-rwbig,.boss-name,.fh-boss,.gic-name,.item-name,.ct-name,.tz-zone-name,.tzt-z-name,
 .rw-name,.rwc-name,.set-card-name,.set-piece-name,.statue-card-name,.gic-char-name,
-.gf-cname,.qw-zone{font-family:var(--ff-game)!important}
+.gf-cname,.qw-zone,span[data-arttip],b[data-arttip],.item-tile-name,.zd-su-card-name,.er-it-name,.hvf-name,.iv-name,
+.cn-name,.cn-pv-opt-nm,.arw-name,.vm-item-name,.zd-hg-name strong,.cw-g-mod,.cw-reroll-mod,.hpbar-mods{font-family:var(--ff-game)!important}
+/* v3898 (#23 phase 2, his 11-08: item names AND keywords/mods, zones, monsters take the in-game face) - [data-arttip] is the
+   hook the board gives every item, rune, base and monster name (its hover art), so the names phase 1's class list missed
+   take the face through it - but ONLY where it sits on an inline name (a span or a b). MEASURED 11-11 over the source: 75
+   kinds of element carry it, and the div/td ones are whole rows and cards (a recipe row, a super-unique card, a crafts
+   header with its "0 / 9 make now"), so a bare [data-arttip] would have dressed a row's numbers and prose as game text; their
+   names take the face by their own name class above. The crafted-item mod chips and a boss's monster mods are game text too.
+   The console's own pieces INSIDE a name keep the console's readable face: the tick box, the base type and the badge beside
+   a wall chip's name ("Cap", "unidentified"), its qlvl, the TZ tag, the tier and LADDER chips (the runeword ladder tag too, which a phase-1 name class had been dressing since v3889), a stash badge, the
+   slot label before a runeword base ("Weapon") and any button. A piece that sets its OWN face (the chip's ETA in the
+   console's monospace) is left off this list: inheritance never beats a rule on the element, and listing it here would
+   swap the face it had for this one (measured 11-11: "7h" went monospace -> Inter). */
+[data-arttip] .si-tier,[data-arttip] .rwc-ladder,.rwc-name .rwc-ladder,[data-arttip] .gf-tick,[data-arttip] .gp-ck,
+[data-arttip] .gq,[data-arttip] .gp-q,[data-arttip] .tz-tag,[data-arttip] .tvn-badge,
+[data-arttip] .cw-ing-badge,.rwd-base-t>b,[data-arttip] button,.rw-ladder-tag{font-family:var(--sans)!important}
 .ct-affixes,.ct-affixes li{font-family:var(--ff-game)!important}
 /* the console's own words inside a game name keep the face they HAD: the item card's Unique / Runeword badge inherited the
    card title's display serif (Grok CLI, 11-09: with --sans it read "Unique" where it had read "UNIQUE") */

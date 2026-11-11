@@ -38,7 +38,18 @@ import js_strip  # noqa: E402  (one comment stripper for the laws - test_one_com
 #: the elements that hold a GAME NAME (item, zone, terror zone, monster, boss, runeword, set) - the theme's whole reach
 GAME_NAMES = (".qw-name", ".f-rwbig", ".boss-name", ".fh-boss", ".gic-name", ".item-name", ".ct-name", ".tz-zone-name",
               ".tzt-z-name", ".rw-name", ".rwc-name", ".set-card-name", ".set-piece-name", ".statue-card-name",
-              ".gic-char-name", ".gf-cname", ".qw-zone")
+              ".gic-char-name", ".gf-cname", ".qw-zone",
+              # v3898 (#23 phase 2) - an inline name the board hangs hover art on, the names inside rows and cards that
+              # carry the art on the row, and the game's mod lines
+              "span[data-arttip]", "b[data-arttip]", ".item-tile-name", ".zd-su-card-name", ".er-it-name", ".hvf-name",
+              ".iv-name", ".cn-name", ".cn-pv-opt-nm", ".arw-name", ".vm-item-name", ".zd-hg-name strong",
+              ".cw-g-mod", ".cw-reroll-mod", ".hpbar-mods")
+#: v3898 - the console's own pieces INSIDE a name (a wall chip's tick, base, badge, qlvl and ETA, the TZ tag, the tier,
+#: LADDER and stash badges, the runeword base's slot label, a button) - they keep the console's face
+BADGES_IN_A_NAME = ("[data-arttip] .si-tier", "[data-arttip] .rwc-ladder", ".rwc-name .rwc-ladder", "[data-arttip] .gf-tick",
+                    "[data-arttip] .gp-ck", "[data-arttip] .gq", "[data-arttip] .gp-q",
+                    "[data-arttip] .tz-tag", "[data-arttip] .tvn-badge", "[data-arttip] .cw-ing-badge", ".rwd-base-t>b",
+                    "[data-arttip] button", ".rw-ladder-tag")
 #: the console's own words beside or around a name - they keep their face (his "titles and stuff should stay")
 NOT_GAME = (".f-atomact", ".qw-area", ".qw-sub", ".gq", ".gf-chip", ".qw-also-h", ".tab", ".tz-zone-tag")
 
@@ -124,6 +135,26 @@ class GameNamesWearTheGameFace(unittest.TestCase):
         self.assertEqual([c for c in NOT_GAME if c in sels], [], "a console word was given the game face")
         self.assertIn(".gic-name .gic-grail-badge{font-family:var(--serif-display)!important}", self.css,
                       "the item card's Unique / Runeword badge lost the face it had (Grok CLI 11-09: 'UNIQUE' -> 'Unique')")
+        # v3898 (#23 phase 2) - the console's pieces inside a game name keep the console's face
+        b = re.search(r"([^{}]+)\{font-family:var\(--sans\)!important\}", self.css)
+        self.assertTrue(b, "no rule gives the console's badges inside a name their own face back")
+        spared = set(x.strip() for x in b.group(1).split(","))
+        self.assertEqual([c for c in BADGES_IN_A_NAME if c not in spared], [],
+                         "a console badge inside a game name took the game face")
+        # a piece that sets its own face keeps it by itself; spared here it would wear --sans instead (11-11: "7h" mono->Inter)
+        self.assertNotIn("[data-arttip] .gp-eta", spared, "the wall chip's ETA lost its own monospace face to the console sans")
+        self.assertIn("font-family:var(--mono,monospace)}", self.src[self.src.index(".gf-piece .gp-eta{"):][:400],
+                      "PREMISE: the wall chip's ETA no longer sets its own face, so it now needs sparing")
+
+    def test_the_art_hook_dresses_inline_names_never_whole_rows(self):
+        """v3898 (#23 phase 2) - MEASURED 11-11 over the source: 75 kinds of element carry data-arttip, and the div and td
+        ones are whole rows and cards (a recipe row, a super-unique card, a crafts header with '0 / 9 make now'). The hook
+        sets the face only where it sits on an inline name; a row's name takes it by its own name class"""
+        m = re.search(r"([^{}]+)\{font-family:var\(--ff-game\)!important\}", self.css)
+        self.assertTrue(m, "PREMISE: no rule sets the game face")
+        sels = [x.strip() for x in m.group(1).split(",")]
+        broad = [c for c in sels if "data-arttip" in c and not re.match(r"^(span|b)\[data-arttip\]$", c)]
+        self.assertEqual(broad, [], "the art hook dresses more than an inline name - a whole row or card takes the game face")
 
     def test_a_zone_name_is_wrapped_apart_from_the_words_after_it(self):
         """the area line reads 'Catacombs L4 · ~350 kills a run': only the zone is a game name"""
@@ -171,6 +202,36 @@ class TheConsolesGameNamesToo(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "v3898 (#23 phase 2) - the names phase 1's class list missed (an inline [data-arttip]) keep the console face again",
+     "file": "bible.html",
+     "find": ".gf-cname,.qw-zone,span[data-arttip],b[data-arttip],.item-tile-name,",
+     "replace": ".gf-cname,.qw-zone,.item-tile-name,",
+     "matches": 1},
+    {"why": "v3898 (#23 phase 2) - a bare [data-arttip] dresses whole rows and cards (a crafts header's '0 / 9 make now')",
+     "file": "bible.html",
+     "find": ".gf-cname,.qw-zone,span[data-arttip],b[data-arttip],.item-tile-name,",
+     "replace": ".gf-cname,.qw-zone,[data-arttip],.item-tile-name,",
+     "matches": 1},
+    {"why": "v3898 (#23 phase 2) - a wall chip's base type and badge ('Cap', 'unidentified') take the game face",
+     "file": "bible.html",
+     "find": "[data-arttip] .gp-ck,\n[data-arttip] .gq,[data-arttip] .gp-q,",
+     "replace": "[data-arttip] .gp-ck,\n[data-arttip] .gp-q,",
+     "matches": 1},
+    {"why": "v3898 (#23 phase 2) - the wall chip's ETA is spared to the console sans and loses its own monospace face",
+     "file": "bible.html",
+     "find": "[data-arttip] .gq,[data-arttip] .gp-q,[data-arttip] .tz-tag,",
+     "replace": "[data-arttip] .gq,[data-arttip] .gp-q,[data-arttip] .gp-eta,[data-arttip] .tz-tag,",
+     "matches": 1},
+    {"why": "v3898 (#23 phase 2) - the runeword base's slot label ('Weapon') takes the game face",
+     "file": "bible.html",
+     "find": "[data-arttip] .cw-ing-badge,.rwd-base-t>b,",
+     "replace": "[data-arttip] .cw-ing-badge,",
+     "matches": 1},
+    {"why": "v3898 (#23 phase 2) - the tier and LADDER badges inside a name take the game face",
+     "file": "bible.html",
+     "find": "[data-arttip] .si-tier,[data-arttip] .rwc-ladder,.rwc-name .rwc-ladder,[data-arttip] .gf-tick,",
+     "replace": "[data-arttip] .gf-tick,",
+     "matches": 1},
     {"why": "v3889 round 2 (REG-3490) - the board's stylesheet asks for the font again on every page, file:// and the site",
      "file": "bible.html",
      "find": '@font-face{font-family:"D2 Exocet";src:local("Exocet Blizzard OT"),local("ExocetBlizzardOT-Medium");font-display:swap}',
@@ -203,8 +264,9 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3889 (#23) - the theme block recolours a name (his 'colors still the same')",
      "file": "bible.html",
-     "find": ".gf-cname,.qw-zone{font-family:var(--ff-game)!important}",
-     "replace": ".gf-cname,.qw-zone{font-family:var(--ff-game)!important;color:#fff}",
+     # v3898 re-anchored: phase 2 grew the selector list, this rule's last line is now the mod chips
+     "find": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods{font-family:var(--ff-game)!important}",
+     "replace": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods{font-family:var(--ff-game)!important;color:#fff}",
      "matches": 1},
     {"why": "v3889 (#23, the Grok CLI's catch) - the item card's badge is set in a face it never had",
      "file": "bible.html",
