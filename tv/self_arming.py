@@ -355,15 +355,14 @@ LOCKS = {
         "acts": "tells him how much space was freed",
         "bar": 0.510, "kinds_bar": 1.0, "after": [],
     },
+    # REG-3819 (his 11-13 "okay then do it") - PROVABLE NOW. The drop REFUSES while any ledger row cites only reels the
+    # river has released (24 of 184 rows on his Mac, measured 11-13 - the "rebuildable" premise was false for them) and
+    # while the ledger or the reel store will not read. Clearing the swept memory still never refuses. vault_forget_wilson
+    # attacks the refusal on a scratch ledger; the cross-family kind is owed before the lock can open (kinds_bar 1.3).
     "vault.forget": {
-        "surface": "VAULT", "acts": "drops the ledger",
-        "destructive": True,   # there is nothing to drop it back from
+        "surface": "VAULT", "acts": "drops the ledger - refused while any row cites only reels gone from disk",
+        "destructive": True,   # a row whose reels are gone has nothing to be rebuilt from
         "bar": 0.722, "kinds_bar": 1.3, "after": ["vault.sweep_start"],
-        "unprovable": ("the door has no refusal path by design — clearing a rebuildable "
-                       "optimisation is a button, and gating it would be a cage. There is no "
-                       "state in which it must refuse, so sabotage cannot produce evidence in "
-                       "either direction"),
-        "unprovable_fn": "vault_forget",
     },
     # step 1 — MINI AUTO. His ruling, 2026-09-02: "i want it not enforced... i want it BADGED...
     # my point was i want it KNOWN on the console is all", with "a logical coding to it with wilson
@@ -640,10 +639,13 @@ PROVES = {
     # vault_wilson attempts proposals the WRITE door must reject — v1595's re-gate, which
     # returns before the board is ever asked. It never applies anything: every row it hands
     # in carries an empty evidence list, so it fails the witness gate by construction.
-    # ⚠ It is declared for vault.apply ONLY. vault.forget has no refusal path at all (7
-    # lines, one return, always ok), so nothing can prove it by sabotage and nothing here
-    # pretends to.
+    # ⚠ It is declared for vault.apply ONLY. vault.forget gained its refusal path in REG-3819 and is attacked by its
+    # own harness below, never by this one.
     "vault_wilson": ("vault.apply",),
+    # REG-3819 - eleven distinct ways a ledger the drop must KEEP can be handed to vault_forget(ledger=True), each on a
+    # scratch ledger under the system temp dir, each counted only when the ledger bytes did not move. A control that
+    # must CLEAR runs first, so a door that refuses everything scores nothing.
+    "vault_forget_wilson": ("vault.forget",),
     # printer_wilson removes each owner's ability to answer and requires the printer to say
     # UNKNOWN **with a reason** rather than guess, skip the station, or drop the reel. It calls
     # exactly one function, printer.stream(), whose own docstring is "IT PRINTS NOTHING AND
@@ -1597,7 +1599,7 @@ LOCK_DOORS = {
     "vault.sweep_start": ("control_app", "sweep_wilson"),
     "vault.apply": ("read_names_feeder",),
     "prune.reports": ("disk_report_wilson", "control_app"),
-    "vault.forget": (),
+    "vault.forget": ("control_app", "vault_forget_wilson"),
     "miniauto.run": ("hover_wilson",),
     "console.pixel_rescue": ("control_app",),
 }
@@ -1624,6 +1626,8 @@ LOCK_MARKS = {
     # the pixels' reload: the console's rescue loop asks the lock on a BLANK pixel verdict
     "console.pixel_rescue": ("console.pixel_rescue", "_console_rescue_loop", "pixelBlank", "pixelMayAct", "_PIXEL_ACT",
                              "_PIXEL_VERDICT_MAX_AGE_S", "ui_rescue_due", "console-blank-by-pixels", "pixel_witness"),
+    # REG-3819 - the ledger drop: vault_forget refuses on _ledger_rows_past_their_reels before vault_ledger_save runs
+    "vault.forget": ("vault.forget", "vault_forget", "_ledger_rows_past_their_reels", "vault_ledger_save"),
 }
 _LOCK_MEMO = {"key": None, "owed": None, "blind": None, "why": None, "src": {}, "guard": {}}
 

@@ -35263,9 +35263,10 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
       var j = await r.json();
       // the LEDGER is deliberately kept — this clears which reels were swept, so a re-read is
       // possible. Dropping the accumulated evidence too is a different, bigger button.
-      if (note) note.textContent = (j && j.ok)
+      // REG-3819 — `ok` says the console answered; `forgot` says the swept memory really saved empty
+      if (note) note.textContent = (j && j.ok && j.forgot !== false)
         ? '↺ swept memory cleared — the next sweep re-reads every reel'
-        : '⚠ could not clear — ' + escC((j && j.why) || 'no answer');
+        : '⚠ could not clear — ' + escC((j && (j.forgotWhy || j.why)) || 'no answer');
     } catch (e) {
       if (note) note.textContent = '⚠ could not reach the console';
     }

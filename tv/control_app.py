@@ -34360,7 +34360,7 @@ def _vault_swept_load():
 def _vault_swept_save(rec):
     """Torn-write safe (v1209 doctrine): a crash mid-write must not read back as
     'nothing was ever swept' and re-pay for the whole hist."""
-    _vault_json_save(_VAULT_SWEPT_PATH, rec)
+    return _vault_json_save(_VAULT_SWEPT_PATH, rec)
 
 
 # ── v2115 — AN UNREADABLE STORE IS NOT AN EMPTY ONE ─────────────────────────────────────────
@@ -42991,14 +42991,64 @@ def _vault_lane_note_outcome(reel_dir, swept=None):
 _VAULT_LAST_PROPOSAL = None
 
 
+def _ledger_rows_past_their_reels(led, hist=None):
+    """REG-3819 - the ledger rows whose EVERY witness reel is gone from disk (their evidence cannot be rebuilt). -> list | None
+
+    A row is any dict carrying a "witnesses" list; a witness names its "session" (s_...), whose reel is HIST/reel_<session>.
+    A row with no session on any witness is past rebuilding too. None: the ledger or the reel store would not read (UNKNOWN)."""
+    hist = hist or HIST_DIR
+    if not isinstance(led, dict) or not os.path.isdir(hist):
+        return None
+    gone = []
+
+    def walk(o):
+        if isinstance(o, dict):
+            w = o.get("witnesses")
+            if isinstance(w, list):
+                # a session is a plain reel name: one with a separator or a dot-dot could join to a directory OUTSIDE the
+                # reel store (reel_s_x/../.. is the store's parent) and read as a reel still on disk
+                sess = [str(x.get("session")) for x in w if isinstance(x, dict) and x.get("session")]
+                sess = [s_ for s_ in sess if s_.startswith("s_") and not any(c in s_ for c in ("/", "\\", ".."))]
+                if not any(os.path.isdir(os.path.join(hist, "reel_" + s_)) for s_ in sess):
+                    gone.append(o.get("name") or o.get("key") or "a row")
+                return
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    walk(led)
+    return gone
+
+
 def vault_forget(ledger=False):
     """Let him re-read everything. The swept memory is an optimisation, and an optimisation he
-    cannot clear is a cage. ledger=true ALSO drops the accumulated evidence — safe, because the
-    ledger is rebuildable from the reels and was never the source of truth for what he owns."""
-    _vault_swept_save({})
-    if ledger:
-        vault_ledger_save({})
-    return {"ok": True, "forgot": True, "ledgerCleared": bool(ledger)}
+    cannot clear is a cage - that part never refuses.
+
+    REG-3819 (his 11-13 "okay then do it") - ledger=true ALSO drops the accumulated evidence, and that was called safe
+    "because the ledger is rebuildable from the reels" - true only while the reels are on disk. Since the river releases
+    reels, a row whose every witness reel is gone is the only record of that evidence: the drop now REFUSES while any such
+    row exists, and while the ledger or the reel store will not read (UNKNOWN keeps it), and says how many and which.
+    Each half reports what its own write did: a save that was refused is never reported as a clear."""
+    forgot = _vault_swept_save({}) is not False
+    out = {"ok": True, "forgot": forgot, "ledgerCleared": False}
+    if not forgot:
+        out["forgotWhy"] = "the swept memory would not save, so it still holds what it held"
+    if not ledger:
+        return out
+    led = vault_ledger_load()
+    gone = None if VAULT_LEDGER_PATH in _UNREADABLE else _ledger_rows_past_their_reels(led)
+    if gone is None:
+        out.update(refused=True, why="the ledger or the reel store would not read - UNKNOWN, so the ledger is kept")
+    elif gone:
+        out.update(refused=True, why=(
+            "%d ledger row(s) cite only reels no longer on disk (%s) - their evidence cannot be rebuilt, so the ledger "
+            "is kept" % (len(gone), ", ".join(str(g) for g in gone[:3]) + (" ..." if len(gone) > 3 else ""))))
+    elif vault_ledger_save({}) is not False:
+        out["ledgerCleared"] = True
+    else:
+        out.update(refused=True, why="the ledger would not save, so it still holds what it held")
+    return out
 
 
 def _inert(o, _depth=0):

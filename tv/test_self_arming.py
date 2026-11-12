@@ -461,7 +461,13 @@ class AnUnprovableLockSaysSoAndTheClaimIsCHECKED(unittest.TestCase):
     def test_every_unprovable_lock_names_a_function_that_really_cannot_refuse(self):
         import ast
         declared = [(k, v) for k, v in SA.LOCKS.items() if v.get("unprovable")]
-        self.assertTrue(declared, "no lock declares itself unprovable — has vault.forget changed?")
+        # REG-3819 - vault.forget, this law's only subject, gained a refusal path (the ledger drop refuses while a row
+        # cites only released reels), so no lock is unprovable today. The check below still runs for the day one is;
+        # what must hold NOW is the other half: the lock that stopped claiming it is named by a harness that attacks it.
+        if not declared:
+            self.assertIn("vault.forget", [lk for lks in SA.PROVES.values() for lk in lks],
+                          "no lock is unprovable, and vault.forget names no harness either - it lost its "
+                          "explanation without gaining evidence")
         for lock, spec in declared:
             fname = spec.get("unprovable_fn")
             self.assertTrue(
@@ -541,18 +547,24 @@ class AnUnprovableLockSaysSoAndTheClaimIsCHECKED(unittest.TestCase):
             "can never be sabotaged")
 
     def test_the_panel_tells_UNTESTED_apart_from_UNPROVABLE(self):
-        """Both are n=0 and neither is a failure, but only one is waiting on work."""
-        rows = {r["lock"]: r for r in SA.report()["locks"]}
-        forget = rows.get("vault.forget")
-        self.assertTrue(forget, "vault.forget is no longer reported")
+        """Both are n=0 and neither is a failure, but only one is waiting on work.
+
+        REG-3819 - vault.forget, the live example this read, is provable now, so the distinction is pinned on a fixture
+        lock declared unprovable by design: the mechanism must still speak for the day a real door needs it."""
+        from unittest import mock
+        spec = dict(SA.LOCKS["vault.forget"], unprovable="a fixture door with no refusal path", unprovable_fn="vault_forget")
+        with mock.patch.dict(SA.LOCKS, {"zz.fixture_unprovable": spec}):
+            rows = {r["lock"]: r for r in SA.report()["locks"]}
+        forget = rows.get("zz.fixture_unprovable")
+        self.assertTrue(forget, "a lock declared unprovable is not reported")
         self.assertEqual(forget["state"], SA.UNPROVEN)
         self.assertIs(forget.get("provable"), False,
-                      "vault.forget is reported as still-provable, so the panel is telling him a "
+                      "a by-design door is reported as still-provable, so the panel is telling him a "
                       "harness is owed for a door that can never be sabotaged")
         self.assertIn("cannot be proven", forget["why"])
         self.assertNotIn(
             "no sabotage has been attempted", forget["why"],
-            "vault.forget still uses the nobody-has-tested-it sentence, which reads as a missing "
+            "a by-design door still uses the nobody-has-tested-it sentence, which reads as a missing "
             "harness rather than a door with no refusal path")
         # a lock with real evidence must NOT be mislabelled
         for name, r in rows.items():
@@ -947,9 +959,10 @@ class TestV2619AnUnexercisedAxisHoldsTheLock(unittest.TestCase):
                          % changed)
 
     def test_UNPROVEN_is_untouched_because_it_banked_NOTHING(self):
-        """⚠ vault.forget has no rows at all, which is a different fact from having a row that
-        could not run. Collapsing them would relabel a door that is unprovable BY DESIGN."""
-        r = SA.score("vault.forget")
+        """⚠ A lock with no rows at all is a different fact from one with a row that could not run. Collapsing them
+        would relabel a door nobody has attacked as one whose attack was blind. (REG-3819: vault.forget, the lock this
+        read live, now banks evidence, so the no-rows case is handed in explicitly.)"""
+        r = SA.score("vault.forget", rows=[])
         self.assertEqual(r["state"], SA.UNPROVEN)
         self.assertEqual(r["blindClaims"], [])
 

@@ -45982,8 +45982,9 @@ class TestV2618TheHeartsLockBadgeMustBeLEGIBLE(unittest.TestCase):
                       "the badge tests only for OPEN, so a HARDENED lock would draw as shut")
 
     def test_vault_forget_is_not_shown_as_merely_WAITING(self):
-        """It can never be proven, by design. Drawing it identically to a lock that simply has not
-        been attacked yet sends him to look for a harness that cannot exist."""
+        """A lock unprovable BY DESIGN drawn identically to one that simply has not been attacked yet sends him to look
+        for a harness that cannot exist. (REG-3819: vault.forget itself is provable now and has its harness; the
+        renderer keeps the words for any door that declares it.)"""
         here = os.path.dirname(os.path.abspath(__file__))
         ui = io.open(os.path.join(here, "control_ui.html"), encoding="utf-8").read()
         self.assertIn("by design", ui,

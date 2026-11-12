@@ -1,4 +1,4 @@
-"""A2 · can the VAULT APPLY refuse when it must? — and why vault.forget cannot be proven this way.
+"""A2 · can the VAULT APPLY refuse when it must? (vault.forget has its own harness: vault_forget_wilson.py)
 
 `vault.apply` guards "mules items between characters": the door that WRITES HIS LEDGER. Its bar is
 0.722 and it sat UNPROVEN at n=0 because nothing was permitted to feed it.
@@ -11,7 +11,8 @@ only thing counted is whether it refused. There is no attempt here whose success
 it on witnesses alone. A row that might pass would be a row that might be written into his stash,
 and that is not a risk a test may take. [[feedback-fixtures-never-touch-live-data]]
 
-⚠⚠ AND THE FINDING THAT COMES WITH IT: `vault.forget` CANNOT BE PROVEN THIS WAY AT ALL. Measured by
+⚠⚠ HISTORY, RETRACTED BY REG-3819 (11-13): the paragraph below was true until the ledger drop gained its refusal.
+`vault.forget` is now attacked by vault_forget_wilson.py. What it said then: CANNOT BE PROVEN THIS WAY AT ALL. Measured by
 AST — 7 lines, one return, and ZERO refusal paths. It clears the swept memory and always answers
 ok. Its own docstring explains why that is correct: "an optimisation he cannot clear is a cage",
 and the ledger is rebuildable from the reels. So there is no wrong input for it to catch, and its
@@ -462,12 +463,9 @@ def score():
 
 
 def forget_note():
-    """-> str. Why vault.forget carries no sabotage, stated rather than left blank."""
-    return ("vault.forget has NO refusal path — 7 lines, one return, always ok. Its docstring says "
-            "why that is right: 'an optimisation he cannot clear is a cage', and the ledger is "
-            "rebuildable from the reels. There is no wrong input for it to catch, so its lock "
-            "stays UNPROVEN by construction. That is a fact about the door, not a gap in the "
-            "evidence, and a sabotage invented for it would be manufactured proof.")
+    """-> str. Where vault.forget's evidence comes from, stated rather than left blank."""
+    return ("vault.forget is attacked by its own harness, vault_forget_wilson.py (REG-3819): the ledger "
+            "drop refuses while any row cites only reels gone from disk. This harness never attacks it.")
 
 
 def score_live(port=17772, n=8, timeout=6.0):

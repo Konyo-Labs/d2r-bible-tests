@@ -1529,9 +1529,16 @@ GATES = [
              "carrying an EMPTY evidence list so it fails the witness gate by construction, and "
              "counts whether v1595's re-gate refused. ⚠ It never applies anything: every rejection "
              "happens before the board is asked. Proven RED: removing the re-gate takes that claim "
-             "to 8/0 LEAKS while the empty-proposal claim stays PROVEN. It also REPORTS, rather "
-             "than papers over, that vault.forget has no refusal path at all and therefore cannot "
-             "be proven by sabotage."),
+             "to 8/0 LEAKS while the empty-proposal claim stays PROVEN. vault.forget is attacked by its own "
+             "harness (REG-3819), never by this one."),
+    Gate("vault-forget-wilson", [sys.executable, os.path.join(HERE, "vault_forget_wilson.py")], 120,
+         why="REG-3819 (his 11-13 'okay then do it') - vault.forget drops the ledger, and the drop was called safe "
+             "because the ledger is rebuildable from the reels; on his Mac 24 of 184 rows already cited only reels "
+             "the river had released. The drop now refuses while any row cites only reels gone from disk, or while "
+             "the ledger or the reel store will not read. This hands it eleven ledgers it MUST keep, each on a "
+             "scratch ledger under the system temp dir and counted only when the ledger bytes did not move, after a "
+             "control it MUST clear (a door that refuses everything proves nothing). Exit 1 on a LEAK or a control "
+             "that did not clear. Banks only with --bank."),
     Gate("test_a_sweep_with_no_readable_lane_does_not_start",
          [sys.executable, os.path.join(HERE, "test_a_sweep_with_no_readable_lane_does_not_start.py")], 90,
          why="v3406 (#152) - AN ATTACK THE LOCK ANSWERED IS NOT AN ATTACK ON THE DOOR. "

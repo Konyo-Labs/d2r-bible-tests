@@ -71,15 +71,16 @@ class EveryLockWithEvidenceDeclaresItsAttacks(unittest.TestCase):
                          "that earned it: %s" % (len(bad), bad))
 
     def test_a_lock_with_NO_evidence_may_be_unstated(self):
-        """⚠ THE CARVE-OUT, and it must stay. `vault.forget` is UNPROVEN BY CONSTRUCTION — it has
-        no refusal path, so no attack can ever be made. Demanding an attack count there would be
-        demanding a number about an event that cannot happen."""
-        zero = [r for r in _locks() if int(r.get("n") or 0) == 0]
-        # REG-1893 - vault.forget has no refusal path, so it is n=0 on every machine; an empty
-        # `zero` (a lost table, a renamed `n`) would pass the carve-out over nothing.
-        self.assertIn("vault.forget", [r.get("lock") for r in zero],
-                      "vault.forget is not among the zero-evidence locks: %r" % [r.get("lock") for r in zero])
+        """⚠ THE CARVE-OUT, and it must stay. A lock with NO evidence has no attack count to state - demanding one
+        would be demanding a number about an event that has not happened.
+
+        REG-3819 - this used to pin vault.forget as its live subject (it had no refusal path, so it was n=0 on every
+        machine). It banks evidence now, so the carve-out is asked of EVERY lock with no rows handed in: never an
+        empty list that would pass the carve-out over nothing (REG-1893)."""
+        zero = [SA.score(lk, rows=[]) for lk in sorted(SA.LOCKS)]
+        self.assertGreaterEqual(len(zero), 8, "the lock table is too small to be the real one")
         for r in zero:
+            self.assertIsNone(r.get("attacks"), "%s states an attack count with no rows behind it" % r.get("lock"))
             self.assertIn(r.get("state"), ("UNPROVEN", "UNKNOWN", "INCOMPLETE"),
                           "%s has no evidence but does not say so" % r.get("lock"))
 

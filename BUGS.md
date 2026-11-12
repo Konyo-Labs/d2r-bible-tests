@@ -189,6 +189,20 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3819 - THE VAULT LEDGER DROP CALLED ITSELF REBUILDABLE WITH 24 OF 184 ROWS PAST THEIR REELS (v3905, his 11-13 "okay then do it")
+His question: "vault.forget shut by design but if the vault works didnt it prove itself and unlock already?" - it could not:
+vault_forget() had one return and no refusal path, so its lock was declared unprovable. Its docstring called dropping the
+ledger (ledger=true, API only; his Vault "forget" button posts {} and only clears the swept memory) safe "because the
+ledger is rebuildable from the reels". MEASURED on his Mac 11-13: 24 of 184 ledger rows cite only reels the river has
+released - for them the ledger is the last record. Now: clearing the swept memory never refuses; the ledger drop REFUSES
+while any row's every witness reel is gone (a session must be a plain s_ name - a separator or .. could join outside the
+reel store, Windows folds .. by text) and while the ledger or the reel store will not read (UNKNOWN keeps it). Each half
+reports what its own write did: forgot/ledgerCleared follow the saves (a refused save was reported as a clear), and the
+button's line reads forgot. vault.forget is provable now: vault_forget_wilson.py (new gate) hands it 11 ledgers it must
+keep on a scratch ledger, counted only when the bytes did not move, after a control it must clear. Laws re-pinned off
+"vault.forget is unprovable": test_self_arming (unprovable claim CHECKED, UNTESTED vs UNPROVABLE on a fixture lock,
+UNPROVEN-with-no-rows), test_every_lock_declares_its_attacks (carve-out asked of every lock with rows=[]), test_control.
+
 ### REG-3818 - THE VAULT PADLOCK READ LOCKED OVER TWO OPEN, PROVEN DOORS (v3905, his 11-13 question)
 His words: "also for the lock on VAULT is it unlocked already? or not yet?" MEASURED on his Mac (v3903, /api/status):
 vault.apply OPEN "may act, proven 0.90 >= 0.72", vault.sweep_start OPEN "may act, proven 0.90 >= 0.51", vault.forget shut
