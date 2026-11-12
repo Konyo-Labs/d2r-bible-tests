@@ -157,11 +157,36 @@ def index(reaps, tombstones):
     """The deleters' records, indexed once: reap rows by every frame stem they NAME, whole-reel reap rows by reel,
     tombstones by reel and by session. -> dict. Rows keep their record order (both stores are append-only)."""
     names, whole, tombs = {}, {}, {}
-    for r in (reaps or []):
-        if not isinstance(r, dict):
-            continue
+    cut = {"names": {}, "whole": {}}
+    rows = [r for r in (reaps or []) if isinstance(r, dict)]
+    # REG-3787 (the Grok CLI's second look on v3901, #231) - REG-3751 writes the intent line BEFORE the delete precisely so a
+    # recorder stopped between the two keeps a record, and this index skipped every intent line: the interrupted reap's frames
+    # read UNKNOWN, the #217 shape the line exists to end. Each intent is paired with the NEXT row of its reel (record order):
+    # an outcome row there is the reap's own record; anything else (another intent, nothing) means it stopped mid-delete.
+    # A LATER row that names a frame (or any later row of the reel) proves it was still on disk then, so an interrupted reap
+    # explains only the names - and, for a whole-reel reap, only the reel - that nothing recorded after it mentions.
+    nxt, later_names, interrupted = {}, set(), {}
+    for i in range(len(rows) - 1, -1, -1):
+        r = rows[i]
+        reel = str(r.get("reel"))
+        stems = set(_stem(n) for n in (r.get("names") or []))
         if r.get("intent") is True:
-            continue        # REG-3751 - the reaper's INTENT line (written before the delete) took nothing; its outcome row does
+            if nxt.get(reel) != "outcome":
+                interrupted[i] = (stems - later_names, reel not in nxt)
+            nxt[reel] = "intent"
+        else:
+            nxt[reel] = "outcome"
+        later_names |= stems
+    for i, r in enumerate(rows):
+        if r.get("intent") is True:
+            # REG-3751 - an intent line its outcome row follows took nothing itself; the outcome row records the reap
+            if i in interrupted:
+                left, last_of_reel = interrupted[i]
+                for st in sorted(left):
+                    cut["names"].setdefault(st, []).append(r)
+                if last_of_reel and "kept" not in r and r.get("reel") not in (None, "", "loose"):
+                    cut["whole"].setdefault(str(r.get("reel")), []).append(r)
+            continue
         for n in (r.get("names") or []):
             names.setdefault(_stem(n), []).append(r)
         # a whole-reel reap carries no `kept`; a partial release names exactly what it took, so it is matched by name
@@ -172,7 +197,7 @@ def index(reaps, tombstones):
             continue
         for key in set(str(x) for x in (t.get("reel"), t.get("session")) if x):
             tombs.setdefault(key, []).append(t)
-    return {"names": names, "whole": whole, "tombs": tombs}
+    return {"names": names, "whole": whole, "tombs": tombs, "cut": cut}
 
 
 def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
@@ -220,7 +245,25 @@ def judge(frame_id, idx, refusals, read_ts=None, session=None, unread=()):
             events.append((_ts(r.get("ts")), "reaped", "the recorder's disk-floor reaper",
                            "taken by the recorder's disk-floor reaper on %s (%s)"
                            % (_when(r.get("ts")), r.get("by") or "recorder"), "named"))
+    _cut = idx.get("cut") or {}
+    if stem:
+        for r in (_cut.get("names") or {}).get(stem, ()):
+            seen.add(id(r))
+            events.append((_ts(r.get("ts")), "reaped", "the recorder's disk-floor reaper",
+                           "being taken by the recorder's disk-floor reaper on %s when the recorder stopped - its intent "
+                           "line names it and no outcome line followed (%s)" % (_when(r.get("ts")), r.get("by") or "recorder"),
+                           "named"))
     for k in keys:
+        for r in (_cut.get("whole") or {}).get(k, ()):
+            if id(r) in seen:
+                continue
+            seen.add(id(r))
+            t = _ts(r.get("ts"))
+            if filmed and t and t < filmed:
+                continue
+            events.append((t, "reaped", "the recorder's disk-floor reaper",
+                           "being released with its reel on %s by the recorder's disk-floor reaper when the recorder "
+                           "stopped - its intent line names the reel and no outcome line followed" % _when(r.get("ts"))))
         for r in idx["whole"].get(k, ()):
             if id(r) in seen:
                 continue

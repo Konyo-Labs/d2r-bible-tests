@@ -122,8 +122,8 @@ class AReapWritesItsIntentFirst(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3751 - the picture reader takes the reaper's intent line for the deleter",
      "file": "tv/read_pictures.py",
-     "find": "        if r.get(\"intent\") is True:\n            continue        # REG-3751",
-     "replace": "        if False:\n            continue        # REG-3751",
+     "find": "        if r.get(\"intent\") is True:\n            # REG-3751 - an intent line its outcome row follows took nothing",
+     "replace": "        if False:\n            # REG-3751 - an intent line its outcome row follows took nothing",
      "matches": 1},
     {"why": "REG-3751 - the whole-reel reaper deletes before any record again (no intent line)",
      "file": "tv/tv_diablo.py",

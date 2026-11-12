@@ -142,6 +142,17 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3787 - A REAP STOPPED MID-DELETE STILL LEFT ITS FRAMES UNKNOWN: THE PICTURE READER SKIPPED EVERY INTENT LINE (v3903, the Grok CLI's look on v3901)
+REG-3751 made the recorder's disk-floor reaper write its intent line before the delete so a recorder stopped between the delete
+and its outcome line keeps a record (the #217 shape). The second eye on v3901 (#231, grok-cli, 7f1a8149) named the reader:
+read_pictures.index skipped every intent line, so for exactly that case a missing frame read "UNKNOWN - no deleter recorded
+taking it" (reproduced on the shipped index: intent only -> unknown, intent + outcome -> reaped). Now each intent is paired with
+the next row of its reel in record order; one with no outcome there explains, in words that say it stopped mid-delete, only the
+names - and for a whole-reel reap only the reel - that no later row mentions (a later row naming a frame proves it was still on
+disk). test_a_reap_writes_its_intent_before_the_delete[0] re-aimed (an intent row still never enters the outcome index).
+Law: test_an_interrupted_reap_explains_its_missing_frames (5 red-proofs, one went BLIND on a whole-reel fixture first - fixed).
+
+### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3903, #200 card #218)
 Over PROVE_MAX (40) tv/preflight.prove_changed left every changed law to GitHub, and the GREEN line still read "the changed laws
 are proven". GitHub then read the REG-3784 proof BLIND - its anchor sat on line 52 and the hunk that made it dead began on 53.
 MEASURED on v3901: 4,749 proofs tamper a changed file; 67 proofs in 39 laws sit within 10 lines of a changed hunk. Now, over the
