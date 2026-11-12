@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # REG-3761 (v3901) - the rolling reel's footage: one source today, said so rather than claimed covered.
+    "rolling reel filmed":
+        "the row reads the recorder's own footage state (tv_diablo's health: footagePause and footageRefused) - one "
+        "witness. An independent second source would be the rolling reel's frame files on disk (the newest f_<ms>.jpg's "
+        "age against the pause the recorder says) or the shadow watch's rolling-reel record; no joint compares them yet.",
     # REG-3208/3209 (v3865) - the disk growers lane: one source today, said so rather than claimed covered.
     "disk growers":
         "the row reads the growers lane's own pass record (tv/disk_growers.py: measured, salvaged, read back, pruned) - "

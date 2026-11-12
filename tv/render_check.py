@@ -5025,7 +5025,8 @@ def _seed_film(sand, hist, runs=FILM_RUNS, frames=FILM_FRAMES):
 
 def _seed_doors(sand, n=3):
     """REG-3755 (#188) - write a SYNTHETIC chronicle-lane ledger into the sandbox: the newest `n` runs each get a door (the D2
-    logo 12 min after the run's first row, Connecting 9 s later, character select 31 s later). -> how many were written.
+    logo 12 min after the run's first row, Connecting 9 s later, character select 31 s later). -> how many were written, or
+    None when the sandbox's sessions would not read or the ledger would not write (UNKNOWN - never 0, the swallow ratchet).
     Never copies his ledger: the pixels must not depend on one machine's history, and the sandbox is removed at exit."""
     first = {}
     try:
@@ -5039,7 +5040,7 @@ def _seed_doors(sand, n=3):
                 if sid and isinstance(ts, (int, float)) and ts > 0:
                     first[str(sid)] = min(first.get(str(sid), ts), ts)
     except (OSError, AttributeError):
-        return 0
+        return None
     reels = {}
     for sid, ts in sorted(first.items(), key=lambda kv: -kv[1])[:n]:
         st = int(ts) + 12 * 60000
@@ -5053,7 +5054,7 @@ def _seed_doors(sand, n=3):
         with io.open(os.path.join(sand, ".chronicle_lines.json"), "w", encoding="utf-8") as fh:
             fh.write(json.dumps({"v": 1, "reels": reels, "hits": [], "stats": {}}))
     except OSError:
-        return 0
+        return None
     return len(reels)
 
 
@@ -5211,7 +5212,11 @@ def _serve_console():
     # "game began ... at the D2 logo" line is drawn only for a reel the chronicle lane walked, so a world with no lane ledger
     # photographs the card in the one state where the new line cannot appear. Written into the SANDBOX only.
     _doors = _seed_doors(_sand)
-    if _doors:
+    if _doors is None:
+        print("   \u26a0 render sandbox: the synthetic game doors could not be seeded (its sessions or ledger would not read or "
+              "write) - `shelf-cards` cannot photograph the 'game began' line this run, which is UNKNOWN, not a clean card",
+              flush=True)
+    elif _doors:
         print("   \u2139 render sandbox: %d synthetic game door(s) (the D2 logo 12 min into the run) for the newest runs, so "
               "`shelf-cards` photographs the card's 'game began' line. His tree was not written." % _doors, flush=True)
     if _filmed:
