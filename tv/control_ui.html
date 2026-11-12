@@ -29670,7 +29670,14 @@ function escC(s) {
                 + (_pl.why ? ' - ' + _pcCut(_pl.why, 60) : '');
     }
     var _imp = (hs && hs.importing && typeof hs.importing === 'object' && hs.importing.landed !== true) ? hs.importing : null;
-    var _healsItself = !!((proving || _imp) && _routeOpen && !_blindsLock && !pullStuck);
+    /* REG-3783 (GrokBot's v3900 look, #230 11-12 09:05-09:20: Konyo · ALT read BLOCKED "drain stopped" while its own hover
+       said it was importing GitHub's proofs) - THE MINUTES BEFORE THE IMPORT SENDS ITS COUNTS ARE HEALING TOO. Reproduced on
+       the ALT's own heart: with its import counts the row reads UPDATING "drain waits for the proofs"; without them (owed null,
+       no `importing` yet - the first beacons after a restart onto a new version) the same PC read BLOCKED. A heart whose own
+       key says it is stale at boot or stood aside for the import is proving itself; a blind lock, a shut routing door or a
+       refused pull still decide BLOCKED below. */
+    var _bootHeal = !!(hs && hs.census !== 'current' && (hs.key === 'stale-at-boot' || hs.key === 'stood-aside'));
+    var _healsItself = !!((proving || _imp || _bootHeal) && _routeOpen && !_blindsLock && !pullStuck);
     var drainWaits = !!(drainAlert && _healsItself && hs.census !== 'current' && _shutList.indexOf('frame.release') >= 0);
     if (drainWaits) drainAlert = drainAlert.replace(/^drain stopped/, 'drain waits for the proofs');
     var hurt = [];
@@ -29716,9 +29723,10 @@ function escC(s) {
       next = pullStuck ? 'it will not catch up on its own - its pull is refused until that clears'
            : proving ? ('it heals itself: proving ' + eta + ' - nothing for you to do')
                      : (drainAlert ? 'the drain released nothing — disk is at stake' : '');
-    } else if (proving || _imp) {
+    } else if (proving || _imp || _bootHeal) {
       key = 'healing';
-      next = (_imp ? _fleetImportUnit(_imp) : 'proving ' + eta) + ' - nothing for you to do'
+      next = (_imp ? _fleetImportUnit(_imp) : proving ? 'proving ' + eta
+              : 'proving itself after its update - its counts arrive in a few minutes') + ' - nothing for you to do'
            + (drainWaits ? '; the drain releases its reels once the proofs land' : '');
     } else if (!hs || !hs.census || hs.census === 'unknown') {
       key = 'lost'; next = 'whether it has proved itself could not be read on this console';

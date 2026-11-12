@@ -71,6 +71,11 @@ CASES = {
     "route_shut": {"heart": dict(DEAN, locksShut=["reel.route", "frame.release"]), "drain": DRAIN},
     "pull_refused": {"heart": DEAN, "drain": DRAIN,
                      "pull": {"can": False, "behind": 97, "why": "an untracked file is in the way of the update"}},
+    # REG-3783 (GrokBot's v3900 look: Konyo · ALT BLOCKED in the minutes after its restart) - stale at boot, no counts yet
+    "alt_boot": {"heart": {"census": "stale", "key": "stale-at-boot", "owed": None, "blind": 0, "importing": None,
+                           "locksShut": ["frame.release", "vault.sweep_start", "vault.apply"],
+                           "lockWhy": "the heart2 PROOF census is STALE: it is still being proven (55 gate(s) owed)"},
+                 "drain": {"state": "STOPPED", "owedAtMouth": 15, "eligible": 15, "eligibleMb": 2639.6}},
     # an import with no drain trouble: UPDATING with the count, never "proving 543 checks · import first"
     "import_only": {"heart": DEAN, "drain": {"state": "CLEAR", "owed": 0, "owedAtMouth": 0, "eligible": 0, "eligibleMb": 0.0}},
 }
@@ -112,6 +117,13 @@ class ADrainWaitingOnItsProofsIsUpdating(unittest.TestCase):
     def setUpClass(cls):
         cls.o = _drive(CASES)
 
+    def test_a_pc_stale_at_boot_before_its_counts_reads_updating(self):
+        """REG-3783 - the ALT's first beacons after its restart onto v3900: no import counts yet, owed null"""
+        s = self.o["alt_boot"]
+        self.assertEqual((s["key"], s["word"]), ("healing", "updating"), s)
+        self.assertIn("drain waits for the proofs", s["drainAlert"] or "", s)
+        self.assertIn("proving itself after its update", s["next"], s)
+
     def test_deans_row_reads_updating_with_the_import_count(self):
         """* THE POINT - Dean 11-12 01:45: BLOCKED "drain stopped" while importing 157 of 10,028"""
         s = self.o["dean"]
@@ -139,6 +151,11 @@ class ADrainWaitingOnItsProofsIsUpdating(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3783 - a PC stale at boot, before its import counts, reads BLOCKED drain stopped again",
+     "file": "tv/control_ui.html",
+     "find": "    var _healsItself = !!((proving || _imp || _bootHeal) && _routeOpen && !_blindsLock && !pullStuck);",
+     "replace": "    var _healsItself = !!((proving || _imp) && _routeOpen && !_blindsLock && !pullStuck);",
+     "matches": 1},
     {"why": "REG-3741 - a drain waiting on the proof the PC is importing reads BLOCKED again (Dean, 11-12)",
      "file": "tv/control_ui.html",
      "find": "    if (drainWaits) drainAlert = drainAlert.replace(/^drain stopped/, 'drain waits for the proofs');\n",
