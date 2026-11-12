@@ -15320,7 +15320,10 @@ class TestEveryRoutineCanSeeTheInputItPolices(unittest.TestCase):
         repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         with open(os.path.join(repo, ".github", "workflows", wf), encoding="utf-8") as fh:
             text = fh.read()
-        m = re.search(r"\n  push:\n    paths:\n((?:\s*(?:#[^\n]*|-\s*'[^']+')\n)+)", text)
+        # REG-3827 (v3904's GitHub round) - REG-3807 put a `branches-ignore:` list between `push:` and `paths:` in nine
+        # workflows (YAML does not care about key order; this parser did), and every routine read "no push paths at all"
+        m = re.search(r"\n  push:\n(?:    branches-ignore:\n(?:[ \t]*-[ \t]*'[^']+'[^\n]*\n)+)?    paths:\n"
+                      r"((?:\s*(?:#[^\n]*|-\s*'[^']+')\n)+)", text)
         if not m:
             return []
         return re.findall(r"-\s*'([^']+)'", m.group(1))

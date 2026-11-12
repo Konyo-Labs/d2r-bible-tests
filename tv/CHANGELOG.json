@@ -21,7 +21,8 @@
       "REG-3816 - the Theatre head buttons never shrink, CLOSE was cut to CLOS at 1512",
       "REG-3820 - the blueprint law compares two renders the way its check does, a store size moving read as stale code",
       "REG-3821 - the unique art law asserts both ends of the row path it reads, a missing closer read most of the page",
-      "REG-3822 - the shared scratch sweep accepts only our own stems, a short or foreign one could delete dirs not ours"
+      "REG-3822 - the shared scratch sweep accepts only our own stems, a short or foreign one could delete dirs not ours",
+      "REG-3827 - the routine law reads push paths past a branches-ignore list, every routine read none after REG-3807"
     ]
   },
   {
