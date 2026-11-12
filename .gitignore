@@ -538,5 +538,3 @@ tv/.d2jsp_check.json.tmp
 # diff, untracked files, a scratch summary) here before it prunes it, with a manifest and its per-PC state. Never public.
 tv/.salvage/
 tv/.d2jsp_pages/
-# #208 - each PC's ssh target for the shadow pull lives on his Mac only, never in this public repo
-tv/.shadow_pull.json
