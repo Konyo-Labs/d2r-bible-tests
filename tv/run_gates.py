@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_one_nickname_list_in_every_search_bar",
+         [sys.executable, os.path.join(HERE, "test_one_nickname_list_in_every_search_bar.py")], 60,
+         needs_app=False,
+         why="v3900 (REG-3746, his ask 11-12) - 'cta' and 'sunders' found nothing in the jump bar and the D2JSP database "
+             "filter; the page carries the Worker's nickname list word for word plus search-only sunder aliases"),
     Gate("test_the_d2_logo_is_never_warm_up_blank",
          [sys.executable, os.path.join(HERE, "test_the_d2_logo_is_never_warm_up_blank.py")], 60,
          why="v3900 (#188, REG-3745) - the D2 logo (flatness 0.994 on his Mac's own frames) was dropped by the footage "

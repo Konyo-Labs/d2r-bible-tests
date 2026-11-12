@@ -13792,12 +13792,81 @@ function d2jspBatchHtml(view) {
     + (items.length === 1 ? ' item.' : ' items.') + '</p>' + law
     + '<div class="d2jsp-db-scroll" data-d2jsp-db-scroll>' + bar + html + '</div>' + btn;
 }
+/* REG-3746 (his ask via GrokBot #230 6810554491, 11-12: "use the one nickname list in every search bar ... no extra d2jsp
+   searches for nicknames") - THE TRADE NICKNAMES, ONE LIST. This is functions/api/d2jsp_quote.js's D2JSP_SLANG word for word,
+   held equal by test_one_nickname_list_in_every_search_bar (the Worker cannot be read from this page, and a list typed twice
+   drifts). The Worker searches d2jsp with an item's FIRST nickname, so a search-only alias never goes in it. */
+var D2JSP_SLANG = {
+  "Annihilus": ["anni"], "Hellfire Torch": ["torch"], "Gheed's Fortune": ["gheeds"],
+  "Harlequin Crest": ["shako"], "Griffon's Eye": ["gface", "griffons"], "Crown of Ages": ["coa"],
+  "Arreat's Face": ["arreats"], "Andariel's Visage": ["andy"], "Herald of Zakarum": ["hoz"],
+  "Jalal's Mane": ["jalals"], "Stone of Jordan": ["soj"],
+  "Bul-Kathos' Wedding Band": ["bk", "bk ring"], "Raven Frost": ["raven"], "Mara's Kaleidoscope": ["maras"],
+  "Highlord's Wrath": ["highlords"], "Crown of Thieves": ["cot"], "Nightwing's Veil": ["nightwing", "veil"],
+  "Mang Song's Lesson": ["mang song", "mangs"], "Eschuta's Temper": ["eschutas"], "Death's Fathom": ["fathom"],
+  "Call to Arms": ["cta"], "Breath of the Dying": ["botd"], "Heart of the Oak": ["hoto"],
+  "Hand of Justice": ["hoj"], "Enigma": ["nigma"], "Infinity": ["infy"], "Insight": [],
+  "Grief": [], "Spirit": [], "Heart of Winter": [], "Fortitude": ["forti"],
+  "Stormshield": ["storm shield"], "Death's Web": ["deathweb"], "Titan's Revenge": ["titans"],
+  "Windforce": ["wf"], "Eaglehorn": [], "War Traveler": ["war travs", "wartravs"], "Waterwalk": [],
+  "Sandstorm Trek": ["treks"], "Shadow Dancer": ["sdancer"], "Gore Rider": ["gores"],
+  "Steelrend": ["rends"], "Magefist": ["mages"], "Dracul's Grasp": ["dracs"], "Bloodfist": ["bfists"],
+  "Chance Guards": ["chancies"], "Arachnid Mesh": ["arach", "arachnid"], "Verdungo's Hearty Cord": ["dungo"],
+  "Thundergod's Vigor": ["tgod"], "String of Ears": ["soe"], "Nosferatu's Coil": ["nos", "nosferatus"],
+  "The Oculus": ["occy", "oculus"], "Spirit Ward": [],
+  "Tyrael's Might": ["tyraels"], "Skullder's Ire": ["skullders"], "Vipermagi": ["viper", "vmagi"],
+  "Shaftstop": ["shaft"], "Leviathan": ["levi"], "Guardian Angel": ["ga"], "Blackhorn's Face": ["bhades"],
+  "Gladiator's Bane": ["glads"], "Templar's Might": ["templars"], "Atma's Scarab": ["atmas"],
+  "Metalgrid": ["mgrid"], "Seraph's Hymn": ["seraphs"],
+  "Doombringer": ["doom"], "Death Cleaver": ["dc"], "Executioner's Justice": ["ej"],
+  "The Reaper's Toll": ["reapers"], "Stormlash": [], "Tomb Reaver": ["reaver"],
+  "Grandfather": ["gf sword"], "Azurewrath": ["azure"], "Lightsabre": ["lsabre"],
+  "Hellslayer": [], "Messerschmidt's Reaver": ["messer"], "Rainbow Facet": ["facet"],
+  /* v3847 (Elad 15:42) - more of the forum's names; the first word is what the search box is given */
+  "Guardian's Thunder": ["guardians thunder", "gt"], "Jeweler's Monarch of Deflecting": ["jmod"],
+  "Doom": ["doom rw"], "Chains of Honor": ["coh"], "Phoenix": ["phoenix rw"], "Last Wish": ["lw"], "Faith": [],
+  "Beast": [], "Exile": [], "Dream": [], "Fury": [], "Pride": [], "Silence": [],
+  "Crescent Moon": ["cmoon"], "Bramble": [], "Destruction": [], "Obedience": ["obe"],
+  "Whirlwind": ["ww"], "Vampire Gaze": ["vgaze"], "Wisp Projector": ["wisp"],
+  "Dwarf Star": ["dwarf"], "Wizardspike": ["wspike", "spike"],
+  "Ondal's Wisdom": ["ondals"], "Lidless Wall": ["lidless"], "Homunculus": ["homu"],
+  "Arkaine's Valor": ["arkaines"], "Thunderstroke": ["tstroke"], "Kira's Guardian": ["kiras"],
+  "Tal Rasha's Guardianship": ["tal armor"], "Sigon's Complete Steel": ["sigons"],
+  "Immortal King's Stone Crusher": ["ik maul"], "Griswold's Honor": ["gris shield"]
+};/* search-only aliases: words that name an item or a FAMILY of items in these search bars and are never a d2jsp query. GrokBot:
+   'sunders' is the family name of the six sunder charms, never one of them; 'lightning sunder' is Crack of the Heavens. */
+var D2R_SEARCH_ALIASES = {
+  "sunder": ["Bone Break", "Black Cleft", "Crack of the Heavens", "Flame Rift", "Cold Rupture", "Rotting Fissure"],
+  "sunders": ["Bone Break", "Black Cleft", "Crack of the Heavens", "Flame Rift", "Cold Rupture", "Rotting Fissure"],
+  "sunder charm": ["Bone Break", "Black Cleft", "Crack of the Heavens", "Flame Rift", "Cold Rupture", "Rotting Fissure"],
+  "sunder charms": ["Bone Break", "Black Cleft", "Crack of the Heavens", "Flame Rift", "Cold Rupture", "Rotting Fissure"],
+  "lightning sunder": ["Crack of the Heavens"], "light sunder": ["Crack of the Heavens"], "lite sunder": ["Crack of the Heavens"],
+  "fire sunder": ["Flame Rift"], "cold sunder": ["Cold Rupture"], "poison sunder": ["Rotting Fissure"],
+  "psn sunder": ["Rotting Fissure"], "magic sunder": ["Black Cleft"], "phys sunder": ["Bone Break"],
+  "physical sunder": ["Bone Break"]
+};
+/* -> the item names (lowercase) a typed word means by nickname: a trade nickname gives its item, a search alias its item or
+   family. A full name is not here - the bars already match names. [] when the word names nothing. */
+function d2rNicknameItems(q) {
+  var f = String(q || '').toLowerCase().replace(/[\u2018\u2019\u02BC`']/g, '').replace(/[^a-z0-9 \-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!f) return [];
+  var out = [];
+  var add = function (n) { n = String(n).toLowerCase(); if (out.indexOf(n) < 0) out.push(n); };
+  for (var k in D2JSP_SLANG) {
+    if (Object.prototype.hasOwnProperty.call(D2JSP_SLANG, k) && D2JSP_SLANG[k].indexOf(f) >= 0) add(k);
+  }
+  if (Object.prototype.hasOwnProperty.call(D2R_SEARCH_ALIASES, f)) D2R_SEARCH_ALIASES[f].forEach(add);
+  return out;
+}
+window.d2rNicknameItems = d2rNicknameItems;
+window.D2JSP_SLANG = D2JSP_SLANG;
 /* REG-3390 - Find narrows the items by name; Sort orders each group. Both act only inside the database panel. */
 function d2jspDbArrange(root) {
   if (!root || !root.querySelector) return 0;
   var find = root.querySelector('[data-d2jsp-db-find]'), sort = root.querySelector('[data-d2jsp-db-sort]');
   var q = find ? String(find.value || '').trim().toLowerCase() : '';
   var key = sort ? String(sort.value || 'name') : 'name';
+  var _nick = q ? d2rNicknameItems(q) : [];
   var shown = 0;
   Array.prototype.forEach.call(root.querySelectorAll('[data-d2jsp-db-group]'), function (g) {
     var its = Array.prototype.slice.call(g.querySelectorAll('[data-d2jsp-batch-item]'));
@@ -13810,7 +13879,8 @@ function d2jspDbArrange(root) {
     });
     var vis = 0;
     its.forEach(function (it) {
-      var hit = !q || String(it.getAttribute('data-name')).indexOf(q) !== -1;
+      var _nm = String(it.getAttribute('data-name'));
+      var hit = !q || _nm.indexOf(q) !== -1 || _nick.indexOf(_nm.toLowerCase()) !== -1;   /* REG-3746 - a nickname finds its item */
       it.hidden = !hit;
       if (hit) vis++;
       g.appendChild(it);
@@ -42117,7 +42187,10 @@ _v41_whenReady(() => {
         q=(q||'').trim().toLowerCase();
         if (!q){ close(); return; }
         var all=getIndex(), scored=[];
-        for (var i=0;i<all.length;i++){ var sc=score(all[i],q); if (sc>=0) scored.push({c:all[i],s:sc}); }
+        var _nick=(typeof window.d2rNicknameItems==='function') ? window.d2rNicknameItems(q) : [];   /* REG-3746 - 'cta', 'sunders' */
+        for (var i=0;i<all.length;i++){ var sc=score(all[i],q);
+          if (_nick.length && _nick.indexOf(String(all[i].label||'').toLowerCase().replace(/\s*\([^)]*\)\s*$/, ''))>=0) sc=Math.max(sc, 90);
+          if (sc>=0) scored.push({c:all[i],s:sc}); }
         scored.sort(function(a,b){ return b.s-a.s || (a.c.label||'').length-(b.c.label||'').length; });
         ranked=scored.slice(0,10);
         if (!ranked.length){ box.innerHTML='<div class="gsearch-empty">No boss, zone, act, or item matches "'+esc(q)+'"</div>'; box.hidden=false; _scrim(false); active=-1; return; }
