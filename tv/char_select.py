@@ -185,6 +185,18 @@ def _chrome(mean, std):
     return std < _CHROME_STD and (mean > 150 or mean < 10)
 
 
+#: REG-3744 - a light Windows title bar row: most of its pixels near-white, whatever its title text and buttons add
+TITLE_ROW_MIN = 200
+
+
+def _title_row(mean, median):
+    """REG-3744 - MEASURED 11-12 on Dean's 800x400 frames (Windows light theme): his title bar is rows 0-16 at a median of
+    243, but the rows carrying the title text and the min/max/close glyphs spread 17-31 - over _CHROME_STD - so the trim
+    stopped at row 6 and 11 white rows stayed 'in the game' under every fraction a reader measures. In-game rows read a
+    median of 124 or less. A top row whose median AND mean are both over TITLE_ROW_MIN is title bar."""
+    return median > TITLE_ROW_MIN and mean > TITLE_ROW_MIN
+
+
 def game_box(im):
     """(x0, y0, x1, y1) of the game inside an RGB frame: window chrome and letterbox trimmed from each edge."""
     import numpy as np
@@ -194,16 +206,16 @@ def game_box(im):
         return 0, 0, w, h
     rows_m, rows_s = a.mean(axis=1), a.std(axis=1)
 
-    def trim(ms, ss, n):
+    def trim(ms, ss, n, med=None):
         lim = int(n * GAME_TRIM_MAX)
         lo = 0
-        while lo < lim and _chrome(ms[lo], ss[lo]):
+        while lo < lim and (_chrome(ms[lo], ss[lo]) or (med is not None and _title_row(ms[lo], med[lo]))):
             lo += 1
         hi = n
         while n - hi < lim and hi - 1 > lo and _chrome(ms[hi - 1], ss[hi - 1]):
             hi -= 1
         return lo, hi
-    y0, y1 = trim(rows_m, rows_s, h)
+    y0, y1 = trim(rows_m, rows_s, h, med=np.median(a, axis=1))   # REG-3744 - the TOP edge also trims a title bar with text
     band = a[y0:y1] if y1 > y0 else a      # the columns are read below the title bar, not through it
     x0, x1 = trim(band.mean(axis=0), band.std(axis=0), w)
     if (x1 - x0) * (y1 - y0) < GAME_MIN_AREA * w * h:

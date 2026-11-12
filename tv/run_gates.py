@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_title_bar_with_its_text_is_not_the_game",
+         [sys.executable, os.path.join(HERE, "test_a_title_bar_with_its_text_is_not_the_game.py")], 60,
+         needs_app=False,
+         why="v3900 (#185, REG-3744) - on Dean's 800x400 frames the Windows title bar's text rows spread past the chrome "
+             "test, so 11 white rows stayed in the game under every reader; a white-median top row is title bar"),
     Gate("test_a_game_that_starts_mid_reel_says_its_part_one",
          [sys.executable, os.path.join(HERE, "test_a_game_that_starts_mid_reel_says_its_part_one.py")], 120,
          why="v3900 (#188, REG-3742) - GrokBot on the work ALT 11-12: 2 of 21 games read 'part 2 of 2' with no part 1 - the "
