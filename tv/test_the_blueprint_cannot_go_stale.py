@@ -59,11 +59,17 @@ class TheBlueprintCannotGoStaleSilently(unittest.TestCase):
 
     def test_check_IGNORES_the_generated_timestamp(self):
         """★★ Without this the gate is red on every run and becomes furniture in a day. Proven by
-        comparing two renders taken at different clock minutes — only the stamp may differ."""
+        comparing two renders taken at different clock minutes — only the stamp may differ.
+
+        ⚠ REG-3820 (v3904 pre-flight a, 11-13) - THIS CASE HAD ITS OWN STRIPPER, AND IT ASKED A DIFFERENT QUESTION FROM
+        --check. It dropped only the stamp, so the LIVE blocks - store sizes read off disk at render time - had to hold
+        still between two renders. .orphan_cpu_sample.json (REG-3774) is rewritten by every doctor pass, and while the
+        pre-flight's laws ran in parallel it went 5627 B -> 5585 B between the two calls: red, on a tree whose code had
+        not moved. --check compares blueprint.code_only, the ONE stripper ("two copies of this rule is how a check starts
+        asking a different question"), so this asks the same question --check does. [[copy-drift]]"""
         a = BP.render()
         b = BP.render()
-        strip = lambda t: "\n".join(l for l in t.split("\n")
-                                    if not l.strip().startswith("generated "))
+        strip = BP.code_only
         self.assertEqual(strip(a), strip(b),
                          "two renders of the same tree differ outside the timestamp, so --check "
                          "can never be stable")

@@ -142,6 +142,29 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3822 - THE SHARED SCRATCH SWEEP DELETED WHATEVER SHARED THE STEM IT WAS HANDED (v3904, the second eye on v3903)
+The Grok CLI on v3903: "_sweep_stale_scratch treats any directory whose name startswith(prefix) as its scratch. A caller
+that passes a short prefix ... deletes those dirs once they are older than stale_s." Both callers pass distinctive stems
+today (tvd-cs-, tvd-proof-release-), so nothing was lost - but REG-3798 opened the routine to a prefix argument and a
+deletion keyed on a name stem reaches anyone's dirs that share it. Now only tvd-<name>- is accepted; anything else returns
+None (UNKNOWN) and sweeps nothing. Law: test_our_old_scratch_is_collected (+1 case over seven stems with a baseline, +1
+red-proof). Its two other findings: the art-window one is REG-3821; "_keep_sample clobbers an unreadable sample" is
+REFUTED - the file is a CPU-sample cache and the line above the write says an unread file is rewritten on purpose (a
+corrupt cache kept would block the measurement forever).
+
+### REG-3821 - THE UNIQUE ART LAW COULD READ MOST OF THE PAGE AS artOr's BODY (v3904, the second eye on v3903)
+s.find("\n}\n", _ao) returning -1 makes the window s[_ao:-1], so a row path that stopped calling artUrl would still pass
+on a needle found later in bible.html; a missing head (-1) reads the tail. Both ends are asserted now: the head once, the
+closer after it - an unclosed body is UNKNOWN, not clean. Law: test_a_unique_wears_its_own_picture_everywhere (8 of 8
+red-proofs PROVEN).
+
+### REG-3820 - THE BLUEPRINT LAW WENT RED ON A STORE SIZE THAT MOVED BETWEEN TWO RENDERS (v3904 pre-flight a)
+MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 5627 B vs 5585 B on .orphan_cpu_sample.json
+(REG-3774), which every doctor pass rewrites, while the pre-flight's laws ran in parallel. The case had its own stripper
+(the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
+The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
+red-proofs PROVEN).
+
 ### REG-3816 - THE SHADOW FRAME CAPTION CLAIMED "160 px" OVER A 1920x1020 FRAME, AND THE THEATRE'S CLOSE COULD BE CUT (v3904)
 GrokBot's v3903 look (#230 6836226405): a shadow session's served key frames are 1920x1020 full-screen JPEGs and the caption
 said "the served key frame (160 px)" - a size nobody measured, hardcoded twice; it now claims no size. And "at 1512 the

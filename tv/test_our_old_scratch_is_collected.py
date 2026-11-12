@@ -227,6 +227,16 @@ class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
                          "a concurrent tick's fresh dir or another prefix was swept, or the old one stayed")
         self.assertIsNone(cs._sweep_stale_scratch(root=os.path.join(self.root, "nope"), now=NOW), "an unlistable dir read as 0 swept")
 
+    def test_a_prefix_that_is_not_ours_is_refused_and_sweeps_nothing(self):
+        """REG-3822 (the second eye on v3903) - the sweep deletes whatever starts with the stem it is handed, so a short or
+        foreign stem would take another tool's dirs. Only a tvd-<name>- stem is accepted; anything else is UNKNOWN."""
+        old, other = self._mk("tvd-cs-old2", OLD), self._mk("tvd-child-guard-y", OLD)
+        for stem in ("tvd", "tvd-", "t", "", "tmp", "cs-", "tvd-cs"):
+            self.assertIsNone(cs._sweep_stale_scratch(root=self.root, now=NOW, prefix=stem),
+                              "the stem %r was accepted - a deletion keyed on it reaches dirs that are not ours" % stem)
+        self.assertEqual([os.path.exists(p) for p in (old, other)], [True, True], "a refused stem still deleted a dir")
+        self.assertEqual(cs._sweep_stale_scratch(root=self.root, now=NOW), (1, 0), "BASELINE: our own stem sweeps")
+
     def test_a_crop_dir_that_will_not_go_is_said_never_pretended(self):
         p = self._mk("tvd-cs-stuck", NOW)
         with mock.patch.object(cs.shutil, "rmtree", lambda *a, **k: None):
@@ -301,6 +311,12 @@ class AProofImportLeavesNoScratch(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3822 - the shared sweep takes any stem it is handed again, so a short or foreign one deletes dirs that "
+            "are not ours",
+     "file": "tv/char_select.py",
+     "find": "    if not (isinstance(prefix, str) and prefix.startswith(\"tvd-\") and prefix.endswith(\"-\") and len(prefix) >= 7):",
+     "replace": "    if not isinstance(prefix, str):",
+     "matches": 1},
     {"why": "REG-3798 - a proof import no longer sweeps earlier imports' leftovers (they pile up on Windows)",
      "file": "tv/proof_release.py",
      "find": "    out[\"swept\"] = sweep_old_imports()",

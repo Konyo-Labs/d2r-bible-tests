@@ -1184,6 +1184,10 @@ def _sweep_stale_scratch(root=None, now=None, drop=None, prefix=CS_SCRATCH_PREFI
     """The crop dirs earlier ticks left in the temp dir. -> (removed, left), or None when the dir could not be listed
     (UNKNOWN, never "0 swept"). REG-3798 - `prefix` / `stale_s` let proof_release sweep its own import dirs through this
     one routine (a deletion routine that exists twice is the copy that drifts)."""
+    # REG-3822 (the second eye on v3903) - a deletion keyed on a name prefix deletes whatever shares that stem, so only
+    # one of OUR stems is accepted: "tvd-", a name, and a closing dash. Anything else is refused as UNKNOWN, never swept.
+    if not (isinstance(prefix, str) and prefix.startswith("tvd-") and prefix.endswith("-") and len(prefix) >= 7):
+        return None
     root = root or tempfile.gettempdir()
     now = time.time() if now is None else float(now)
     drop = drop or (lambda p: _clean_scratch_dir(p, attempts=1))
