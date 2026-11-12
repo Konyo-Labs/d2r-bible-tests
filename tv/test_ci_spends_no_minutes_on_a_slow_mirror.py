@@ -189,8 +189,8 @@ class TheWorkflows(unittest.TestCase):
                 continue
             push = code[i:]
             push = push[:re.search(r"\n  \S", push[1:]).start() + 1] + "\n"
-            if "\n    branches:\n" in push:
-                continue                     # an allow-list names its own branches
+            if re.search(r"\n    branches:[ \n]", push):
+                continue                     # an allow-list names its own branches (block or inline [main])
             n += 1
             self.assertIn("\n      - 'ci/winlaws-**'", push, "%s runs on a Windows-laws push" % f)
         self.assertGreaterEqual(n, 8, "a zero needs a denominator: only %d push workflows read" % n)
