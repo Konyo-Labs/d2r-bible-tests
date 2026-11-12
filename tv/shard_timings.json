@@ -6663,6 +6663,58 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_battle_net_arms_the_watcher": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_join_game_lobby_is_read": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_one_nickname_list_in_every_search_bar": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_d2_logo_is_never_warm_up_blank": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_title_bar_with_its_text_is_not_the_game": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_game_that_starts_mid_reel_says_its_part_one": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_half_applied_update_heals_itself": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_drain_waiting_on_its_proofs_is_updating": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_documented_loss_closes_out_as_documented": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_fixed_console_home_is_not_old_scratch": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_relook_probe_is_not_a_session_in_parts": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_live_page_ends_a_stuck_publish_watch": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_hand_deploy_finds_its_one_account": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_reach_is_every_function_within_its_depth": {
       "s": 1.437,
       "src": "median"
