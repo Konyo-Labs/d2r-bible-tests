@@ -812,11 +812,10 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         say("preflight: UNKNOWN - a Mac-only gate the main push runs was owed and could not be measured here: %s"
             % "; ".join(unknown)[:300])
         return 2, []
-    # REG-3785 - say what was PROVEN, never more: over the cap only the laws at the edit are, and v3901's line said all were
     say("preflight: GREEN - %d law(s) ran clean%s%s, anchors hold" % (
         len(s["run"]) - len(skipped), (" (%d skipped, said above)" % len(skipped)) if skipped else "",
         (", %d changed law(s) proven here (the rest, if any, are GitHub's - said above)" % len(proved or [])) if prove
-        else ""))
+        else ""))   # REG-3785 - what was PROVEN, never more: v3901's line said every changed law was, and none had been
     return 0, []
 
 
