@@ -126,6 +126,9 @@ class ThePlannerSpinnerStaysUnderTheCursor(unittest.TestCase):
                     " document.getElementById('vault-planner-host').style.setProperty('--law-h', _lh + 'px');"
                     " ed = document.querySelector('#vault-planner-host .cb-ed'); i.scrollIntoView({ block: 'center' }); }"
                     "if (ed && ed.scrollTop < 1) ed.scrollTop = Math.min(ed.scrollHeight - ed.clientHeight, 12);"
+                    # #107 (REG-3812) - what the staging reached, said beside the premise if the pane still reads unscrolled
+                    "window._lawStage = { lawH: _lh, overflow: ed ? ed.scrollHeight - ed.clientHeight : null,"
+                    " topAfterStage: ed ? ed.scrollTop : null };"
                     "OUT.ok = 1;")
         # REG-2936 (CI on ci/claude-v3835: one 22 px "moved sideways" at step 1 on bytes a re-run passed) - the BASELINE is
         # read once the field has stopped moving before any key is pressed (two readings 150 ms apart agree), and how
@@ -154,8 +157,10 @@ class ThePlannerSpinnerStaysUnderTheCursor(unittest.TestCase):
         # REG-2937 (the v3832/v3833 push gate: RED_PROOF[2] BLIND) - at 420 px the hook's Chrome did not scroll the edit pane,
         # so its scrollTop was 0 before any key and putting it back after a repaint changed nothing this case can see.
         # The case now opens the modal at the 260 px its sibling proves makes the pane scroll, and says so first.
+        _stage = board().run("OUT.s = window._lawStage || null;").get("s")
         self.assertGreater(o0["top"] or 0, 0, "PREMISE: the edit pane is not scrolled, so a repaint that sends it back to "
-                                             "the top would change nothing this case can see: %r" % o0)
+                                             "the top would change nothing this case can see: %r (staging: %r - topAfterStage > 0 "
+                                             "and top 0 here means the baseline's repaint reset it)" % (o0, _stage))
         self.assertEqual(o0["fonts"], "loaded", "PREMISE: a web font was still loading when the baseline was read: %r" % o0)
         self.assertLess(o0["settledAfterMs"], 3000, "PREMISE: the planner never stopped moving before a key was pressed: %r" % o0)
         steps = []
