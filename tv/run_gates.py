@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_the_console_tabs_fit_at_his_macbook_width",
+         [sys.executable, os.path.join(HERE, "test_the_console_tabs_fit_at_his_macbook_width.py")], 60,
+         needs_app=False,
+         why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
+             "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
     Gate("test_a_string_is_not_a_browser_call",
          [sys.executable, os.path.join(HERE, "test_a_string_is_not_a_browser_call.py")], 60,
          needs_app=False,

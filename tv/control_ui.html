@@ -8231,7 +8231,12 @@
     .head-tabs .ht[data-tab="tvd"] { padding: 7px 8px; font-size: var(--fs-xs); letter-spacing: 0; }
     .head-tabs .ht .ht-i { width: 16px; height: 16px; vertical-align: -3px; }
   }
-  @media (max-width: 1500px) {
+  /* REG-3765 (GrokBot #230 11-12, his MacBook's 1512 px) - THIS STEP ENTERED 47 px TOO LATE. MEASURED (headless sweep, 4 px
+     steps): with the 1700 step's padding the strip wraps TV·D onto a second, full-width row from 1504 to 1544 px and fits from
+     1548; this step made it fit only at 1500 and below, and the render gate's widths (1440 / 1280 / 1120 / 901) never landed
+     in the band. It now enters at 1600 - the band plus ~50 px for his console's WebKit font, which measures wider than
+     headless Chrome's. The gate renders 1512 now (WIDTHS). */
+  @media (max-width: 1600px) {
     .head-tabs { gap: 3px; }
     .head-tabs .ht,
     .head-tabs .ht[data-tab="tools"],
