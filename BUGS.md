@@ -219,7 +219,8 @@ just not 3 frames for each session", and on Dean "of course he agreed". GrokBot 
 the D2 logo (frame 56 of 290, after GeForce NOW's Loading page); the ALT reels open mid-play. tv/shadow_reels.py: a done
 session (not being written, newest frame 10 min old) goes up re-encoded to 1280 px - the newest 3 whole, sessions 4..16 as
 a summary (first and last frame, the start, every door change from chronicle_line's marks, one frame per 20 s, at most
-80); play starts on the first logo frame, else frame 1. control_app._shadow_reels_loop (its own thread, every 10 min, one
+80); play starts on the first logo frame, else frame 1, and NOTHING BEFORE IT IS SENT - the launcher (GeForce NOW's
+Loading page inside Chrome's window on the Mac, 55 frames on 3 Nov) and any account page are never his to publish. control_app._shadow_reels_loop (its own thread, every 10 min, one
 session a tick) sends nothing while a reel is being written - re-encoding and uploading beside a cloud-gaming stream would
 be his lag - and keeps on / worked / lastTs / owed / why in .shadow_reels_state.json; the doctor's "shadow reels reach the
 bucket" row reads it (a refusal in the lane's own words is MISSING; no receipt is UNKNOWN). Law:

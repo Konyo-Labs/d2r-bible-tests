@@ -82,6 +82,22 @@ class TheUploadPlan(unittest.TestCase):
         server[_ses(3)] = {"mode": "summary", "frames": len(summary)}
         self.assertEqual(SR.plan(local, server), [])
 
+    def test_nothing_before_play_starts_goes_up(self):
+        """his rule: account-page frames are never posted - what precedes the first D2 logo is the launcher (GeForce NOW's
+        Loading page inside Chrome's window on the Mac, 55 frames of it on 3 Nov), never the game"""
+        names = _names(120)
+        logo_ts = T0 + 55000
+        marks_of = lambda s: [[logo_ts, "logo"], [T0 + 80000, "char-select"]]
+        local = [(_ses(k), names) for k in range(5)]
+        got = SR.plan(local, {}, marks_of=marks_of)
+        for g in got:
+            ts = [int(n[2:-4]) for n in g["frames"]]
+            self.assertGreaterEqual(min(ts), logo_ts, "a %s upload carries a frame from before the logo" % g["mode"])
+            self.assertEqual(g["start"], g["frames"][0], "the upload does not open on the frame play starts on")
+        self.assertEqual(len(got[0]["frames"]), 120 - 55, "a whole session lost game frames after the logo")
+        no_logo = SR.plan([(_ses(0), names)], {}, marks_of=lambda s: [[T0 + 3000, "hud"]])
+        self.assertEqual(len(no_logo[0]["frames"]), 120, "BASELINE: a reel with no logo (mid-play) goes up whole")
+
     def test_an_unknown_store_or_bucket_plans_nothing(self):
         self.assertIsNone(SR.plan(None, {}))
         self.assertIsNone(SR.plan([(_ses(0), _names(3))], None), "a bucket that did not answer read as an empty one")
@@ -195,6 +211,11 @@ class TheDoctorRow(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "#208 - the frames before the first logo go up too, so the launcher and an account page are published",
+     "file": "tv/shadow_reels.py",
+     "find": "        played = ordered[ordered.index(first):] if first in ordered else []     # nothing before play starts goes up",
+     "replace": "        played = ordered",
+     "matches": 1},
     {"why": "#208 - every done session goes up whole, so 16 PCs' worth of full reels fill the bucket",
      "file": "tv/shadow_reels.py",
      "find": '        mode = "full" if i < full else "summary"',

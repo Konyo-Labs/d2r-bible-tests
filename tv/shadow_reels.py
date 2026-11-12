@@ -15,7 +15,11 @@ keeps each PC's newest 16 sessions and holds the bucket under its 9 GB cap; this
   - a session already in the bucket with the same mode and the same frame count is not sent again; one that slid from
     the newest 3 to the rest is re-begun as a summary (the door drops the frames not on the new list);
   - play starts on the first D2 logo frame (his 11-11 ruling: "one trigger on every route ... starts at the first logo");
-    a reel with no logo (GrokBot 11-13: the ALT reels open mid-play) starts on its first frame.
+    a reel with no logo (GrokBot 11-13: the ALT reels open mid-play) starts on its first frame;
+  - NOTHING BEFORE THAT FRAME IS SENT. What comes before the logo is the launcher - GeForce NOW's Loading page inside
+    Chrome's window on the Mac (GrokBot 11-13: 55 frames before the logo) - and a launcher or account page is never his to
+    publish (his rule: account-page frames are never posted). The recorder films only the game's window, so from the
+    logo on it is the game.
 
 Read-only on his footage: frames are read and re-encoded into this module's own scratch folder, removed after each
 session. UNKNOWN stays UNKNOWN: an unreadable reel store or a bucket that will not answer plans nothing.
@@ -195,7 +199,10 @@ def plan(local, server, marks_of=None, full=FULL_SESSIONS, keep=KEEP_SESSIONS):
     for i, (ses, names) in enumerate(local[:keep]):
         marks = (marks_of or (lambda s: None))(ses)
         mode = "full" if i < full else "summary"
-        want = [n for _t, n in frames_of(names)][-FULL_MAX:] if mode == "full" else summary_frames(names, marks)
+        ordered = [n for _t, n in frames_of(names)]
+        first = start_frame(ordered, marks)
+        played = ordered[ordered.index(first):] if first in ordered else []     # nothing before play starts goes up
+        want = played[-FULL_MAX:] if mode == "full" else summary_frames(played, marks)
         if not want:
             continue
         have = server.get(ses) or {}
