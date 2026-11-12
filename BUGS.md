@@ -148,6 +148,56 @@ BROWSER_FLAGS (whole text) and BROWSER_CALL_ONLY (strings blanked) and left the 
 the red-proof kept cutting the dead copy while drives_browser matched the live one. Fix: the dead BROWSER_CALLS is gone (one pattern,
 its REG-3310 note moved onto BROWSER_CALL_ONLY) and proof [4] cuts BROWSER_CALL_ONLY's line. heart2 --prove: 17 of 17 PROVEN, [4] among
 them; the anchor census holds. The v3901 pre-flight could not see it: 1426 laws changed since main, over the 40 it proves here.
+### REG-3783 - A PC STALE AT BOOT READ BLOCKED "DRAIN STOPPED" UNTIL ITS IMPORT SENT COUNTS (GrokBot's v3900 look, #230)
+
+GrokBot 11-12 09:05-09:20 at 1512: Konyo · ALT read BLOCKED "drain stopped - 15 reels · 2.6 GB at stake" while its own hover said
+it was importing GitHub's proofs for its commit - REG-3741's UPDATING "drain waits for the proofs" was nowhere. Reproduced with
+the shipped _pcStatus on the ALT's live heart (census stale, owed null, frame.release shut, reel.route open, 0 blind, pull
+level): WITH its import counts (3,509 of 10,029) the row reads UPDATING "drain waits for the proofs"; WITHOUT them - the first
+beacons after a restart onto a new version, key "stale-at-boot", before the import reports - `proving` is false (owed null),
+`_imp` is empty, and the row fell to BLOCKED. A heart whose own key says it is stale at boot or stood aside for the import is
+now healing too ("proving itself after its update - its counts arrive in a few minutes"); a blind lock, a shut routing door and a
+refused pull still decide BLOCKED. Which state the ALT's beacon was in at GrokBot's exact minute is not measured; the mechanism
+is. Guard: test_a_drain_waiting_on_its_proofs_is_updating (+ the stale-at-boot case; new RED proof).
+
+### REG-3782 - THE TRAVINCAL COUNCIL GROUP ROWS WORE ONE SHARED PICTURE (#91, his 11-12 ruling "show their own sprites")
+
+GrokBot's v3899 look (#230): the BOSSES Super-Uniques chip "Travincal Council" and the RUNES row "Travincal Council · Toorc +
+Geleb + Ismail · the 3-Council fight" drew councilmember_graphic.png while each priest has had his own hash-pinned sprite since
+REG-3963. Asked, he ruled: show their own sprites. artOr now draws a GROUP name (ART_GROUP) as its members' own sprites, in the
+order the row names them; artUrl (a one-URL caller) and the Travincal zone card, which names no priest, keep the council
+picture. Rendered at 1512 and 1440 and looked at: the first cut OVERLAPPED the sprites (each carries its own dark stone
+backdrop, so the three merged into one dark strip) and, in the Bosses chip, three full sprites pushed the chip's own name past
+its edge ("Travinc / Counci") - now a 3 px gap, and in a small slot a 2x2 mosaic in one sprite's footprint ("Travincal Council"
+on one line). Grok CLI (cold) on both crops: three separate pictures each, nothing cut. Guard:
+test_a_council_group_row_draws_each_priests_sprite (the shipped page in node; 2 RED proofs PROVEN).
+
+### REG-3781 - THE TASK BOARD'S TITLE SAID "v3894 SHIPPING" WHILE v3900 WAS LIVE (his 11-12 screenshot)
+
+His words 11-12 ~09:20: "the task list board still needs updating?" / "this should be the flow per version you should update it"
+/ "and the console also for future should be updating to that section". The title was the session's hand-typed name in
+~/.claude/tasks/_session_names.json, true the day it was typed. The format is now `<words> ▸ <version line>`: the console's
+board lane (his Mac, the publish's own guard) rewrites only the part after " ▸ " each minute - task_board.version_line: what
+main ships (_published_ver) and each newer claude/vNNNN branch with its stage read off .git/ship_logs (LIVE, on main
+publishing, pushing main, on GitHub, ship stopped, pre-flight, pre-flight red/green, building) - before it publishes, so the
+console's board page carries it too. An UNKNOWN main writes nothing; other boards are never touched. Guard:
+test_the_board_title_says_where_each_version_is (fixture repo + names file, the real board_retitle; 3 RED proofs).
+
+### REG-3780 - AN EAGLE-CHILD ANSWER NOBODY READ STAYED IN HIS LIVE TREE, AND GIT SAW THE CHILD'S FILES
+
+11-12, his live tree's git status: tv/.eagle_child_<nonce>.json x3 (11-06, 11-08, 11-10, ~50 KB each), tv/.eagle_child_progress.json
+and tv/control_agent.lease UNTRACKED. doctor_rows removes its child's answer in a `finally`, and a console killed mid-ask (every
+update relaunch) never runs it - the child finishes and writes rows nobody reads, one per relaunch. Each ask now sweeps answers
+older than twice the child's own timeout (sweep_doctor_orphans), keeping the progress file and anything younger; .gitignore
+names all three runtime files. Guard: test_an_eagle_childs_unread_answer_is_swept (3 RED proofs).
+
+### REG-3779 - THE SHIP WROTE NOTHING WHILE ITS BOX REHEARSAL RAN (a relaunched log sat at 0 bytes ~6 minutes)
+
+11-12 08:02-08:09: v3900's relaunched ship wrote nothing at all to ship_v3900.log - the box rehearsal prints its table only
+when it ends - and a log at 0 bytes reads exactly like a hung ship (the process tree was the only way to tell). ship() now says
+"box rehearsal running for <sha> - its table prints when it ends" before it runs. Guard:
+test_a_ship_says_its_box_rehearsal_has_started (the real ship(), the start line said before the rehearsal is called; RED proof).
+
 ### REG-3778 - A VERSION WAS BANKED WHILE A NEW PROOF LAW HAD NO SHARD-TIMING ROW (three versions running)
 
 The pre-flight stopped right after the bump on test_the_shard_balance_file_covers_every_proof_test ("shard_timings.json is

@@ -6667,6 +6667,58 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_a_council_group_row_draws_each_priests_sprite": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_board_title_says_where_each_version_is": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_an_eagle_childs_unread_answer_is_swept": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_ship_says_its_box_rehearsal_has_started": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_bump_refuses_a_proof_law_with_no_timing_row": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_post_land_check_reads_the_consoles_ver": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_relaunch_does_not_re_rehearse_the_box": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_the_stray_sweep_keeps_its_last_sample": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_queued_run_is_said_once_then_every_ten_minutes": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_shard_never_rerun_is_not_red_twice": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_tz_cards_go_two_up_only_when_their_lines_fit": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_card_names_another_pcs_run_in_one_line": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_an_orphaned_publish_holds_nothing": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_string_is_not_a_browser_call": {
       "s": 1.437,
       "src": "median"
