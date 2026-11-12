@@ -6,6 +6,8 @@ name: 🪟 TV DIABLO — Windows boot
 # before it shipped: booted in 3.7s, ran the shipped build, said platform=windows.
 on:
   push:
+    branches-ignore:
+      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws
     # It must watch itself as well as the tree it boots.
     paths:
       - 'tv/**'

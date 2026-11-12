@@ -582,6 +582,7 @@ CARRY_OS = {
     "macos": lambda p: p == "darwin",
     "posix": lambda p: bool(p) and not p.startswith("win"),
     "posix-signals": lambda p: bool(p) and not p.startswith("win"),
+    "windows": lambda p: bool(p) and p.startswith("win"),     # REG-3808 - the trace's ntpath wraps
 }
 #: v3895 (REG-3660) - the Claude CLI is a TOOL a PC has or lacks, like node: carried as a tool is
 CARRY_TOOL = frozenset(("node", "bash", "numpy", "dir-link", "claude-cli"))

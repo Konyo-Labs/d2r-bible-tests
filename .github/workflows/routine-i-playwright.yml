@@ -54,6 +54,7 @@ on:
     # only queued the census behind runners this suite held (13-24 min, census 39982880536).
     branches-ignore:
       - 'ci/proof-keys-**'
+      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws
 
 env:
   # REG-3318 (11-06) - GitHub's ubuntu-latest moved to Ubuntu 26.04; Playwright 1.60 knows hosts up to 24.04 and its

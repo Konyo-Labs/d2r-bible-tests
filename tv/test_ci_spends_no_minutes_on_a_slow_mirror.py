@@ -176,6 +176,25 @@ class TheWorkflows(unittest.TestCase):
                              "%s runs on every proof-keys census push" % name)
             self.assertIn("\n    paths:\n", push, "%s lost its paths filter" % name)
 
+    def test_a_windows_laws_push_runs_no_other_workflow(self):
+        """REG-3807 (#107, 11-12) - a NEW ci/winlaws branch is compared against main, so a paths filter alone fired Routine I,
+        M, the agent suite and the Windows boot beside the one run it was for; each push workflow ignores those branches"""
+        n = 0
+        for f in sorted(os.listdir(WF)):
+            if not f.endswith(".yml") or f == "windows-laws.yml":
+                continue
+            code = _code(_read(f))
+            i = code.find("\n  push:\n")
+            if i < 0:
+                continue
+            push = code[i:]
+            push = push[:re.search(r"\n  \S", push[1:]).start() + 1] + "\n"
+            if "\n    branches:\n" in push:
+                continue                     # an allow-list names its own branches
+            n += 1
+            self.assertIn("\n      - 'ci/winlaws-**'", push, "%s runs on a Windows-laws push" % f)
+        self.assertGreaterEqual(n, 8, "a zero needs a denominator: only %d push workflows read" % n)
+
 
 if __name__ == "__main__":
     unittest.main()
@@ -233,4 +252,9 @@ RED_PROOF = [
         "replace": "",
         "matches": 1, "needs": "posix-signals",
     },
+    {"why": "REG-3807 - a Windows-laws push starts the Windows boot again",
+     "file": "../.github/workflows/tv-windows-boot.yml",
+     "find": "    branches-ignore:\n      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws\n",
+     "replace": "",
+     "matches": 1, "needs": "posix-signals"},
 ]

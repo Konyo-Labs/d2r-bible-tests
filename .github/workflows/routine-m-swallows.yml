@@ -25,6 +25,8 @@ name: Routine M — swallowed-exception ratchet
 # and name in the commit message which sites you fixed and why each was a real defect.
 on:
   push:
+    branches-ignore:
+      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws
     paths:
       # ⚠ A GATE MUST SEE THE INPUT IT POLICES, ITSELF INCLUDED. Routine L already carries this
       # rule after four sibling routines learned it the expensive way: editing the checker changes

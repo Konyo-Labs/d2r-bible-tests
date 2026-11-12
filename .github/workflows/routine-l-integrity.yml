@@ -17,6 +17,8 @@ on:
   # Found by a third-eye sweep (a different model family), which also caught GAME_RULES.md still
   # documenting this gate as "312 items, 11 bosses" while the baseline it reads says 322 and 13.
   push:
+    branches-ignore:
+      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws
     paths:
       # v1910 — A GATE MUST SEE THE INPUT IT POLICES, ITSELF INCLUDED. Routine I already says this
       # in its own path list and fixes it for itself; these four did not. Editing L_integrity.js (or this

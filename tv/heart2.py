@@ -148,6 +148,8 @@ PROOF_NEEDS_HOST = {
     # starts only on macOS (start_film_thread returns unless sys.platform == "darwin"), and the law reaches the farewell
     # look with SIGTERM, which on Windows ends the process before any handler runs.
     "macos": ("heart2", "_host_is_macos", "macOS (the code it guards runs only there)"),
+    # REG-3808 - the trace's ntpath wraps run only on Windows; a proof that tampers them is judged there, ELSEWHERE here
+    "windows": ("heart2", "_host_is_windows", "Windows (the code it guards runs only there)"),
     "posix-signals": ("heart2", "_host_has_posix_signals",
                       "a SIGTERM that reaches the process's handler (Windows ends the process instead)"),
     # REG-1719 — the ALT on v3556 filed four gates BLIND; three judged code its Windows PC never runs. numpy: the ALT
@@ -180,6 +182,11 @@ PROOF_NEEDS_HOST = {
 def _host_is_macos():
     """REG-1688 — the PROOF_NEEDS_HOST probe for "macos". -> bool"""
     return sys.platform == "darwin"
+
+
+def _host_is_windows():
+    """REG-3808 — the PROOF_NEEDS_HOST probe for "windows". -> bool"""
+    return os.name == "nt"
 
 
 def _host_has_posix_signals():
@@ -2567,6 +2574,24 @@ def _h2_install():
             w.__wrapped__ = f
             return w
         setattr(_o, n, wrap())
+    # REG-3808 (#107, GitHub windows-latest on v3903) - ON WINDOWS os.path IS ntpath, whose exists / lexists / isfile / isdir /
+    # islink / isjunction are bound at import to nt's C fast paths and whose realpath calls nt._getfinalpathname: none of them
+    # reaches the stat wraps above, so a law's exists() probe and its realpath() were never traced there and a read of
+    # gitignored local state was carried. Each is a probe of its own on Windows; on POSIX they call the wrapped stat / lstat.
+    if _o.name == "nt":
+        _op = _o.path
+        for n in ("exists", "lexists", "isfile", "isdir", "islink", "isjunction", "realpath"):
+            f = getattr(_op, n, None)
+            if f is None:
+                continue
+            def wrap_nt(f=f, n=n):
+                def w(path, *a, **k):
+                    names("S", path, n not in ("lexists", "islink", "isjunction"))
+                    return f(path, *a, **k)
+                w.__name__ = n
+                w.__wrapped__ = f
+                return w
+            setattr(_op, n, wrap_nt())
     _scandir = getattr(_o, "scandir", None)
     if _scandir is not None:     # a DirEntry's stat() reveals a size without an open: it counts as a stat
         class _Entry(object):

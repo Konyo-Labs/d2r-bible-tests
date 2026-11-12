@@ -278,7 +278,8 @@ class UnknownIsNotConsent(_FakeConsoleCase):
 # #107 - start_tvd_mac.sh's block runs only on a Mac. On Windows a "real POSIX bash" is Git Bash, whose python3 is not the
 # one the Mac launcher finds, so the fake decide never answers and the block falls through - a Windows-only artefact of
 # running the MAC launcher where it never runs. Windows' own click is pinned by TheWindowsClickUsesTheSameDecision below.
-@unittest.skipIf(os.name == "nt", "the Mac launcher's block - it never runs on Windows (TheWindowsClick* pin that side)")
+@unittest.skipIf(os.name == "nt", "the Mac launcher's block never runs on Windows - UNMEASURED here (TheWindowsClick* pin "
+                                    "that side)")   # #107 (REG-3808) - a shell skip says UNMEASURED
 class TheShellBlockRunsUnderSetE(unittest.TestCase):
     """v3525 — the law above drove launcher_decide.py and never the SHELL that calls it. start_tvd_mac.sh runs
     under `set -euo pipefail`, and `x=$(cmd)` whose cmd exits 1 ends the script on that line: with the console

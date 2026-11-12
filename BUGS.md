@@ -142,6 +142,25 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3808 - ON WINDOWS THE PROOF TRACE NEVER SAW exists() OR realpath(): GITIGNORED STATE WAS CARRIED (v3904, #107)
+GitHub windows-latest on v3903 (the ci/winlaws run): test_a_gate_proven_on_these_bytes_is_carried read "a read of ignored
+local state was carried" and "os.path.realpath is not traced". The trace wraps os.stat / lstat / access / readlink, and on
+POSIX every os.path probe goes through them. On Windows os.path is ntpath, whose exists / lexists / isfile / isdir / islink /
+isjunction are bound at import to nt's C fast paths and whose realpath calls nt._getfinalpathname - none reaches os.stat, so a
+Windows PC could bank a proof whose law read gitignored local state, and a realpath probe never keyed its file. Each is now
+a probe of its own when os.name is nt. A new capability, windows (heart2._host_is_windows, the carry rule's CARRY_OS), lets
+the red-proof that removes those wraps be judged on Windows and ELSEWHERE everywhere else. Also from the same run: the
+launcher law's Windows skip says UNMEASURED (the bash law's every shell case now skips there, REG-3801's env fix holding).
+
+### REG-3807 - A WINDOWS-LAWS PUSH STARTED FOUR OTHER SUITES: A NEW BRANCH'S PATHS ARE MEASURED AGAINST MAIN (v3904, #107)
+11-12 ~18:50 IST: ci/winlaws-v3903 (the 28 Windows-red laws on windows-latest) also started Routine I (the whole Playwright
+suite), Routine M, the agent suite and the Windows boot - cancelled by hand before v3903's round needed the runners. The
+workflow's header said "its only changed file is this one, so no other workflow fires"; on a NEW branch GitHub compares the
+paths against main, so every file v3903 changed counted. Every push-triggered workflow without a branch allow-list now
+ignores ci/winlaws-** (tv-tests and Routine I keep ci/proof-keys-** first, where their law reads it), and the header says
+what happened. Law: test_ci_spends_no_minutes_on_a_slow_mirror::test_a_windows_laws_push_runs_no_other_workflow (+1
+red-proof).
+
 ### REG-3806 - THE SHELF'S STREAK TILE CUT ITS FLOOR: "at least 467 runs logg…" AT 1512 (v3903, GrokBot's v3902 look)
 GrokBot on his Mac 11-12 18:01-18:15: the Streak tile's line read "at least 467 runs logg…" at 1512 (the wording came in
 with v3901, REG-3763). Every tile's line is one line with an ellipsis by design, about 6 px a character there; the floor is

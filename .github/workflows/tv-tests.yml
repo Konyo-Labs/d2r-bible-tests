@@ -13,6 +13,7 @@ on:
     # only queued the census behind runners this suite held (13-24 min, census 39982880536).
     branches-ignore:
       - 'ci/proof-keys-**'
+      - 'ci/winlaws-**'      # #107 - a Windows-laws push grades only its laws
   workflow_dispatch:
 # gbl/ci-speed - A NEWER PUSH TO THE SAME ci/ BRANCH CANCELS THE OLDER RUN; MAIN IS NEVER CANCELLED.
 # On ci/** the group is the branch, so the superseded run stops holding runners (2026-10-23: main v3791's

@@ -5,7 +5,9 @@ name: 🪟 Windows laws — why each one is red on Windows
 # there) or a real Windows defect (to fix) could only be guessed from names. This runs a named list of laws on windows-latest,
 # in the Windows proof run's own environment, each on its own, verbose, and keeps every word each one printed. It never fails
 # on a red law (finding them is its job); it fails only if it could not run the list. Triggered by a ci/winlaws-* push, which
-# the pre-push grades nowhere (a ci-only push) and whose only changed file is this one, so no other workflow fires.
+# the pre-push grades nowhere (a ci-only push). v3904 (REG-3807) - and every other push-triggered workflow IGNORES ci/winlaws-**:
+# "its only changed file is this one" was false on a NEW branch - GitHub compares a new branch's paths against main, so the
+# v3903 run (11-12) also started Routine I, M, the agent suite and the Windows boot, cancelled by hand.
 on:
   push:
     branches: ['ci/winlaws-**']
