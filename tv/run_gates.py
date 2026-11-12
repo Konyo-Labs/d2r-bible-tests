@@ -13973,6 +13973,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_council_group_row_draws_each_priests_sprite.py")], 360,
          why="v3902 (#91, REG-3782) - his 11-12 ruling 'show their own sprites': the Bosses chip and the Runes row that name "
              "the Council drew one shared picture; a group row draws Toorc, Geleb and Ismail's own sprites"),
+    Gate("test_the_theatre_wears_one_caption_bar",
+         [sys.executable, os.path.join(HERE, "test_the_theatre_wears_one_caption_bar.py")], 120,
+         why="v3903 (#210, his approved design brief) - CLEAN THEATRE: the film fills the stage under one thin caption bar; "
+             "the AI read card, chips and status rows are the read panel's, which never opens itself"),
     Gate("test_python_is_never_stripped_as_javascript",
          [sys.executable, os.path.join(HERE, "test_python_is_never_stripped_as_javascript.py")], 120,
          why="v3903 (REG-3796, #200) - two laws stripped Python with the JavaScript comment rules: a slash-star in a "

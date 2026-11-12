@@ -60,7 +60,8 @@ test.describe('v851 theatre pack (live control app)', () => {
     await page.waitForTimeout(250);
     for (let i = 0; i < 40; i++) {
       const cap = (await page.locator('#th-caption').textContent()) || '';
-      if (cap.includes('CAPTURE')) return cap;
+      // #210 (clean theatre): a READ beat's one-line bar starts 'read #N'; its AI read line is the read panel's
+      if (/read #\d+/.test(cap)) return cap;
       await page.keyboard.press('ArrowRight');
       await page.waitForTimeout(150);
     }
@@ -74,11 +75,18 @@ test.describe('v851 theatre pack (live control app)', () => {
     await page.waitForTimeout(1600);
     test.skip(!(await reelLoaded(page)), LAST_HAS_NO_REEL);
     const cap = await gotoReadBeat(page);
-    test.skip(!cap.includes('CAPTURE'), LAST_HAS_NO_READ);
-    expect(cap).toContain('CAPTURE');
-    expect(cap).toMatch(/AI READ|IT SAW/);
-    // read line block exists
-    await expect(page.locator('.th-airead')).toHaveCount(1);
+    test.skip(!/read #\d+/.test(cap), LAST_HAS_NO_READ);
+    // #210 (clean theatre): the caption is ONE bar - the read line is not in it; it heads the read panel
+    expect(cap).not.toContain('CAPTURE');
+    const drawer = page.locator('#th-drawer');
+    if (await drawer.isHidden()) { await page.keyboard.press('i'); await page.waitForTimeout(300); }
+    await expect(drawer).toBeVisible();
+    const card = (await drawer.textContent()) || '';
+    expect(card).toContain('CAPTURE');
+    expect(card).toMatch(/AI READ|IT SAW/);
+    // read line block exists, once, in the panel
+    await expect(page.locator('#th-drawer .th-airead')).toHaveCount(1);
+    await expect(page.locator('#th-caption .th-airead')).toHaveCount(0);
   });
 
   test('READ CARD drawer opens with I, follows the playhead, closes with ✕', async ({ page }) => {
@@ -87,7 +95,7 @@ test.describe('v851 theatre pack (live control app)', () => {
     await simToggle(page);
     await page.waitForTimeout(1400);
     test.skip(!(await reelLoaded(page)), LAST_HAS_NO_REEL);
-    test.skip(!(await gotoReadBeat(page)).includes('CAPTURE'), LAST_HAS_NO_READ);   // v918.4 — 'identity' lives on READ cards
+    test.skip(!/read #\d+/.test(await gotoReadBeat(page)), LAST_HAS_NO_READ);   // v918.4 — 'identity' lives on READ cards
     const drawer = page.locator('#th-drawer');
     if (await drawer.isHidden()) { await page.keyboard.press('i'); await page.waitForTimeout(300); }
     await expect(drawer).toBeVisible();

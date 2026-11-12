@@ -142,6 +142,26 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3800 - THE MASK-ENCODER LAW TOOK A COMPLETE PAGE WITH NO LSR AS READY: ONE CASE RACED RED (v3902 round 2 on GitHub)
+agent-suite (5) of run 43241192004 (v3902, 9b38ec448): test_mask_encoders_agree::test_owning_EVERYTHING - "the js encoder
+refused: this page has no LSR, so a mask read here would be of the wrong world"; every sibling case passed. The shipped snippet
+refuses without window.LSR (v3215: no bare-localStorage fallback), and the harness's readiness wait broke on readyState
+'complete' whether or not LSR had bound - so a page complete before its wrapper raced one case red. It is also on #107's
+Windows-red list. Ready is now _page_ready(href, readyState, has_lsr): the served page, parsed, AND its LSR; one that never
+binds is a skip, never a pass. The ship re-ran the one shard on the same commit (his one-flaky-shard rule). Law: the same file
+::test_a_page_is_ready_only_with_its_lsr (+1 red-proof).
+
+### REG-3799 - CLEAN THEATRE: THE CAPTION STACKED THE WHOLE AI READ CARD OVER THE FILM (v3903, #210, his approved design brief)
+GrokBot #230 6795098365 ask 3, approved by him: "the image fills the stage with one thin caption bar (like frame 2/395, the
+Loading splash); status lines, the AI read box and the rest move into a collapsible side/bottom panel, closed by default".
+thPaint wrote, per beat: a retro hand-off row, the READ/MISS verdict, forensic flags, the photo position and clock, the
+AI-stamp hint AND thCaption's whole read card (CAPTURE / AI READ / IT SAW / OCR / the three-eye dossier) plus name chips -
+up to 44vh over the film. The read panel (#th-drawer) already carries each in full and never opens itself (an earlier law).
+Now the caption is ONE line (thCaptionBar, the whole text on hover, an I hint): thCaption(b, 'bar') is the identity line
+("read #N · where · photo lock · flags"), thCaption(b, 'card') the rest, and the read panel heads with that AI read line;
+thCaption(b) is unchanged for every other caller. tests/v851_theatre_pack.spec.ts moves with the product (the read line is
+read in the panel). Law: test_the_theatre_wears_one_caption_bar (4 red-proofs).
+
 ### REG-3798 - A PROOF IMPORT'S SCRATCH DIR STRANDED ON WINDOWS: 7 OF THE OLD PC ALT'S 43 OLD TEMP DIRS (v3903)
 The doctor on the OLD PC ALT (11-12, v3901): "43 of 83 scratch director(ies) WE made are older than 3 days - oldest 7.5 days".
 MEASURED there read-only: 25 tvd-gate-ledgers (v3902's REG-3771 sweep collects those), 8 tvd-nogit + 2 tvd-par-dirty (declared,

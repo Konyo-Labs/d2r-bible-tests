@@ -121,10 +121,12 @@ class TheShelfOpensOnTheList(unittest.TestCase):
         self.assertIn('onclick="window._dossierClose()"', self.src[self.src.rindex("<", 0, i):end])
 
     def test_the_read_panel_and_the_frame_are_one_width(self):
-        self.assertEqual(self.src.count("min(280px, 30%)"), 2,
-                         "the drawer and the frame inset drifted apart, or the panel grew back")
+        # #210 (v3903, the clean theatre) - while the panel is open the caption bar takes the same inset as the frame, so the
+        # one width now appears three times: the panel's width, the frame's inset and the caption's inset
+        self.assertEqual(self.src.count("min(280px, 30%)"), 3,
+                         "the drawer, the frame inset and the caption inset drifted apart, or the panel grew back")
         self.assertEqual(self.src.count("width: min(280px, 30%)"), 1)
-        self.assertEqual(self.src.count("right: min(280px, 30%)"), 1)
+        self.assertEqual(self.src.count("right: min(280px, 30%)"), 2)
         self.assertEqual(self.src.count("min(380px, 44%)"), 0)
 
     def test_the_read_panel_does_not_open_itself(self):
@@ -381,8 +383,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-1757 - the frame inset stays wide after the panel was narrowed",
      "file": "control_ui.html",
-     "find": "right: min(280px, 30%)",
-     "replace": "right: min(380px, 44%)",
+     "find": "#theatre.card-open .th-film { right: min(280px, 30%)",
+     "replace": "#theatre.card-open .th-film { right: min(380px, 44%)",
      "matches": 1},
     {"why": "REG-1757 - a session with no saved preference opens the read panel on the first named beat",
      "file": "control_ui.html",

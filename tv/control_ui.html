@@ -1723,6 +1723,23 @@
     font-size: var(--fs-md); color: var(--text); letter-spacing: var(--ls-tight);   /* v945 — never below readable app scale */
     text-shadow: 0 2px 8px rgba(0,0,0,.9); background: linear-gradient(0deg, rgba(5,4,3,.85), transparent); }
   .th-caption b { color: var(--gold-hi); }
+  /* #210 - CLEAN THEATRE: the beat's caption is ONE line over the film (the Loading splash's thin bar); the rest is the read
+     panel's. A message (loading, an error) is not a bar and keeps its own lines. */
+  .th-caption .th-bar { display: flex; justify-content: center; align-items: baseline; min-width: 0; }
+  .th-caption .th-bar .th-bar-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .th-caption .th-bar .th-bar-more { flex: none; }   /* only the text is ever cut - the control stays whole */
+  #theatre.card-open .th-caption .th-bar-more { display: none; }   /* the panel it opens is already open */
+  .th-caption .th-bar .th-bar-more { margin-left: 8px; color: var(--muted); font-size: var(--fs-2xs); cursor: pointer;
+    border: 1px solid var(--edge); border-radius: 6px; padding: 1px 6px; pointer-events: auto; }
+  .th-caption .th-bar .th-bar-more:hover, .th-caption .th-bar .th-bar-more:focus-visible { color: var(--gold); border-color: var(--edge-hi); outline: none; }
+  .th-caption:has(.th-bar) { padding-top: 7px; padding-bottom: 7px; }
+  /* in the 280px read panel the caption's card is the panel's width: each key on its own line, its value under it */
+  .th-cap-card .th-airead { display: block; max-width: none; margin: 0; padding: 6px 8px; border-radius: 4px; }
+  .th-cap-card .th-airead .ar-k { display: block; min-width: 0; margin-top: 4px; }
+  .th-cap-card .th-airead .ar-row:first-child .ar-k { margin-top: 0; }
+  /* while the read panel is open the caption stops at its edge, the same inset the film takes - never under the panel */
+  /* the cross-family look on #210: the filmstrip's honesty note ran under the open panel, clipped mid-word ("(fi") */
+  #theatre.card-open .th-caption, #theatre.card-open #th-filmstrip-wrap { right: min(280px, 30%); }
   .th-caption { max-height: min(44vh, calc(100% - var(--th-top-h, 80px) - clamp(56px,8vh,74px) - 8px)); }   /* REG-2134 - never over the header */
   /* v1508 — Diablo word leads, system word trails in muted mono (task #8's rule, applied here) */
   .th-caption .th-dl { color: var(--gold-hi); }
@@ -1743,7 +1760,7 @@
      ✕, and never outranks the controls. */
   /* v1379 — drawer MUST outrank the 📼 REPLAY ribbon (z-index 8). When drawer was z=5 the
      sticky ✕ sat UNDER the ribbon and Playwright (and humans) could not click "close". */
-  .th-drawer { position: absolute; top: 0; right: 0; bottom: clamp(54px, 9vh, 72px); width: min(280px, 30%);
+  .th-drawer { position: absolute; top: var(--th-head-b, 0px); right: 0; bottom: clamp(54px, 9vh, 72px); width: min(280px, 30%);
 
     z-index: 12; overflow-y: auto; background: rgba(8,10,9,.94); border-left: 1px solid var(--edge);
     padding: 38px 16px 16px;   /* v859 — ✕ clearance survives the shorthand */ font: var(--fw-normal) var(--fs-sm)/var(--lh-relaxed) var(--mono); color: #c2d1c6;   /* v945 — readable app scale (was 11px) */
@@ -2546,6 +2563,7 @@
   #th-fs-note { pointer-events: auto; padding: 5px clamp(12px,1.4vw,20px) 0;
     font: var(--fw-normal) var(--fs-xs)/var(--lh-normal) var(--mono); color: #c0a578; opacity: .85; letter-spacing: var(--ls-tight); }   /* v945 — app scale */
   #th-fs-note[hidden] { display: none !important; }
+  #th-fs-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* #210 - one line, the rest on hover */
   #th-filmstrip { pointer-events: auto; display: flex; align-items: center; gap: 3px;
     height: 54px; padding: 3px clamp(12px,1.4vw,20px); overflow-x: auto; overflow-y: hidden;
     scrollbar-width: thin; scroll-behavior: smooth; }
@@ -17842,7 +17860,20 @@ window._lockMark = function(isOpen, px, label){
       ? ' · since then: ' + esc(_missedSay(_ksm).replace(/^swept · /, '')) : '';
     return '<span style="color:#f0c060">🧠 <b>KAI CLOSED THE SESSION</b> · ' + swept + ' · ' + held + since + '</span>';
   }
-  function thCaption(b){
+  /* #210 (his approved design brief, GrokBot #230 6795098365 ask 3) - CLEAN THEATRE: the film fills the stage under ONE thin
+     caption bar, the way the Loading splash looks. The bar is the beat's identity line ("read #N · where · photo lock ·
+     flags"); the AI read card (CAPTURE / AI READ / IT SAW / OCR / dossier), the tag and name chips and the status rows live
+     in the read panel (#th-drawer, closed until he opens it - it never opens itself). thCaption(b) is unchanged for every
+     caller; thCaption(b, 'bar') is the line before the card, thCaption(b, 'card') the rest ('' for a one-line beat). */
+  var _thCapIdent = null;
+  function thCaption(b, part){
+    var full = _thCaptionFull(b);
+    if (part === 'bar') return _thCapIdent !== null ? _thCapIdent : full;
+    if (part === 'card') return _thCapIdent !== null ? full.slice(_thCapIdent.length) : '';
+    return full;
+  }
+  function _thCaptionFull(b){
+    _thCapIdent = null;
     if (b && b.lane === 'kai'){
       return _thKaiCaption(b);
     }
@@ -17902,6 +17933,7 @@ window._lockMark = function(isOpen, px, label){
     if (b.farewell) bits.push('👋 farewell');
     if (b.stashTab) bits.push('🏦 tab:'+esc(b.stashTab));
     var line = bits.join(' · ');
+    _thCapIdent = line;                         // #210 - the bar ends here; the note and the read card are the panel's
     if (b.note) line += '<br>⏳ '+esc(b.note);
     // v821 (Konyo: 'WHERE is the AI read at the time of') — THE AI READ LINE: the model's
     // answer is the HEADLINE, stamped with its OWN clock, cross-referenced to this exact frame.
@@ -18033,6 +18065,20 @@ window._lockMark = function(isOpen, px, label){
       }
     }
   }
+  /* #210 - the caption is ONE line: the whole text on hover, and I (or a click on the bar) opens the read panel */
+  function thCaptionBar(html){
+    var cap = $('th-caption'); if (!cap) return;
+    cap.innerHTML = '<span class="th-bar"><span class="th-bar-t">' + html + '</span><span class="th-bar-more" role="button"'
+      + ' tabindex="0" aria-label="open the read card (I)" title="open the read card (I)">ℹ read card</span></span>';
+    try { cap.title = (cap.textContent || '').replace(/\s*ℹ read card\s*$/, '').trim(); } catch (e) {}
+    /* the cross-family look on #210: a lone "i" looked clickable with no label - it is a labelled control that opens the panel */
+    try {
+      var more = cap.querySelector('.th-bar-more');
+      if (more) more.onclick = more.onkeydown = function(ev){
+        if (ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault(); ev.stopPropagation(); if (!CARD.open) thCardToggle(); };
+    } catch (e) {}
+  }
   function thPaint(){
     var b = TH.beats[TH.i];
     if (!b) return;
@@ -18073,10 +18119,12 @@ window._lockMark = function(isOpen, px, label){
       // v949 — even zipping, a retro-caught frame shouts its hand-off chip (the layered net winning)
       var _retroA = thHandoffNote(b);
       var _retroRowA = _retroA ? '<div class="ar-reader" style="justify-content:center;margin-bottom:4px">' + thReaderBadge(b) + ' ' + _retroA + '</div>' : '';
-      if (_rsA) $('th-caption').innerHTML = _retroRowA + _rpA + ' ' + _rsA + _ffA;
-      else if (_retroA) $('th-caption').innerHTML = _retroRowA + _rpA + _ffA;
-      else if (lr) $('th-caption').innerHTML = _rpA + ' <span class="ar-dim">📹</span> ' + thCaption(lr) + _ffA;
-      else $('th-caption').innerHTML = _rpA + ' <span class="ar-dim">📹 film</span>' + _ffA;
+      // #210 - one thin bar: the retro hand-off row and the standing read's card are the read panel's
+      // the forensic flags render as their own block row - the read panel shows them (read status), never the bar
+      if (_rsA) thCaptionBar(_rpA + ' ' + _rsA);
+      else if (_retroA) thCaptionBar(_rpA + ' ' + thReaderBadge(b));
+      else if (lr) thCaptionBar(_rpA + ' <span class="ar-dim">📹</span> ' + thCaption(lr, 'bar'));
+      else thCaptionBar(_rpA + ' <span class="ar-dim">📹 film</span>');
     } else if (b.footage){
       var lr2 = TH.lastRead;
       var _rsB = thReadStatus(b, false), _rpB = thRouterPill(b), _ffB = thForensicFlags(b);
@@ -18094,10 +18142,12 @@ window._lockMark = function(isOpen, px, label){
       // v949 (Grok P2#8) — the STORY hand-off chip: a frame live missed at speed → KAI caught retro
       var _retroF = thHandoffNote(b);
       var _retroRow = _retroF ? '<div class="ar-reader" style="justify-content:center;margin-bottom:5px">' + thReaderBadge(b) + ' ' + _retroF + '</div>' : '';
-      $('th-caption').innerHTML = _retroRow + (_rsB ? _rsB + '<br>' : '') + _ffB + (lr2 ? (foot + _stampHint + '<br>' + thCaption(lr2)) : (foot + _stampHint));
+      // #210 - one thin bar: the verdict, where the photo sits and when; the hand-off row, the forensic flags and the standing
+      // read's card are the read panel's (it holds each in full - read status, reader, the three eyes, AI stamps)
+      thCaptionBar((_rsB ? _rsB + ' ' : '') + foot + _stampHint + (_retroRow ? ' <span class="ar-dim">· KAI hand-off (I)</span>' : ''));
     } else {
       var _rpC = thRouterPill(b), _ffC = thForensicFlags(b);
-      $('th-caption').innerHTML = (_rpC ? _rpC + ' ' : '') + thCaption(b) + _ffC;
+      thCaptionBar((_rpC ? _rpC + ' ' : '') + thCaption(b, 'bar'));   // #210 - the read card and the flags are the panel's
     }
     if (typeof thCardRender === 'function'){
       clearTimeout(window.__thCardT);
@@ -18557,10 +18607,12 @@ window._lockMark = function(isOpen, px, label){
         note.hidden = false;
         note.textContent = '🎬 STORY mode — the AI-reader cut: ' + modeFoot + ' film stills centered on each AI read · session has '
           + footCount + ' film · switch to REAL or FAST for every screenshot';
+        note.title = note.textContent;   // #210 - one line over the film; the whole note on hover
       } else if (TH.filmstrip && footCount < 20 && spanS > 60){
         note.hidden = false;
         note.textContent = '📹 this session recorded only ' + footCount + ' still' + (footCount === 1 ? '' : 's')
           + ' — the film lane was off when it ran (fixed in v941; new sessions record full film)';
+        note.title = note.textContent;   // #210 - one line over the film; the whole note on hover
       } else note.hidden = true;
     }
     if (!TH.filmstrip){ strip.innerHTML = ''; return; }
@@ -19140,8 +19192,16 @@ window._lockMark = function(isOpen, px, label){
      can never climb over the title, the clock or the buttons. */
   (function _thTopHeight(){
     var tl = document.querySelector('#theatre .th-topline'), th = document.getElementById('theatre');
-    if (tl && th && typeof ResizeObserver !== 'undefined')
-      new ResizeObserver(function(){ th.style.setProperty('--th-top-h', Math.ceil(tl.getBoundingClientRect().height) + 'px'); }).observe(tl);
+    if (tl && th && typeof ResizeObserver !== 'undefined') {
+      var _ro = new ResizeObserver(function(){
+        th.style.setProperty('--th-top-h', Math.ceil(tl.getBoundingClientRect().height) + 'px');
+        /* #210 - the header's real bottom (the REPLAY ribbon and the header row together): the read panel starts there, so
+           it never sits under the Theatre's ✕ CLOSE (whose clearance padded it to a 100px column) or over the header buttons */
+        th.style.setProperty('--th-head-b', Math.max(0, Math.ceil(tl.getBoundingClientRect().bottom - th.getBoundingClientRect().top)) + 'px');
+      });
+      _ro.observe(tl);
+      try { var rb = document.getElementById('th-ribbon'); if (rb) _ro.observe(rb); } catch (e) {}
+    }
   })();
   function thLit(){
     var bt = $('btn-theatre');
@@ -19271,7 +19331,10 @@ window._lockMark = function(isOpen, px, label){
     var b = TH.beats[TH.i] || {};
     function kv(k, v){ return (v === undefined || v === null || v === '') ? '' : '<div class="kv"><span class="k">' + k + '</span><span class="v">' + esc(String(v)) + '</span></div>'; }
     function col(label, arr){ arr = arr || []; return '<div class="col"><em>' + label + '</em> ' + (arr.length ? esc(arr.join(', ')) : '—') + '</div>'; }
-    var h = '<h4>identity</h4>'
+    /* #210 - the AI read line left the caption bar: it heads the read panel, the same block (CAPTURE / AI READ / IT SAW) */
+    var _airead = String(thCaption(b, 'card') || '').replace(/^(\s*<br>)+/, '');
+    var h = (_airead ? '<h4>AI read</h4><div class="th-cap-card">' + _airead + '</div>' : '')
+      + '<h4>identity</h4>'
       + kv('read', '#' + (b.n || '?')) + kv('frame', b.frameId ? b.frameId + '.jpg' : '(none)')
       + kv('session', (b.sessionId || '').slice(0, 22)) + kv('lane', b.lane) + kv('model', b.model) + kv('sim', b.sim ? 'YES — view only' : '')
       + '<h4>clocks</h4>'
