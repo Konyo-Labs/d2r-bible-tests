@@ -99,6 +99,10 @@ EXPOSED = {
     "test_what_keeps_growing_is_salvaged_then_pruned.py": "lists the salvage folder its own fixture lane wrote, inside the "
                                                          "scratch base it built, only to name it in a failure (REG-3209)",
     "test_a_frame_index_lists_each_folder_once.py": "walks only the scratch tree it built (the verbatim reference walk)",
+    "test_the_eagles_pass_runs_in_a_child.py": "lists only the mkdtemp world it sets as TV_HIST before audit_child resolves "
+                                               "its cache root, to prove no .eagle_child_ answer is left (REG-3780 gitignored them)",
+    "test_an_eagle_childs_unread_answer_is_swept.py": "lists only the mkdtemp it planted the answers in, to prove which ones "
+                                                      "the sweep took (REG-3780)",
     "vault_fixture_reels.py": "walks the synthetic reel tree it just materialised in its own scratch",
     "test_no_python_door_writes_owned_without_the_door.py": "its '.*' is an EXCLUSION (startswith('.') skips the entry) and it reads only the tv/*.py product files it keeps, so .DS_Store is never counted",
     "corroborate.py": "lists his ledger backups and his footage: outside the tree, or a dir no sandbox carries - never banked",

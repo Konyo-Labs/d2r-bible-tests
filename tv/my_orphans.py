@@ -290,9 +290,10 @@ def _keep_sample(kind, cpu, at):
         try:
             with io.open(path, encoding="utf-8") as fh:
                 body = json.load(fh)
-            body = body if isinstance(body, dict) else {}
         except Exception:
-            body = {}
+            body = None     # UNKNOWN - absent or unreadable: never read as an empty file that was there
+        # an unread (or wrong-shaped) file is rewritten with this pass's sample alone: the other kind measures afresh
+        body = body if isinstance(body, dict) else {}
         body[kind] = {"at": at, "cpu": cpu}
         tmp = "%s.%d.tmp" % (path, os.getpid())
         with io.open(tmp, "w", encoding="utf-8") as fh:
