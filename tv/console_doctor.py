@@ -6983,7 +6983,11 @@ EVIDENCE_SINCE_MS = 1789833019729
 #: there is no screen state to snapshot. MEASURED 11-06 on his Mac: the row read MISSING on 5 'theatre-open-no-sessions'
 #: rows (/api/sessions did not answer, 10-28) - true of the wrong population, as this row's own comment warns.
 #: tv/test_a_ui_fault_counts_only_the_kinds_that_carry_a_snapshot.py holds it to the page's own senders.
-SNAPSHOT_KINDS = ("theatre-stuck-black",)
+#: REG-3775 (11-12) - AND THE SERVER'S OWN RESCUE. _console_rescue_loop records "console-rescued-by-server" with
+#: before=ui_pre_rescue_snapshot() (elsNow, painting, frozenBeats, pixelBlank...): MEASURED on his Mac, 3 such rows in 14 days,
+#: each carrying its snapshot, while this row read UNKNOWN ("no console paint fault ... UNMEASURED") because only the page's
+#: sender was named. The law reads both senders: the page's posts and control_app's ui_fault_record calls that pass before=.
+SNAPSHOT_KINDS = ("theatre-stuck-black", "console-rescued-by-server")
 
 
 def _check_the_item_facts_are_reaching_the_row():
@@ -7165,7 +7169,9 @@ def _check_a_ui_fault_keeps_its_evidence():
     if rows is None:
         return UNKNOWN, ("the fault ledger could not be read (%s), so evidence cannot be counted"
                          % (why or "no reason given"))
-    # Only the console-reported kinds can carry a snapshot; a server-side row has no DOM to measure.
+    # Only the kinds that are SENT with a snapshot are counted (SNAPSHOT_KINDS, held by a law to both senders). REG-3775: the
+    # server's own rescue sends one too (before=ui_pre_rescue_snapshot(), the last beat's DOM facts), so the kind decides,
+    # never where the row was written - "a server-side row has no DOM to measure" stopped being true when it did.
     # ⚠⚠ AND ONLY ROWS WRITTEN AFTER THE FIX SHIPPED. Without this boundary the row read MISSING
     # the moment it was born — 35 console faults in 14 days, none carrying evidence, every one of
     # them recorded by code that could not yet send any. That is a TRUE sentence about the WRONG
@@ -7174,8 +7180,7 @@ def _check_a_ui_fault_keeps_its_evidence():
     # The constant is a HISTORICAL boundary — the instant the writer gained the ability — so
     # unlike a freshness threshold it legitimately never moves. [[zero-needs-a-denominator]]
     mine = [r for r in rows
-            if str((r or {}).get("where") or "").startswith("control_ui")
-            and ((r or {}).get("at") or 0) >= EVIDENCE_SINCE_MS
+            if ((r or {}).get("at") or 0) >= EVIDENCE_SINCE_MS
             and str((r or {}).get("kind") or "") in SNAPSHOT_KINDS]      # REG-3287 - only the kinds that carry one
     if not mine:
         return UNKNOWN, ("no console paint fault (%s) in 14 days since the snapshot shipped, so whether it travels is "

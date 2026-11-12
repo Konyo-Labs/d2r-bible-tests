@@ -8,6 +8,8 @@ with, because there is no stage to measure when the list never came. Only the pa
   * the kinds console_doctor.SNAPSHOT_KINDS names are exactly the ui_fault posts in control_ui.html that send `before`;
   * the row is UNKNOWN on non-paint faults (never MISSING), MISSING when a paint fault arrives without a snapshot, OK
     when it carries one.
+REG-3775 (11-12): the server's own rescue ("console-rescued-by-server", recorded with before=) is a snapshot sender too -
+3 such rows on his Mac in 14 days, and the row read UNKNOWN; the kinds are held to BOTH senders now.
 Fixtures only (the ledger read is stubbed). RED_PROOF below.
 """
 import io
@@ -40,16 +42,44 @@ def _ui_fault_posts(src):
     return out
 
 
+def _server_records(src):
+    """REG-3775 - {kind: sends_before} for every ui_fault_record("<kind>", ...) call in control_app.py, by paren count (the
+    relay that records the page's own posts names no literal kind and is left out - the page's half is read above)."""
+    out = {}
+    for m in re.finditer(r"ui_fault_record\(", src):
+        if src[max(0, m.start() - 4):m.start()] == "def ":
+            continue
+        j, depth = m.end(), 1
+        while j < len(src) and depth:
+            depth += {"(": 1, ")": -1}.get(src[j], 0)
+            j += 1
+        body = src[m.end():j - 1]
+        k = re.match(r'\s*"([\w-]+)"', body)
+        if k:
+            out[k.group(1)] = out.get(k.group(1), False) or ("before=" in body)
+    return out
+
+
 class TheRowCountsOnlyPaintFaults(unittest.TestCase):
 
     def test_the_kinds_are_the_pages_own_snapshot_senders(self):
         with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
             posts = _ui_fault_posts(fh.read())
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            served = _server_records(fh.read())
         self.assertGreater(len(posts), 5, "PREMISE: the page's ui_fault posts were not found: %r" % posts)
         self.assertIn("theatre-open-no-sessions", posts, "PREMISE: the measured kind is no longer posted")
-        senders = sorted(k for k, b in posts.items() if b)
+        self.assertGreater(len(served), 5, "PREMISE: the server's ui_fault_record calls were not found: %r" % served)
+        senders = sorted(set(k for k, b in posts.items() if b) | set(k for k, b in served.items() if b))
         self.assertEqual(senders, sorted(CD.SNAPSHOT_KINDS),
-                         "the doctor's snapshot kinds and the page's snapshot senders differ")
+                         "the doctor's snapshot kinds and the page's + the server's snapshot senders differ")
+
+    def test_the_servers_rescue_with_its_snapshot_is_evidence(self):
+        """REG-3775 - his Mac 11-12: 3 server rescues in 14 days, each with `before`, and the row read UNKNOWN"""
+        t = CD.EVIDENCE_SINCE_MS + 1000
+        bare = {"kind": "console-rescued-by-server", "where": "_console_rescue_loop", "at": t}
+        self.assertEqual(self._row([dict(bare, before={"elsNow": 1})])[0], CD.OK)
+        self.assertEqual(self._row([bare])[0], CD.MISSING, "a server rescue with no snapshot read as evidence")
 
     def _row(self, rows):
         import control_app as CA
@@ -74,6 +104,11 @@ class TheRowCountsOnlyPaintFaults(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3775 - the server's snapshot-carrying rescue is left out again: 3 rescues, row UNKNOWN for 14 days",
+     "file": "tv/console_doctor.py",
+     "find": "SNAPSHOT_KINDS = (\"theatre-stuck-black\", \"console-rescued-by-server\")\n",
+     "replace": "SNAPSHOT_KINDS = (\"theatre-stuck-black\",)\n",
+     "matches": 1},
     {"why": "REG-3287 - the row counts every console fault, so five sessions-did-not-answer rows read as a stopped snapshot",
      "file": "tv/console_doctor.py",
      "find": "            and str((r or {}).get(\"kind\") or \"\") in SNAPSHOT_KINDS]      # REG-3287 - only the kinds that carry one\n",
@@ -81,8 +116,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3287 - the doctor's kinds drift from the page's snapshot senders",
      "file": "tv/console_doctor.py",
-     "find": "SNAPSHOT_KINDS = (\"theatre-stuck-black\",)\n",
-     "replace": "SNAPSHOT_KINDS = (\"theatre-stuck-black\", \"theatre-open-no-sessions\")\n",
+     "find": "SNAPSHOT_KINDS = (\"theatre-stuck-black\", \"console-rescued-by-server\")\n",
+     "replace": "SNAPSHOT_KINDS = (\"theatre-stuck-black\", \"console-rescued-by-server\", \"theatre-open-no-sessions\")\n",
      "matches": 1},
 ]
 
