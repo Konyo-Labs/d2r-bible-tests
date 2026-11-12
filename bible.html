@@ -24190,7 +24190,9 @@ function artOr(name, fallbackHtml, size){
   /* typeof: artOr is a hoisted declaration, and a render that runs before the map's line has executed must draw as before */
   var _grp = (typeof ART_GROUP === 'object' && ART_GROUP) ? ART_GROUP[String(name == null ? '' : name).trim()] : null;
   if (_grp) return '<span class="d2art-group ' + (size || 'lg') + '" role="img" aria-label="' + _d2artEsc(name) + '">'
-    + _grp.map(function(m){ return artOr(m, fallbackHtml, size); }).join('') + '</span>';
+    /* v3902 REG-3782 (Routine I): ONE fallback per group - the caller's emoji rides the first priest only, so a card still
+       holds one .boss-emoji (three hidden copies broke its structure law) and all three failing still shows it once */
+    + _grp.map(function(m, i){ return artOr(m, i === 0 ? fallbackHtml : '', size); }).join('') + '</span>';
   // Resolve art robustly for vault item names that carry a socket/Larzuk SUFFIX ("Grim Scythe (6os)",
   // "Crystal Sword (Larzuk base)") or a quality PREFIX ("Superior …", "Ethereal …"). A failed v381 batch
   // fetch left ~487 base_*.png as an identical placeholder gem; a suffixed name can land on one of those

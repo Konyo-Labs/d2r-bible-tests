@@ -85,9 +85,13 @@ test.describe('v53 rune sources — droppable cards', () => {
     await expect(detail).toBeVisible();
     const head = detail.locator('.gbc-card > .gbc-header');
     await expect(head).toBeVisible();
-    // artOr emblem (routes through the helper -> .d2art-wrap with img/fallback)
-    await expect(head.locator('.d2art-wrap')).toBeVisible();
-    await expect(head.locator('.d2art-wrap .d2art-fallback')).toHaveCount(1);
+    // artOr emblem (routes through the helper -> .d2art-wrap with img/fallback). v3902 REG-3782 - his 11-12 ruling "show
+    // their own sprites": the Council is a GROUP, one .d2art-group holding the three priests' own wraps, each through the
+    // helper (img + fallback), and the caller's emoji fallback carried once
+    const emblem = head.locator('.d2art-group');
+    await expect(emblem).toBeVisible();
+    await expect(emblem.locator('.d2art-wrap')).toHaveCount(3);
+    await expect(emblem.locator('.d2art-wrap .d2art-fallback')).toHaveCount(3);
     await expect(head.locator('.gbc-name')).toHaveText('Travincal Council');
     await expect(head.locator('.gbc-tier .gbc-tier-val')).toHaveText('S');
     await expect(head.locator('.gbc-close')).toBeVisible();

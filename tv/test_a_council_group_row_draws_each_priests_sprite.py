@@ -28,7 +28,8 @@ var rs = (typeof RUNE_SOURCES !== 'undefined' ? RUNE_SOURCES : []).filter(functi
 var bs = (typeof BOSSES !== 'undefined' ? BOSSES : []).filter(function(b){ return b.id === 'travincal'; })[0] || {};
 OUT.r = {group: /class="d2art-group sm"/.test(h), srcs: srcs, aria: (h.match(/aria-label="([^"]+)"/) || [])[1] || '',
          url: String(artUrl('Travincal Council') || ''), one: (one.match(/src="([^"]+)"/) || [])[1] || '',
-         oneGroup: /d2art-group/.test(one), runeName: rs.name || '', runeSub: rs.subtitle || '', bossName: bs.name || ''};
+         oneGroup: /d2art-group/.test(one), runeName: rs.name || '', runeSub: rs.subtitle || '', bossName: bs.name || '',
+         fallbacks: (h.match(/>X</g) || []).length};
 """
 
 
@@ -54,12 +55,23 @@ class ACouncilGroupRowDrawsEachPriestsSprite(unittest.TestCase):
                          names)
         self.assertEqual(self.r["aria"], "Travincal Council", "the group lost its own name for a screen reader")
 
+    def test_the_callers_fallback_is_carried_once(self):
+        """Routine I on v3902's first round: the boss card's fallback emoji rode all three priests, so the card held three
+        .boss-emoji (BUG-030's one-of-each structure law) - one fallback per group, shown if every sprite fails"""
+        self.assertEqual(len(self.r["srcs"]), 3, "PREMISE: the group no longer draws three sprites")
+        self.assertEqual(self.r["fallbacks"], 1, "the caller's fallback rode %d priests" % self.r["fallbacks"])
+
     def test_a_priest_alone_is_one_sprite(self):
         self.assertFalse(self.r["oneGroup"])
         self.assertTrue(self.r["one"].endswith("d2mon_Toorc_Icefist.gif"), self.r["one"])
 
 
 RED_PROOF = [
+    {"why": "v3902 REG-3782 - a group's caller fallback rides every priest again (three .boss-emoji in one boss card)",
+     "file": "bible.html",
+     "find": "    + _grp.map(function(m, i){ return artOr(m, i === 0 ? fallbackHtml : '', size); }).join('') + '</span>';\n",
+     "replace": "    + _grp.map(function(m, i){ return artOr(m, fallbackHtml, size); }).join('') + '</span>';\n",
+     "matches": 1},
     {"why": "REG-3782 - the Council group row wears the one shared council picture again (his 11-12 ruling)",
      "file": "bible.html",
      "find": "  if (_grp) return '<span class=\"d2art-group ' + (size || 'lg') + '\" role=\"img\" aria-label=\"' + _d2artEsc(name) + '\">'\n",
