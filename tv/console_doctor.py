@@ -10405,7 +10405,7 @@ def _check_the_eye_cap_is_a_size_the_eye_has_finished():
 _SCRATCH_SCAN_CAP = 400000
 
 
-def _check_nothing_we_made_is_still_on_his_disk_days_later():
+def _check_nothing_we_made_is_still_on_his_disk_days_later(_platform=None):
     """v3422 - IS OUR SCRATCH BEING COLLECTED, OR JUST ACCUMULATING?
 
     THE CLASS BEHIND #170, WHICH WAS FILED AS ONE PREFIX AND IS NOT. Fixing `second_eye_run` took
@@ -10484,9 +10484,12 @@ def _check_nothing_we_made_is_still_on_his_disk_days_later():
                          "known to create, so whether our litter is collected is UNKNOWN - on a "
                          "machine that runs gates daily that points at the prefix list, not the disk")
     if old:
+        # REG-3797 (the OLD PC ALT, 11-12) - the row told a Windows PC "macOS's own policy is three days": Windows never
+        # clears %TEMP% on its own, so there nothing but our own sweeps ever collects
+        _os_word = ("Windows never clears its temp folder on its own" if str(_platform or sys.platform).startswith("win")
+                    else "macOS's own policy is three days and it is not keeping up either")
         return MISSING, ("%d of %d scratch director(ies) WE made are older than 3 days - oldest "
-                         "%.1f days. Nothing is collecting them; macOS's own policy is three days "
-                         "and it is not keeping up either" % (old, total, oldest / 86400.0))
+                         "%.1f days. Nothing is collecting them; %s" % (old, total, oldest / 86400.0, _os_word))
     if capped:
         # ⚠ v3466 — A SCAN THAT STOPPED IS A SAMPLE, NOT A VERDICT. The bound is right (an
         # unbounded walk on his machine is the 28-hour-search scar); calling the sample "being

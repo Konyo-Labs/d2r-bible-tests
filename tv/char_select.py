@@ -1180,21 +1180,22 @@ def _clean_scratch_dir(path, attempts=4, pause_s=0.25, sleep=time.sleep):
     return False
 
 
-def _sweep_stale_scratch(root=None, now=None, drop=None):
+def _sweep_stale_scratch(root=None, now=None, drop=None, prefix=CS_SCRATCH_PREFIX, stale_s=CS_SCRATCH_STALE_S):
     """The crop dirs earlier ticks left in the temp dir. -> (removed, left), or None when the dir could not be listed
-    (UNKNOWN, never "0 swept")."""
+    (UNKNOWN, never "0 swept"). REG-3798 - `prefix` / `stale_s` let proof_release sweep its own import dirs through this
+    one routine (a deletion routine that exists twice is the copy that drifts)."""
     root = root or tempfile.gettempdir()
     now = time.time() if now is None else float(now)
     drop = drop or (lambda p: _clean_scratch_dir(p, attempts=1))
     try:
-        names = [n for n in os.listdir(root) if n.startswith(CS_SCRATCH_PREFIX)]
+        names = [n for n in os.listdir(root) if n.startswith(prefix)]
     except OSError:
         return None
     removed = left = 0
     for n in names:
         p = os.path.join(root, n)
         try:
-            if not os.path.isdir(p) or now - os.path.getmtime(p) < CS_SCRATCH_STALE_S:
+            if not os.path.isdir(p) or now - os.path.getmtime(p) < stale_s:
                 continue
         except OSError:
             continue

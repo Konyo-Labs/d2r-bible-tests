@@ -241,7 +241,84 @@ class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
         self.assertIn("if not _clean_scratch_dir(work):", src, "the tick's own crop dir is removed silently again")
 
 
+class AProofImportLeavesNoScratch(unittest.TestCase):
+    """REG-3798 (the doctor on the OLD PC ALT, 11-12: 43 of 83 of our temp dirs older than 3 days, 7 of them
+    tvd-proof-release-) - an import's scratch went in a finally with rmtree(ignore_errors=True), silent on Windows while
+    heart2's key workers hold a file, and never at all when the console died mid-import. REG-3797 - the same row told that
+    Windows PC "macOS's own policy is three days"."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="tvd-scratch-law-")
+        self.addCleanup(shutil.rmtree, self.root, True)
+
+    def _mk(self, name, mtime):
+        p = os.path.join(self.root, name)
+        os.makedirs(p)
+        os.utime(p, (mtime, mtime))
+        return p
+
+    def test_an_earlier_imports_leftover_is_swept_and_a_live_one_is_not(self):
+        import proof_release as PR
+        stale = NOW - PR.PROOF_SCRATCH_STALE_S - 60
+        old = self._mk("tvd-proof-release-old1", stale)
+        live = self._mk("tvd-proof-release-live", NOW - 5400)          # an import still inside its own bound
+        crop = self._mk("tvd-cs-old1", OLD)                            # another lane's prefix
+        self.assertEqual(PR.sweep_old_imports(root=self.root, now=NOW), (1, 0))
+        self.assertEqual([os.path.exists(x) for x in (old, live, crop)], [False, True, True],
+                         "a live import's dir or another prefix was swept, or the leftover stayed")
+
+    def test_the_import_sweeps_first_and_removes_its_own_dir_through_the_retried_remove(self):
+        import proof_release as PR
+        old = self._mk("tvd-proof-release-old2", NOW - PR.PROOF_SCRATCH_STALE_S - 60)
+        dropped = []
+        real = cs._clean_scratch_dir
+
+        def _drop(path, *a, **k):
+            dropped.append(os.path.basename(path))
+            return real(path, *a, **k)
+        with mock.patch.object(tempfile, "tempdir", self.root), mock.patch.object(cs, "_clean_scratch_dir", _drop), \
+                mock.patch.object(PR.time, "time", lambda: NOW):
+            out = PR.import_bundle("0" * 40, tv_dir=self.root, urlopen=lambda *a, **k: (_ for _ in ()).throw(OSError("offline")))
+        self.assertNotEqual(out.get("state"), "imported", "PREMISE: the fake download imported something")
+        self.assertFalse(os.path.exists(old), "the earlier import's leftover was not swept")
+        own = [n for n in dropped if n.startswith(PR.PROOF_SCRATCH_PREFIX) and n != "tvd-proof-release-old2"]
+        self.assertEqual(len(own), 1, "the import's own dir did not go through the retried remove: %r" % dropped)
+        self.assertEqual([n for n in os.listdir(self.root) if n.startswith(PR.PROOF_SCRATCH_PREFIX)], [])
+        self.assertIs(out.get("scratchLeft"), False)
+
+    def test_the_row_names_this_pcs_own_os(self):
+        import console_doctor as CD
+        self._mk("tmpREG3797old", OLD)
+        with mock.patch.object(tempfile, "tempdir", self.root), mock.patch.object(CD.time, "time", lambda: NOW):
+            win = CD._check_nothing_we_made_is_still_on_his_disk_days_later(_platform="win32")
+            mac = CD._check_nothing_we_made_is_still_on_his_disk_days_later(_platform="darwin")
+        self.assertIn("older than 3 days", win[1], "PREMISE: the planted old dir was not counted: %r" % (win,))
+        self.assertIn("Windows never clears its temp folder", win[1])
+        self.assertNotIn("macOS", win[1], "a Windows PC was told about macOS's policy")
+        self.assertIn("macOS's own policy is three days", mac[1])
+
+
 RED_PROOF = [
+    {"why": "REG-3798 - a proof import no longer sweeps earlier imports' leftovers (they pile up on Windows)",
+     "file": "tv/proof_release.py",
+     "find": "    out[\"swept\"] = sweep_old_imports()",
+     "replace": "    out[\"swept\"] = None",
+     "matches": 1},
+    {"why": "REG-3798 - an import's own dir goes through a silent rmtree again",
+     "file": "tv/proof_release.py",
+     "find": "        out[\"scratchLeft\"] = not _drop_scratch(d)",
+     "replace": "        out[\"scratchLeft\"] = shutil.rmtree(d, ignore_errors=True)",
+     "matches": 1},
+    {"why": "REG-3798 - the shared sweep ignores the prefix it is handed (an import's dirs are never matched)",
+     "file": "tv/char_select.py",
+     "find": "        names = [n for n in os.listdir(root) if n.startswith(prefix)]",
+     "replace": "        names = [n for n in os.listdir(root) if n.startswith(CS_SCRATCH_PREFIX)]",
+     "matches": 1},
+    {"why": "REG-3797 - a Windows PC's scratch row talks about macOS's policy again",
+     "file": "tv/console_doctor.py",
+     "find": "        _os_word = (\"Windows never clears its temp folder on its own\" if str(_platform or sys.platform).startswith(\"win\")",
+     "replace": "        _os_word = (\"Windows never clears its temp folder on its own\" if False",
+     "matches": 1},
     {"why": "REG-3771 - a pidless (pre-v3897) ledger dir is kept forever again and the doctor row stays MISSING",
      "file": "tv/run_gates.py",
      "find": "                if now - os.stat(p).st_mtime <= LEGACY_LEDGER_AGE_S:\n",
@@ -299,7 +376,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3888 (REG-3478) - the crop sweep takes a concurrent tick's fresh dir",
      "file": "tv/char_select.py",
-     "find": "            if not os.path.isdir(p) or now - os.path.getmtime(p) < CS_SCRATCH_STALE_S:\n",
+     "find": "            if not os.path.isdir(p) or now - os.path.getmtime(p) < stale_s:\n",
      "replace": "            if not os.path.isdir(p):\n",
      "matches": 1},
     {"why": "v3888 (REG-3478) - a crop dir that stayed reads as removed",

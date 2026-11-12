@@ -142,6 +142,21 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3798 - A PROOF IMPORT'S SCRATCH DIR STRANDED ON WINDOWS: 7 OF THE OLD PC ALT'S 43 OLD TEMP DIRS (v3903)
+The doctor on the OLD PC ALT (11-12, v3901): "43 of 83 scratch director(ies) WE made are older than 3 days - oldest 7.5 days".
+MEASURED there read-only: 25 tvd-gate-ledgers (v3902's REG-3771 sweep collects those), 8 tvd-nogit + 2 tvd-par-dirty (declared,
+graduating), 7 tvd-proof-release, 1 heartlane. proof_release.import_bundle removed its dir in a finally with
+rmtree(ignore_errors=True) - silent on Windows while heart2's key workers still hold a file there (REG-3352) - and a console
+killed mid-import (an update's relaunch) never reaches the finally. Now the remove is char_select's retried one (REG-3478) and
+each import first sweeps earlier imports' dirs past 2 x its own 5,400 s bound, through char_select's sweep given a prefix -
+one deletion routine, never a second copy. A dir that would not go is said (scratchLeft). Law: test_our_old_scratch_is_collected
+::AProofImportLeavesNoScratch (+3 red-proofs; REG-3478's age proof re-aimed at the passed age).
+
+### REG-3797 - THE SCRATCH ROW TOLD A WINDOWS PC "macOS's OWN POLICY IS THREE DAYS" (v3903)
+console_doctor's "our scratch is collected" on the OLD PC ALT ended "macOS's own policy is three days and it is not keeping up
+either" - a Windows PC, where nothing clears %TEMP% on its own. The row now names the PC's own OS. Law:
+test_our_old_scratch_is_collected::AProofImportLeavesNoScratch::test_the_row_names_this_pcs_own_os (+1 red-proof).
+
 ### REG-3796 - TWO LAWS STRIPPED PYTHON WITH THE JAVASCRIPT COMMENT RULES: 45% OF console_doctor.py WAS INVISIBLE TO THEM (v3903, #200)
 frame_authority._executable_only dispatches on the path it is given; test_a_held_relaunch_gets_a_green_light and
 test_a_lane_has_one_work_list handed it Python with a bare ".js" ("the idiom for the comment-stripping branch"). That branch

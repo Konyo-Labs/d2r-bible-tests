@@ -251,6 +251,36 @@ def _import_tail(d):
     return (" - last line: %s" % lines[-1][:200]) if lines else ""
 
 
+#: REG-3798 (the doctor on the OLD PC ALT 11-12: "43 of 83 scratch director(ies) WE made are older than 3 days"; 7 of them
+#: tvd-proof-release-) - an import's scratch went in a finally with rmtree(ignore_errors=True), which fails SILENTLY on Windows
+#: while heart2's key workers still hold a file in it (REG-3352), and a console killed mid-import (an update's relaunch) never
+#: reaches the finally. Now the remove is char_select's retried one, and each import first sweeps earlier imports' dirs past
+#: PROOF_SCRATCH_STALE_S - twice the import's own 5,400 s bound, so a live import's dir is never touched.
+PROOF_SCRATCH_PREFIX = "tvd-proof-release-"
+PROOF_SCRATCH_STALE_S = 2 * 5400
+
+
+def _drop_scratch(d):
+    """Remove one import dir. -> True when it is gone (char_select's retried remove: Windows cannot delete an open file)."""
+    try:
+        import char_select as _cs
+        return _cs._clean_scratch_dir(d)
+    except Exception:
+        shutil.rmtree(d, ignore_errors=True)
+        return not os.path.exists(d)
+
+
+def sweep_old_imports(root=None, now=None):
+    """Earlier imports' scratch dirs past PROOF_SCRATCH_STALE_S. -> (removed, left) | None (the temp dir would not list,
+    or the sweep is unavailable - UNKNOWN, never "0 swept")"""
+    try:
+        import char_select as _cs
+    except Exception:
+        return None
+    return _cs._sweep_stale_scratch(root=root, now=now, drop=_drop_scratch, prefix=PROOF_SCRATCH_PREFIX,
+                                    stale_s=PROOF_SCRATCH_STALE_S)
+
+
 def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="", progress=None):
     """Download, unpack and import this commit's proofs. -> {"state", "sha", "flavor", "why", "seconds", "at"}.
     REG-3194 - `progress` (a callable) is handed {"done", "of", "etaS", "at"} as heart2 keys the proofs."""
@@ -259,7 +289,8 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
     t0 = time.time()
     out = {"state": "unknown", "sha": str(sha or ""), "flavor": flavor, "why": "", "seconds": None,
            "at": int(time.time() * 1000)}
-    d = tempfile.mkdtemp(prefix="tvd-proof-release-")
+    out["swept"] = sweep_old_imports()                 # REG-3798 - earlier imports' leftovers, before this one makes its own
+    d = tempfile.mkdtemp(prefix=PROOF_SCRATCH_PREFIX)
     try:
         bundle = os.path.join(d, "bundle.tgz")
         got, why = download(sha, bundle, urlopen=urlopen, run=run, flavor=flavor)
@@ -313,7 +344,7 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
         return out
     finally:
         out["seconds"] = round(time.time() - t0, 1)
-        shutil.rmtree(d, ignore_errors=True)
+        out["scratchLeft"] = not _drop_scratch(d)          # REG-3798 - a dir that would not go is said, never pretended
 
 
 def load_state(tv_dir=None):
