@@ -283,7 +283,9 @@ class AProofImportLeavesNoScratch(unittest.TestCase):
         self.assertFalse(os.path.exists(old), "the earlier import's leftover was not swept")
         own = [n for n in dropped if n.startswith(PR.PROOF_SCRATCH_PREFIX) and n != "tvd-proof-release-old2"]
         self.assertEqual(len(own), 1, "the import's own dir did not go through the retried remove: %r" % dropped)
-        self.assertEqual([n for n in os.listdir(self.root) if n.startswith(PR.PROOF_SCRATCH_PREFIX)], [])
+        # a literal prefix (the unkeyable-laws ratchet keys a listing by its constant), pinned to the module's own
+        self.assertEqual(PR.PROOF_SCRATCH_PREFIX, "tvd-proof-release-")
+        self.assertEqual([n for n in os.listdir(self.root) if n.startswith("tvd-proof-release-")], [])
         self.assertIs(out.get("scratchLeft"), False)
 
     def test_the_row_names_this_pcs_own_os(self):
