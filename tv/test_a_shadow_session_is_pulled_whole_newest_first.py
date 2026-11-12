@@ -59,6 +59,39 @@ class AShadowSessionIsPulledWholeNewestFirst(unittest.TestCase):
         self.assertIsNone(SP.plan(self.listing, ["reel_s_3"], {}, free_bytes=None), "an unread disk planned a copy")
 
 
+class ThePullOnlyReadsThePC(unittest.TestCase):
+    """#208 - the I/O: a listing that does not come back is UNKNOWN (None), never 'no reels'; the copy's sftp batch only ever
+    GETs - nothing on his PC is written or removed by the pull. MEASURED 11-12: a 196-frame OLD PC ALT reel (14 MB) copied
+    whole in 13.7 s over one sftp connection."""
+
+    class _R(object):
+        def __init__(self, rc, out=""):
+            self.returncode, self.stdout = rc, out
+
+    def test_an_unread_listing_is_unknown_never_empty(self):
+        pc = {"ssh": "u@h"}
+        self.assertIsNone(SP.list_remote(pc, run=lambda *a, **k: self._R(255)), "a failed ssh read as no reels")
+        self.assertIsNone(SP.list_remote(pc, run=lambda *a, **k: self._R(0, "not json")), "a broken answer read as no reels")
+        self.assertEqual(SP.list_remote(pc, run=lambda *a, **k: self._R(0, "[]")), [], "BASELINE: an empty PC is []")
+
+    def test_the_copy_only_gets(self):
+        import tempfile, shutil
+        d = tempfile.mkdtemp(prefix="shadowpull-law-")
+        self.addCleanup(shutil.rmtree, d, True)
+        seen = {}
+
+        def run(argv, **k):
+            b = argv[argv.index("-b") + 1]
+            with open(b, encoding="utf-8") as fh:
+                seen["batch"] = fh.read()
+            return self._R(0)
+        ok, why = SP.copy_reel({"ssh": "u@h", "repo": "d2r_bible_tests"}, "reel_s_1", ["f_0001.jpg", "f_0002.jpg"], d, run=run)
+        self.assertTrue(ok, why)
+        lines = [l for l in seen["batch"].splitlines() if l.strip()]
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(all(l.startswith("get ") for l in lines), "the pull's batch does more than read his PC: %r" % lines)
+        self.assertIn("d2r_bible_tests/tv/frames/hist/reel_s_1/f_0001.jpg", seen["batch"])
+
 RED_PROOF = [
     {"why": "#208 - a reel still being written is copied (the rolling one, or one written seconds ago)",
      "file": "tv/shadow_pull.py",
@@ -74,6 +107,11 @@ RED_PROOF = [
      "file": "tv/shadow_pull.py",
      "find": "    room = min(budget_bytes - held_bytes, free_bytes - floor_bytes)\n",
      "replace": "    room = budget_bytes - held_bytes\n",
+     "matches": 1},
+    {"why": "#208 - a listing that never came back reads as a PC with no reels",
+     "file": "tv/shadow_pull.py",
+     "find": "    if getattr(r, \"returncode\", 1) != 0:\n        return None\n    raw = (r.stdout or \"\").strip()\n",
+     "replace": "    if getattr(r, \"returncode\", 1) != 0:\n        return []\n    raw = (r.stdout or \"\").strip()\n",
      "matches": 1},
 ]
 

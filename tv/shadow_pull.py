@@ -105,3 +105,106 @@ def local_have(root):
         if os.path.isdir(d):
             out[reel] = set(n for n in os.listdir(d) if n.endswith(".jpg"))
     return out
+
+
+# ── the I/O: one ssh listing per PC, one sftp batch per reel. Read-only on the PC: ls and get, never a put or a rm. ──
+import subprocess  # noqa: E402
+
+LIST_PS = ("$h = Join-Path $env:USERPROFILE 'd2r_bible_tests\\tv\\frames\\hist'; $o = @(); "
+           "Get-ChildItem $h -Directory -Filter 'reel_s_*' | Sort-Object LastWriteTime -Descending | Select-Object -First %d | "
+           "ForEach-Object { $f = @(Get-ChildItem $_.FullName -File -Filter '*.jpg' | ForEach-Object { @{name=$_.Name; "
+           "size=$_.Length; mtime=[int64](($_.LastWriteTimeUtc - [datetime]'1970-01-01').TotalSeconds)} }); "
+           "$o += @{reel=$_.Name; files=$f} }; ConvertTo-Json -InputObject $o -Depth 4 -Compress")
+
+
+def _ps_encoded(script):
+    """the PowerShell script as -EncodedCommand (base64 UTF-16LE): the same bytes run under a cmd or a PowerShell ssh shell"""
+    import base64
+    return "powershell -NoProfile -EncodedCommand " + base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+
+
+def _ssh_argv(pc, remote_cmd):
+    key = os.path.expanduser(pc.get("key") or "")
+    return (["ssh"] + (["-i", key] if key else []) + ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
+            + list(pc.get("opts") or []) + [pc["ssh"], remote_cmd])
+
+
+def list_remote(pc, newest=16, timeout=120, run=None):
+    """-> one PC's listing (done_reels' input) | None (ssh or the answer did not read: UNKNOWN, never 'no reels')"""
+    try:
+        r = (run or subprocess.run)(_ssh_argv(pc, _ps_encoded(LIST_PS % int(newest))), capture_output=True, text=True,
+                                    encoding="utf-8", errors="replace", timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if getattr(r, "returncode", 1) != 0:
+        return None
+    raw = (r.stdout or "").strip()
+    try:
+        d = json.loads(raw) if raw else []
+    except ValueError:
+        return None
+    return d if isinstance(d, list) else ([d] if isinstance(d, dict) else None)
+
+
+def copy_reel(pc, reel, names, dest_root, timeout=1800, run=None):
+    """sftp the named frames of one reel into dest_root/<reel>/ over ONE connection (a batch of `get`s). -> (ok, why)"""
+    d = os.path.join(dest_root, reel)
+    os.makedirs(d, exist_ok=True)
+    repo = (pc.get("repo") or "d2r_bible_tests").replace("\\", "/")
+    lines = ["get \"%s/tv/frames/hist/%s/%s\" \"%s\"" % (repo, reel, n, os.path.join(d, n)) for n in names]
+    batch = os.path.join(d, ".sftp_batch")
+    with open(batch, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    key = os.path.expanduser(pc.get("key") or "")
+    argv = (["sftp"] + (["-i", key] if key else []) + ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
+            + list(pc.get("opts") or []) + ["-b", batch, pc["ssh"]])
+    try:
+        r = (run or subprocess.run)(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return False, "the copy did not finish (%s)" % type(e).__name__
+    finally:
+        try:
+            os.remove(batch)
+        except OSError:
+            pass
+    if getattr(r, "returncode", 1) != 0:
+        return False, "sftp exit %s" % getattr(r, "returncode", "?")
+    return True, "%d frame(s)" % len(names)
+
+
+if __name__ == "__main__":
+    import argparse
+    import shutil
+    ap = argparse.ArgumentParser(description="#208 shadow pull - copy done sessions from his PCs to this Mac")
+    ap.add_argument("--config", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), CONFIG_NAME))
+    ap.add_argument("--dest", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "frames", "shadow"))
+    ap.add_argument("--dry-run", action="store_true", help="list and plan, copy nothing")
+    a = ap.parse_args()
+    import time as _t
+    cfg = config_load(a.config)
+    if cfg is None:
+        raise SystemExit("the shadow pull config would not read - UNKNOWN, nothing copied")
+    if not cfg:
+        raise SystemExit("no PC is named in %s yet - nothing to pull" % os.path.basename(a.config))
+    held = sum(os.path.getsize(os.path.join(dp, f)) for dp, _d, fs in os.walk(a.dest) for f in fs if f.endswith(".jpg")) \
+        if os.path.isdir(a.dest) else 0          # the budget is all PCs' copies together
+    for label, pc in sorted(cfg.items()):
+        root = os.path.join(a.dest, label.replace(" ", "_").replace("·", "-"))
+        listing = list_remote(pc)
+        if listing is None:
+            print("%s: UNKNOWN - its reels could not be listed" % label)
+            continue
+        done = done_reels(listing, _t.time())
+        have = local_have(root)
+        free = shutil.disk_usage(os.path.dirname(a.dest) if os.path.isdir(os.path.dirname(a.dest)) else "/").free
+        p = plan(listing, done, have, held_bytes=held, free_bytes=free)
+        held += (p or {}).get("bytes", 0)
+        print("%s: %d reel(s) listed, %d done, plan: %s (%d MB)" % (label, len(listing), len(done or []), p and p["why"],
+                                                                   (p or {}).get("bytes", 0) // (1024 ** 2)))
+        if a.dry_run or not p:
+            continue
+        for reel, names in p["copy"]:
+            ok, why = copy_reel(pc, reel, names, root)
+            print("   %s %s: %s" % ("copied" if ok else "STOPPED", reel, why))
+            if not ok:
+                break
