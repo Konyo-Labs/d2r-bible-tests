@@ -308,7 +308,7 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3798 - an import's own dir goes through a silent rmtree again",
      "file": "tv/proof_release.py",
-     "find": "        out[\"scratchLeft\"] = not _drop_scratch(d)",
+     "find": "        out[\"scratchLeft\"] = not _clean_scratch(d)",
      "replace": "        out[\"scratchLeft\"] = shutil.rmtree(d, ignore_errors=True)",
      "matches": 1},
     {"why": "REG-3798 - the shared sweep ignores the prefix it is handed (an import's dirs are never matched)",

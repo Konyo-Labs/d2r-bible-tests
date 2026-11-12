@@ -260,7 +260,7 @@ PROOF_SCRATCH_PREFIX = "tvd-proof-release-"
 PROOF_SCRATCH_STALE_S = 2 * 5400
 
 
-def _drop_scratch(d):
+def _clean_scratch(d):
     """Remove one import dir. -> True when it is gone (char_select's retried remove: Windows cannot delete an open file)."""
     try:
         import char_select as _cs
@@ -277,7 +277,7 @@ def sweep_old_imports(root=None, now=None):
         import char_select as _cs
     except Exception:
         return None
-    return _cs._sweep_stale_scratch(root=root, now=now, drop=_drop_scratch, prefix=PROOF_SCRATCH_PREFIX,
+    return _cs._sweep_stale_scratch(root=root, now=now, drop=_clean_scratch, prefix=PROOF_SCRATCH_PREFIX,
                                     stale_s=PROOF_SCRATCH_STALE_S)
 
 
@@ -344,7 +344,7 @@ def import_bundle(sha, tv_dir=None, urlopen=None, run=None, say=None, flavor="",
         return out
     finally:
         out["seconds"] = round(time.time() - t0, 1)
-        out["scratchLeft"] = not _drop_scratch(d)          # REG-3798 - a dir that would not go is said, never pretended
+        out["scratchLeft"] = not _clean_scratch(d)          # REG-3798 - a dir that would not go is said, never pretended
 
 
 def load_state(tv_dir=None):
