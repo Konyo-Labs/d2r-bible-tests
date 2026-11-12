@@ -169,6 +169,30 @@ def _is_game_exe(n):
     return n.startswith("d2r") or "diabloii" in n.replace(" ", "")
 
 
+#: REG-3748 (#188) - the LOCAL route's launcher: while it runs the game may start at any second (his 11-11 ruling)
+LAUNCHER_EXES = ("battle.net.exe",)
+_POSIX_LAUNCHER = re.compile(r"Battle\.net\.exe", re.I)
+
+
+def launcher_state():
+    """REG-3748 - is the local route's launcher (Battle.net) running on THIS machine? -> True | False | None (UNKNOWN)
+
+    His words 11-12: "locally it opens battle.net and then it can be armed based on window already". MEASURED that night on
+    Dean's PC: Battle.net launched the game at 17:38:18, the shadow watcher's 20-second look opened the reel 15 s later, and
+    the D2 logo had already gone by. Battle.net open is the early warning; it never starts a session."""
+    try:
+        if IS_WIN:
+            import tv_diablo as _tvd
+            return _tvd._toolhelp_any(lambda name: (name or "").lower() in LAUNCHER_EXES)
+        out = subprocess.run(["ps", "-Ao", "command="], capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", timeout=3)
+        if out.returncode != 0 or not (out.stdout or "").strip():
+            return None
+        return any(_POSIX_LAUNCHER.search(ln) for ln in out.stdout.splitlines())
+    except Exception:
+        return None
+
+
 def is_play_exe(name):
     """A process name (any case) that CAN mean he is playing here: the game, or a cloud client. Pure.
     Whether a cloud client is actually STREAMING is is_play_proc's question (REG-1511)."""

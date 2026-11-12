@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_battle_net_arms_the_watcher",
+         [sys.executable, os.path.join(HERE, "test_battle_net_arms_the_watcher.py")], 120,
+         why="v3900 (#188, REG-3748, his 11-12 words) - Battle.net open arms the shadow watcher: a cheap process check every "
+             "2 s and the full look the moment the game starts; Dean 11-07 the 20 s look came 15 s after launch, past the logo"),
     Gate("test_the_join_game_lobby_is_read",
          [sys.executable, os.path.join(HERE, "test_the_join_game_lobby_is_read.py")], 60,
          needs_app=False,

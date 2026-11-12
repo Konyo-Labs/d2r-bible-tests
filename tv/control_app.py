@@ -39615,6 +39615,46 @@ def vault_autoreel_tick():
 # read it from other processes; in-memory state is invisible across the board-window boundary and
 # that has already cost a whole feature here. [[d2r-board-window-kill-loses-writes]]
 _SHADOW_WATCH_EVERY_S = 20
+#: REG-3748 (#188) - while ARMED (the local launcher is up and no reel rolls) the watcher looks for the game this often
+_SHADOW_ARM_EVERY_S = 2
+
+
+_ARM_ASK = object()     # REG-3748 - a seam not handed in is asked; None stays UNKNOWN
+
+
+def _shadow_armed(launcher=_ARM_ASK, rolling=_ARM_ASK, on=_ARM_ASK):
+    """REG-3748 (#188, his 11-12 words: "locally it opens battle.net and then it can be armed ... and then the same
+    mechanism") - is the shadow watcher ARMED? -> (armed: bool, why: str). Armed = the reader is on, no reel is rolling
+    and Battle.net (the local route's launcher) is running: the game may start any second, so the next look must come in
+    seconds, not in 20 - MEASURED 11-12 on Dean's PC: launch 17:38:18, the 20 s look opened the reel 15 s later, past the
+    D2 logo. UNKNOWN anywhere arms nothing (the old 20 s cadence). The seams are a law's."""
+    try:
+        if on is _ARM_ASK:
+            on = (_shadow_state() or {}).get("on")
+        if on is not True:
+            return False, "the shadow reader is not on"
+        if rolling is _ARM_ASK:
+            rolling = _agent_alive()
+        if rolling:
+            return False, "a reel is rolling - the watcher looks on its hour"
+        if launcher is _ARM_ASK:
+            import self_prove as _sp
+            launcher = _sp.launcher_state()
+        if launcher is True:
+            return True, ("armed - Battle.net is open, so the game may start any second: looking for it every %d s"
+                          % _SHADOW_ARM_EVERY_S)
+        return False, ("Battle.net is not running" if launcher is False
+                       else "whether Battle.net runs could not be read - the 20 s cadence")
+    except Exception as e:
+        return False, "the arm check raised %s - the 20 s cadence" % type(e).__name__
+
+
+def _shadow_full_look_due(armed, game_running, since_full_s):
+    """REG-3748 - while armed, a full look (the window finder) runs only when the game's process is up, or when the old
+    20 s look is due anyway; between them a cheap process check is all. -> bool"""
+    if not armed:
+        return True
+    return game_running is True or since_full_s >= _SHADOW_WATCH_EVERY_S
 # REG-1675 — his number, 2026-10-01: "if the game isnt open for like 3 minutes". And only for a game that has truly GONE
 # (its process exited): a window that is minimized, covered or painting black while the game runs is a pause, and the
 # hour stays open (see _game_running). MEASURED on his ALT: 13 reels in 80 minutes, every one cut by the old 60 s seal
@@ -41020,9 +41060,23 @@ def _shadow_watch_loop():
     _SHADOW_ROTATE_RELOOK_S rather than a whole period later, so a new reel follows the sealed one
     within seconds ("continue another session but instantly"). At most one extra look per period.
     """
+    _full_at = [0.0]
+    _armed_said = [None]
     while True:
         try:
-            time.sleep(_SHADOW_WATCH_EVERY_S)
+            # REG-3748 (#188) - ARMED while Battle.net is up and no reel rolls: a cheap process check every 2 s, and the full
+            # look the moment the game's process exists (or when the 20 s look is due anyway)
+            _armed, _awhy = _shadow_armed()
+            time.sleep(_SHADOW_ARM_EVERY_S if _armed else _SHADOW_WATCH_EVERY_S)
+            if _armed != _armed_said[0]:
+                _armed_said[0] = _armed
+                try:
+                    _shadow_watch_note(armed=bool(_armed), armedWhy=_awhy, armedAt=int(time.time() * 1000))
+                except Exception:
+                    pass
+            if not _shadow_full_look_due(_armed, _game_running() if _armed else None, time.time() - _full_at[0]):
+                continue
+            _full_at[0] = time.time()
             for _look in (0, 1):
                 _lane_tick('tvd-shadow-watch', _SHADOW_WATCH_EVERY_S)
                 r = shadow_watch_tick()
