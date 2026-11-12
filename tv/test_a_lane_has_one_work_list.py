@@ -89,10 +89,9 @@ class TestALaneHasOneWorkList(unittest.TestCase):
             except Exception:
                 continue
             scanned += 1
-            # ⚠ ".js" is the idiom for taking the comment-stripping branch — _executable_only
-            # dispatches on EXTENSION, and a ".py" that cannot be parsed falls through returning
-            # the source UNSTRIPPED, which would read the very prose this law must ignore.
-            body = _executable_only(src, ".js")
+            # REG-3796 - the real path, never ".js": the JavaScript branch strips /* */ and // but never #, and a
+            # slash-star in a string ran to the next star-slash - 45% of console_doctor.py was invisible to this scan.
+            body = _executable_only(src, path)   # REG-3796 - the real .py path: comments AND docstrings go, # included
             for m in WALKS_THE_MAP.finditer(body):
                 line = body[:m.start()].count("\n") + 1
                 offenders.append("%s (stripped line %d)" % (name, line))

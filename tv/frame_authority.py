@@ -716,6 +716,19 @@ def _executable_only(src, path=""):
     # file, inside a try/except, silently, while looking perfectly wired.
     # Caught by TestV2010NoCallIntoANameThatIsNotThere. [[the-unjoined-end]]
     import re
+    # REG-3796 - A BARE ".js" IS A CLAIM ABOUT THE LANGUAGE, AND TWO LAWS MADE IT ABOUT PYTHON. test_a_held_relaunch_gets_a_
+    # green_light and test_a_lane_has_one_work_list passed Python source with ".js" ("the idiom for the comment-stripping
+    # branch"); this branch strips /* .. */ and // and never #, so a slash-star in a Python string or docstring opened a
+    # block that ran to the next star-slash. MEASURED 11-12: 45% of console_doctor.py (128 of its 254 defs) and 41 of
+    # control_app.py's 1,279 defs vanished from what those laws read; v3902's "claude/*" docstring hid relaunch_green_light_
+    # tick and turned the first one red. Python handed in with a bare JS extension is stripped as Python.
+    if path in (".ts", ".tsx", ".js"):
+        try:
+            import ast as _ast
+            _ast.parse(src)
+            path = ".py"
+        except Exception:
+            pass                         # not Python: the JavaScript branch below, as the caller asked
     if path.endswith((".ts", ".tsx", ".js")):
         try:
             out = re.sub(r"/\*.*?\*/", " ", src, flags=re.S)

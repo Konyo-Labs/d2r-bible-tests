@@ -13973,6 +13973,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_council_group_row_draws_each_priests_sprite.py")], 360,
          why="v3902 (#91, REG-3782) - his 11-12 ruling 'show their own sprites': the Bosses chip and the Runes row that name "
              "the Council drew one shared picture; a group row draws Toorc, Geleb and Ismail's own sprites"),
+    Gate("test_python_is_never_stripped_as_javascript",
+         [sys.executable, os.path.join(HERE, "test_python_is_never_stripped_as_javascript.py")], 120,
+         why="v3903 (REG-3796, #200) - two laws stripped Python with the JavaScript comment rules: a slash-star in a "
+             "docstring ate the code after it (45% of console_doctor.py, 41 control_app.py defs); now Python is stripped as Python"),
     Gate("test_an_interrupted_reap_explains_its_missing_frames",
          [sys.executable, os.path.join(HERE, "test_an_interrupted_reap_explains_its_missing_frames.py")], 120,
          why="v3903 (REG-3787, the Grok CLI's look on v3901) - REG-3751's intent line exists for a reap stopped mid-delete, "

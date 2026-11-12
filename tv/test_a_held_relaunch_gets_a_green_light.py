@@ -54,9 +54,9 @@ def _code(path):
     """The file with its prose removed — a guard must grade code, never its own commentary."""
     with io.open(path, encoding="utf-8") as fh:
         src = fh.read()
-    # ".js" is the idiom for the comment-stripping branch: _executable_only dispatches on
-    # EXTENSION, and a ".py" it cannot parse falls through returning the source UNSTRIPPED.
-    return _executable_only(src, ".js")
+    # REG-3796 - never ".js" for Python: that branch strips /* */ and // but not #, and a slash-star in a docstring hid
+    # relaunch_green_light_tick from this very law (v3902). The real path takes the Python branch (comments + docstrings).
+    return _executable_only(src, path)      # REG-3796 - its real path: Python is stripped as Python
 
 
 class TestAHeldRelaunchGetsAGreenLight(unittest.TestCase):
