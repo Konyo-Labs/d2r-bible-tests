@@ -47,12 +47,11 @@ COSTS = os.path.join(HERE, "gate_costs.json")
 #: REG-3310 - and the render harness's own handles: a law that opens RC._Tab(...) or calls _chrome_up() starts render_check's
 #: headless Chrome. Twelve laws did and none matched, so the pre-flight ran them on his Mac - measured 11-06 with the v3875
 #: pre-flight's test_a_roster_name_opens_its_row_with_the_eyes as the parent of a --remote-debugging-port Chrome.
-BROWSER_CALLS = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
-                           r"|playwright|launch_chrome|--remote-debugging|headless=new"
-                           r"|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
 #: REG-3764 - the CALLS among them are code, never text: `Board()` matched `d2jspBoard()` inside the JavaScript a law hands
 #: to node (test_d2jsp_desk), and the pre-flight filed it as a browser law and never ran it - GitHub spent v3900's first
 #: round on it. These are matched with every string literal blanked; the launch FLAGS (a string in a real argv) are not.
+#: REG-3784 - ONE pattern. REG-3764 left the old whole-text BROWSER_CALLS beside these two with no reader, and REG-3310's
+#: red-proof kept cutting `_Tab(` out of that dead copy: v3901's GitHub round read the law BLIND, green through its defeat.
 BROWSER_CALL_ONLY = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
                                r"|launch_chrome|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
 BROWSER_FLAGS = re.compile(r"playwright|--remote-debugging|headless=new")
@@ -91,7 +90,7 @@ def code_text(src, strings=True):
     -> str (the whole source when it will not parse: a law that cannot be read stays GitHub's)
 
     Measured 11-06: 2 laws (test_a_cut_off_gate_set_is_not_a_verdict, test_what_keeps_growing_is_salvaged_then_pruned)
-    matched BROWSER_CALLS only in a comment or docstring and were never run here. Every other string stays: a launch flag
+    matched the browser calls only in a comment or docstring and were never run here. Every other string stays: a launch flag
     such as '--headless=new' IS a string, so stripping strings would put a real browser on his Mac."""
     import ast
     import tokenize
