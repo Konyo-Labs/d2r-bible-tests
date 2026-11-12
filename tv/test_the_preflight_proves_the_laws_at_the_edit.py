@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""v3903 (REG-3785, #200 card #218) - OVER THE CAP, THE PRE-FLIGHT PROVES THE LAWS WHOSE RED-PROOFS SIT AT THE EDIT.
+"""v3902 (REG-3785, #200 card #218) - OVER THE CAP, THE PRE-FLIGHT PROVES THE LAWS WHOSE RED-PROOFS SIT AT THE EDIT.
 
 MEASURED 11-12: v3901 changed 1,426 laws since origin/main, over the 40 the pre-flight proves on this PC, so it proved NONE
 and its GREEN line said "the changed laws are proven". GitHub's proof shard 9 then read

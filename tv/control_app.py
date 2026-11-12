@@ -5948,11 +5948,12 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
             "truth": truth}
 
 
-def _local_claude_branches(run=None):
+def _local_claude_branches():
     """REG-3781 - this repo's local claude/vNNNN branch names (the versions being built here). -> [str] | None (git would not
     say). (Never write a slash-star pair here: ten laws strip this file with the JavaScript comment rules.)"""
     try:
-        r = (run or subprocess.run)(["git", "-C", REPO, "for-each-ref", "--format=%(refname:short)", "refs/heads/claude/"],
+        # the one git door (v3407): on Windows a git child must never own a console over his game
+        r = _git_run(["git", "-C", REPO, "for-each-ref", "--format=%(refname:short)", "refs/heads/claude/"],
                                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if getattr(r, "returncode", 1) != 0:
             return None

@@ -13975,7 +13975,7 @@ GATES = [
              "the Council drew one shared picture; a group row draws Toorc, Geleb and Ismail's own sprites"),
     Gate("test_the_preflight_proves_the_laws_at_the_edit",
          [sys.executable, os.path.join(HERE, "test_the_preflight_proves_the_laws_at_the_edit.py")], 120,
-         why="v3903 (REG-3785, #200) - v3901 changed 1,426 laws, over the 40 the pre-flight proves, so it proved none and a "
+         why="v3902 (REG-3785, #200) - v3901 changed 1,426 laws, over the 40 the pre-flight proves, so it proved none and a "
              "BLIND proof one line from its edit cost a GitHub round: over the cap the laws at the edit are proved here"),
     Gate("test_the_board_title_says_where_each_version_is",
          [sys.executable, os.path.join(HERE, "test_the_board_title_says_where_each_version_is.py")], 120,

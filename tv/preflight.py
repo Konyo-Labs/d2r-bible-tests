@@ -328,7 +328,7 @@ def prove_base(version=None, _git_=None):
     return None
 
 
-#: v3903 (REG-3785, #200 card #218) - PROOFS AT THE EDIT. v3901 changed 1,426 laws, over the 40 this PC proves, so the
+#: v3902 (REG-3785, #200 card #218) - PROOFS AT THE EDIT. v3901 changed 1,426 laws, over the 40 this PC proves, so the
 #: pre-flight proved NONE and said "the changed laws are proven"; GitHub then read test_a_version_is_preflighted_before_
 #: github_grades_it[4] BLIND - its red-proof cut a pattern copy REG-3764 had left dead ONE line above the edit (REG-3784). A
 #: proof goes blind or invalid where the code around its anchor moved, so when the changed set is over the cap the laws whose
