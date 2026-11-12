@@ -189,6 +189,17 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3825 - A SHADOW SESSION PLAYED 3 KEY FRAMES: THE ONE THE BUCKET HOLDS NOW PLAYS WHOLE, FULL WINDOW, FROM THE LOGO (v3905, #208)
+His ask via GrokBot #230: "shadow mode must render full screen and ALL frames of that session locally, and show the game
+recording from when play starts". The shadow sessions list asks this console (GET /api/roster-cache?reels=<owner>, which
+asks the site - the page never holds its password) which sessions the bucket holds; each held row offers WATCH (the whole
+session or its summary) and the player covers the window, opens on the manifest's start frame (the first D2 logo, else
+frame 1 - GrokBot: a Mac reel's logo arrives at frame 56, after GeForce NOW's Loading page), plays at 1-8x, steps, goes back
+to START and closes on Esc. Frames come through this console (?reel=&session=&frame=), which keeps a copy of each under
+roster_reels_cache, at most 1.5 GB, the least recently read session leaving first and never the one playing. A bucket that
+did not answer is UNKNOWN on every row, never "not in the bucket". Law: test_a_shadow_session_plays_whole_from_the_bucket
+(node over the shipped player, +3 red-proofs).
+
 ### REG-3824 - AN OFFLINE PC's SESSIONS WERE 3 FRAMES EACH: THIS PC NOW SENDS ITS NEWEST 3 WHOLE AND 13 SUMMARY REELS (v3905, #208)
 His words 11-13: "when a player is offline to see his last 16 reels somehow", "maybe just the last 3 sessions recorded for
 each pc so those are online and always reachable even when a user is offline ... a type of summary almost like it is now

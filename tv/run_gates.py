@@ -14225,6 +14225,12 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,
          why="v3889 (#23, his theme pass: the in-game fonts on in-game text only, colours unchanged) - item, zone, terror-zone, monster, boss, runeword and set names wear --ff-game (the builder's D2 Exocet, then the display serif); the block sets the font and nothing else; the console's words keep the face they had (the Grok CLI caught the item card badge); the zone name is wrapped apart from its words; the game's font is never tracked in this public repo."),
+    Gate("test_a_shadow_session_plays_whole_from_the_bucket",
+         [sys.executable, os.path.join(HERE, "test_a_shadow_session_plays_whole_from_the_bucket.py")], 120,
+         needs_app=False,
+         why="#208 (his ask: full screen, ALL frames, from when play starts) - a shadow session the bucket holds offers WATCH, "
+             "the player fills the window on the manifest's start frame (the first D2 logo, else frame 1), plays on and "
+             "closes on Esc; an unanswered bucket is UNKNOWN on every row, a manifest with no frame says why"),
     Gate("test_a_shadow_reel_is_kept_under_the_cap",
          [sys.executable, os.path.join(HERE, "test_a_shadow_reel_is_kept_under_the_cap.py")], 120,
          needs_app=False,
