@@ -142,6 +142,14 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3786 - THE RIVER'S SIGHTING NOTE CALLED A SEAL THAT NEVER SAID WHAT IT FOUND A REEL THAT FOUND A CHRONICLE PAGE (v3903, the Grok CLI's look on v3901)
+REG-3756 counts a sealed reel as owing a sighting unless its row says pages == 0 - a row with no `pages` (an older seal) or a
+non-number still owes one, never assumed empty. Right for the count; but j_sighting's note read "N of M sealed reel(s) found a
+Chronicle page" over that count, so a seal file of rows that never recorded a page read as every reel having found one. The
+second eye on v3901 (#231, grok-cli) named it; the count itself was by design and is unchanged. Now j_read also publishes
+sealedUnsaid and the note reads "F of M found a Chronicle page and U did not say what it found (each still owes one)".
+Law: test_a_seal_that_found_no_page_owes_no_sighting (+1 case, +1 red-proof; 3 of 3 PROVEN).
+
 ### REG-3787 - A REAP STOPPED MID-DELETE STILL LEFT ITS FRAMES UNKNOWN: THE PICTURE READER SKIPPED EVERY INTENT LINE (v3903, the Grok CLI's look on v3901)
 REG-3751 made the recorder's disk-floor reaper write its intent line before the delete so a recorder stopped between the delete
 and its outcome line keeps a record (the #217 shape). The second eye on v3901 (#231, grok-cli, 7f1a8149) named the reader:

@@ -223,7 +223,7 @@ def j_read():
         worth = sum(1 for v in (blob or {}).values() if v.get("full") and v.get("panels"))
     except Exception as e:
         return _joint("read", "reels sealed", None, None, str(e)[:70], "reel")
-    sealed = with_pages = None
+    sealed = with_pages = unsaid = None
     try:
         p = os.path.join(HERE, "chronicle_swept.json")
         if os.path.isfile(p):
@@ -235,11 +235,16 @@ def j_read():
                 # does not say (an older row, a non-number) still counts as owing one - never assumed empty
                 with_pages = sum(1 for v in rows if not (isinstance(v, dict) and isinstance(v.get("pages"), int)
                                                          and not isinstance(v.get("pages"), bool) and v.get("pages") == 0))
+                # REG-3786 (the Grok CLI's look on v3901) - the seals that do not SAY are counted apart: they still owe a
+                # sighting, and the note called every one of them a reel that "found a Chronicle page"
+                unsaid = sum(1 for v in rows if not (isinstance(v, dict) and isinstance(v.get("pages"), int)
+                                                     and not isinstance(v.get("pages"), bool)))
     except Exception:
-        sealed = with_pages = None
+        sealed = with_pages = unsaid = None
     j = _joint("read", "reels sealed", sealed, worth,
                "a reel the survey says CARRIES something and nobody read is the backlog", "reel")
     j["sealedWithPages"] = with_pages
+    j["sealedUnsaid"] = unsaid
     return j
 
 
@@ -279,9 +284,12 @@ def j_sighting():
     # whose reels held no Chronicle page read DRY - a broken join - when nothing was owed. It waits only on seals that found
     # a page (or do not say); none read as UNKNOWN.
     up = r.get("sealedWithPages")
+    uns = r.get("sealedUnsaid") or 0
     return _joint("sighting", "sightings recorded", len(ss), up,
-                  ("" if up is None else "%d of %d sealed reel(s) found a Chronicle page - a sealed read that found none "
-                   "owes no sighting" % (up, r.get("crossed") or 0)), "sighting")
+                  ("" if up is None else "%d of %d sealed reel(s) found a Chronicle page%s - a sealed read that found none "
+                   "owes no sighting" % (up - uns, r.get("crossed") or 0,
+                                         (" and %d did not say what it found (each still owes one)" % uns) if uns else "")),
+                  "sighting")
 
 
 def j_surface():

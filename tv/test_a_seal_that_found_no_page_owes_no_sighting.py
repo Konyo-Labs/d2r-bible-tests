@@ -65,6 +65,15 @@ class ASealThatFoundNoPageOwesNoSighting(unittest.TestCase):
         self._world({"reel_s_1": {"ts": 1}, "reel_s_2": {"ts": 1, "pages": True}}, [])
         self.assertEqual(RV.j_sighting()["upstream"], 2, "a seal that does not say what it found was assumed empty")
 
+    def test_a_seal_that_does_not_say_is_never_called_a_find(self):
+        """REG-3786 (the Grok CLI's look on v3901): a row with no `pages`, or a non-number, still owes a sighting - and the
+        note said it "found a Chronicle page". It is counted apart and said as not saying."""
+        self._world({"reel_s_1": {"ts": 1}, "reel_s_2": {"ts": 1, "pages": True}, "reel_s_3": {"ts": 1, "pages": 2},
+                     "reel_s_4": {"ts": 1, "pages": 0}}, [])
+        j = RV.j_sighting()
+        self.assertEqual(j["upstream"], 3, "PREMISE: the owed count moved - this case is about the words only")
+        self.assertIn("1 of 4 sealed reel(s) found a Chronicle page and 2 did not say what it found", j["why"])
+
     def test_the_read_joint_is_unchanged(self):
         self._world({"reel_s_1": {"ts": 1, "pages": 0}, "reel_s_2": {"ts": 1, "pages": 3}}, [{"reel": "reel_s_2", "frame": "f"}])
         r = RV.j_read()
@@ -73,6 +82,11 @@ class ASealThatFoundNoPageOwesNoSighting(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3786 - a seal that does not say what it found is called a reel that found a Chronicle page again",
+     "file": "tv/river.py",
+     "find": "    uns = r.get(\"sealedUnsaid\") or 0\n",
+     "replace": "    uns = 0\n",
+     "matches": 1},
     {"why": "REG-3756 - the sighting joint waits on every sealed reel again, so a PC whose reels held no page reads DRY",
      "file": "tv/river.py",
      "find": "    up = r.get(\"sealedWithPages\")\n",
