@@ -1033,11 +1033,15 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 .d2art-wrap.d2art-failed .d2art-img{display:none}
 .d2art-wrap.d2art-failed .d2art-fallback{display:inline-flex}
 .d2art-wrap.lg{width:54px;height:54px;flex:0 0 auto}
-/* REG-3782 (#91, his 11-12 "show their own sprites") - a GROUP row draws its members' own sprites, overlapped a little so a
-   three-priest row stays compact beside its name */
-.d2art-group{display:inline-flex;align-items:center;vertical-align:middle;flex:0 0 auto}
-.d2art-group > .d2art-wrap + .d2art-wrap{margin-left:-10px}
-.d2art-group > .d2art-wrap.sm + .d2art-wrap.sm{margin-left:-5px}
+/* REG-3782 (#91, his 11-12 "show their own sprites") - a GROUP row draws its members' own sprites side by side with a small
+   gap: each priest's sprite carries its own dark stone backdrop, and overlapped (the first cut) the three merged into one dark
+   strip where no priest read on his own */
+.d2art-group{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;flex:0 0 auto}
+/* ...and in a SMALL slot (a Bosses chip) three full sprites in a row pushed the chip's own name past its edge ("Travinc /
+   Counci" at 1512): there the group is a 2x2 mosaic in one sprite's footprint, each priest still his own square */
+.d2art-group.sm{display:inline-grid;grid-template-columns:repeat(2,23px);gap:2px;align-items:center;justify-items:center}
+.d2art-group.sm > .d2art-wrap{width:23px!important;height:23px!important;margin:0}
+.d2art-group.sm > .d2art-wrap .d2art-img{max-width:23px!important;max-height:23px!important}
 .boss-detail-header .d2art-wrap.lg{width:66px;height:66px}
 .boss-detail-header .d2art-wrap.lg .d2art-img{max-width:66px;max-height:66px}
 .boss-chip .d2art-wrap.sm{width:48px;height:48px}
@@ -24185,7 +24189,7 @@ try { window.ART_GROUP = ART_GROUP; } catch (eAg) {}
 function artOr(name, fallbackHtml, size){
   /* typeof: artOr is a hoisted declaration, and a render that runs before the map's line has executed must draw as before */
   var _grp = (typeof ART_GROUP === 'object' && ART_GROUP) ? ART_GROUP[String(name == null ? '' : name).trim()] : null;
-  if (_grp) return '<span class="d2art-group" role="img" aria-label="' + _d2artEsc(name) + '">'
+  if (_grp) return '<span class="d2art-group ' + (size || 'lg') + '" role="img" aria-label="' + _d2artEsc(name) + '">'
     + _grp.map(function(m){ return artOr(m, fallbackHtml, size); }).join('') + '</span>';
   // Resolve art robustly for vault item names that carry a socket/Larzuk SUFFIX ("Grim Scythe (6os)",
   // "Crystal Sword (Larzuk base)") or a quality PREFIX ("Superior …", "Ethereal …"). A failed v381 batch

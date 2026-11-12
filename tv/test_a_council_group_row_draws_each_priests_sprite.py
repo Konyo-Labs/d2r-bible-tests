@@ -26,7 +26,7 @@ var srcs = []; h.replace(/src="([^"]+)"/g, function(_m, s){ srcs.push(s); return
 var one = String(artOr('Toorc Icefist', 'X', 'sm'));
 var rs = (typeof RUNE_SOURCES !== 'undefined' ? RUNE_SOURCES : []).filter(function(s){ return s.id === 'travincal'; })[0] || {};
 var bs = (typeof BOSSES !== 'undefined' ? BOSSES : []).filter(function(b){ return b.id === 'travincal'; })[0] || {};
-OUT.r = {group: /class="d2art-group"/.test(h), srcs: srcs, aria: (h.match(/aria-label="([^"]+)"/) || [])[1] || '',
+OUT.r = {group: /class="d2art-group sm"/.test(h), srcs: srcs, aria: (h.match(/aria-label="([^"]+)"/) || [])[1] || '',
          url: String(artUrl('Travincal Council') || ''), one: (one.match(/src="([^"]+)"/) || [])[1] || '',
          oneGroup: /d2art-group/.test(one), runeName: rs.name || '', runeSub: rs.subtitle || '', bossName: bs.name || ''};
 """
@@ -62,8 +62,8 @@ class ACouncilGroupRowDrawsEachPriestsSprite(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3782 - the Council group row wears the one shared council picture again (his 11-12 ruling)",
      "file": "bible.html",
-     "find": "  if (_grp) return '<span class=\"d2art-group\" role=\"img\" aria-label=\"' + _d2artEsc(name) + '\">'\n",
-     "replace": "  if (false) return '<span class=\"d2art-group\" role=\"img\" aria-label=\"' + _d2artEsc(name) + '\">'\n",
+     "find": "  if (_grp) return '<span class=\"d2art-group ' + (size || 'lg') + '\" role=\"img\" aria-label=\"' + _d2artEsc(name) + '\">'\n",
+     "replace": "  if (false) return '<span class=\"d2art-group ' + (size || 'lg') + '\" role=\"img\" aria-label=\"' + _d2artEsc(name) + '\">'\n",
      "matches": 1},
     {"why": "REG-3782 - the priests are drawn out of the order the row names them",
      "file": "bible.html",
