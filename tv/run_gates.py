@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_rolling_reel_that_films_nothing_is_said",
+         [sys.executable, os.path.join(HERE, "test_a_rolling_reel_that_films_nothing_is_said.py")], 60,
+         why="v3901 (#188, REG-3761) - Dean 11-08: two reels filmed nothing for 31-34 min and no surface said so; the "
+             "recorder publishes its running footage pause and the doctor's 'rolling reel filmed' row names it after 5 min"),
     Gate("test_his_darker_char_select_is_read",
          [sys.executable, os.path.join(HERE, "test_his_darker_char_select_is_read.py")], 60,
          needs_app=False,

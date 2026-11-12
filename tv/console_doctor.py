@@ -4077,6 +4077,11 @@ BY_DESIGN = {
 }
 
 MINE = {
+    # REG-3761 - a rolling reel that films nothing is a defect in the recorder's gates (a stale capture file, a refused
+    # write, a floor); finding which is my work, and the row names the gate in its own words.
+    "rolling reel filmed":
+        "REG-3761 - Dean's two 11-08 reels filmed nothing for 31-34 min while their reads ran; the gate that held the film "
+        "is the recorder's, so the hunt is mine. He cannot act on a pause except by playing on through it.",
     # #41 rank 16 (REG-1560) — a row of their planner's tooltip that ours does not compose is my composition
     # defect, and a receipt the page has moved from is my lane's to re-measure; nothing here is his to rule on.
     "their tooltip rows":
@@ -6165,6 +6170,45 @@ def _check_the_fleet_lane_is_reachable():
                      "STALE list instead of a blank. Reason: %s"
                      % (("" if dur is None else " and has been for %ss" % dur),
                         g_on, g_off, g_on + g_off, why))
+
+
+#: REG-3761 - a pause shorter than this is a warm-up, a loading screen or a moment's stale capture - not yet a row
+FOOTAGE_PAUSE_ROW_S = 300
+
+
+def _check_the_rolling_reel_is_filmed():
+    """REG-3761 (Dean 11-08: two reels filmed nothing for 31 and 34 minutes while their reads ran, and nothing on any
+    surface said so) - IS THE REEL THAT IS ROLLING NOW GETTING ITS FOOTAGE?
+
+    The recorder now keeps why each footage frame was refused (REG-3753) and publishes the pause running now in its health
+    (`footagePause`: kind, words, since, count). This row reads it through the console's own status: MISSING when a pause has
+    lasted FOOTAGE_PAUSE_ROW_S or more while the recorder's state is fresh, naming the gate in its own words. A recorder that
+    is not reporting now (no reel rolling: stale or absent state) is UNMEASURED, never a pass; a build before v3901
+    publishes no pause and is UNMEASURED too. It never acts. [[heart-first]] [[unknown-stays-unknown]]"""
+    st = _get("/api/status")
+    if st is None:
+        return UNKNOWN, ("the console is not answering on %s, so whether the rolling reel is filmed is UNKNOWN"
+                         % (CONSOLE or "no port"))
+    if st.get("stateFresh") is not True or st.get("phase") == "off":
+        return UNMEASURED, ("no recorder is reporting now (no reel rolling), so there is no rolling footage to judge - "
+                            "UNMEASURED, not a pass")
+    h = st.get("health") if isinstance(st.get("health"), dict) else {}
+    if "footagePause" not in h:
+        return UNMEASURED, ("the recorder publishes no footage pause (a build before v3901), so whether its footage lands "
+                            "is UNMEASURED")
+    p = h.get("footagePause")
+    tally = h.get("footageRefused") if isinstance(h.get("footageRefused"), dict) else {}
+    said = " · ".join("%s %s" % (k, v) for k, v in sorted(tally.items(), key=lambda kv: (-int(kv[1] or 0), kv[0])))
+    if not isinstance(p, dict) or not isinstance(p.get("sinceMs"), (int, float)):
+        return OK, "the rolling reel's footage is landing" + (" (refused this reel: %s)" % said if said else "")
+    age_s = max(0, int(time.time() - float(p["sinceMs"]) / 1000.0))
+    if age_s < FOOTAGE_PAUSE_ROW_S:
+        return OK, ("footage paused %d s ago (%s) - under the %d s this row waits for"
+                    % (age_s, p.get("say") or p.get("kind") or "reason unknown", FOOTAGE_PAUSE_ROW_S))
+    return MISSING, ("the rolling reel has filmed NOTHING for %d min: %s (%s frame(s) refused%s) - its reads may still run, "
+                     "but the reel will hold no picture of that stretch"
+                     % (age_s // 60, p.get("say") or p.get("kind") or "reason unknown", p.get("n"),
+                        "; this reel: " + said if said else ""))
 
 
 #: REG-3757 - the shelf lanes whose reads are paid Claude reads (shelf_driver.OWED_BY: the chronicle sweep and the vault sweep)
@@ -11501,6 +11545,7 @@ CHECKS = [
     # stored beat was 31.6h old while control_app imported the module under two aliases and called
     # nothing on either. [[the-unjoined-end]]
     ("shelf lanes reading", _check_the_shelf_lanes_are_still_reading),
+    ("rolling reel filmed", _check_the_rolling_reel_is_filmed),     # REG-3761
     # v2843 — THE FLEET, WHICH THE HEART HAD NEVER HEARD OF. `grep -c fleet` was 0 across
     # heart.py and lane_census.py while his card sat on "unreachable" and the footer said 8 dark.
     ("fleet reachable", _check_the_fleet_lane_is_reachable),
@@ -12444,6 +12489,8 @@ WATCHES = {
     # `test_the_doctor_says_what_it_watches` RED on the tree.
     "window runs the document on disk": ("console", "page"),
     "shelf lanes reading":         ("shelf-cards",),
+    # REG-3761 - it reads the recorder's health through /api/status; no element of its own
+    "rolling reel filmed": (),
     # v3232 — filed WITH its check, which is the point of this map. `_check_the_shelf_tabs_are_alive`
     # asks /api/river and compares the stamped population against the label map, so what it covers
     # is the station-chip row on the SHELF and the river strip those chips are drawn from. Named,

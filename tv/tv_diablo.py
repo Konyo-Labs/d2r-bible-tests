@@ -921,6 +921,10 @@ def _health(st):
          "footageTargetFps": _FOOTAGE_FPS,   # REG-1948 — "footageFps" is set once, above (it was set twice here)
          "filmLane": globals().get("_FILM_LANE", ""), "filmCapMs": globals().get("_FILM_CAP_MS"),   # v867
          "footageWhy": globals().get("_FOOTAGE_WHY", ""),   # v947 — grab|bridge-last-good|disk-full
+         # REG-3761 - the footage pause running NOW (REG-3753's own record), and this reel's refusals by reason, so the
+         # console's doctor can say a rolling reel that films nothing - Dean 11-08: 34 minutes and no word anywhere
+         "footagePause": footage_pause_now(),
+         "footageRefused": dict(_FOOTAGE_REFUSED),
          "footageBridges": int(globals().get("_FOOTAGE_BRIDGES") or 0),
          "filmWhiteRejects": int(globals().get("_FILM_WHITE_REJECTS") or 0),
          "filmMaxPx": FILM_MAX_PX, "pollMs": int(POLL_S * 1000),
@@ -2408,6 +2412,15 @@ def _footage_landed(now_f):
             p.update(since=None, kind=None, n=0)
     except Exception:
         pass
+
+
+def footage_pause_now():
+    """REG-3761 - the footage pause running now. -> {kind, say, sinceMs, n} | None (footage is landing, or none was due)"""
+    p = _FOOTAGE_PAUSE
+    if p.get("since") is None:
+        return None
+    return {"kind": p.get("kind"), "say": FOOTAGE_REFUSAL_WORDS.get(p.get("kind"), p.get("kind")),
+            "sinceMs": int(float(p["since"]) * 1000), "n": int(p.get("n") or 0)}
 
 
 def footage_refused_words(tally=None):
