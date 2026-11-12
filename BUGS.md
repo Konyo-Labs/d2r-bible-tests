@@ -142,6 +142,17 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3814 - #23 THEME PASS: A SUPER-UNIQUE'S NAME ON A TERROR-ZONE LINE WAS NOT IN THE GAME FACE, AND ITS LINKER SPLIT A SET NAME (v3904)
+A measurement (scratchpad gamefont_probe: every element whose own text is a known game name, its computed face) on the board
+at 1512: on the Terror Zones and Zones tabs 3 of 8 game names were in the console serif - the super-unique links on a zone's
+line (span.su-link inside p.tz-zone-sub: "The Summoner", "Nihlathak", "Griswold"). .su-link joins the game-face rule. Then
+the pixels showed the Tristram line as "GRISWOLD (drops the GRISWOLD's Legacy set)": linkifySU wrapped EVERY occurrence of a
+name (split/join), so the set name's first word was a monster link - invisible while both shared one face. A name followed
+by 's (straight or curly) names a thing of theirs and stays plain. Law: test_game_names_wear_the_game_face (GAME_NAMES +
+.su-link; AMonsterNameInsideAThingOfTheirsIsNotLinked, node, +1 red-proof; the mod-chips red-proof re-aimed) - 15 PROVEN.
+The probe's own reach was thin (its name list held 26 boss names - ITEMS and RUNEWORDS were empty at read time), so
+the rest of the board's game text is UNMEASURED by it, said here.
+
 ### REG-3813 - THE SHOW-TOGGLE LAW READ A WINDOWS RUNNER'S REDUCED MOTION AS A DRAWER THAT SNAPS SHUT (v3904, #107)
 GitHub windows-latest on v3903 (ci/winlaws): test_a_show_toggle_reads_hide_while_open - "the drawer snapped shut with no
 slide" (310 -> 24 between two samples). The law's own header says the board slides both ways and does NOT under reduced

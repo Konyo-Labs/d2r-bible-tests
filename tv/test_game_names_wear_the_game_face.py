@@ -43,7 +43,9 @@ GAME_NAMES = (".qw-name", ".f-rwbig", ".boss-name", ".fh-boss", ".gic-name", ".i
               # carry the art on the row, and the game's mod lines
               "span[data-arttip]", "b[data-arttip]", ".item-tile-name", ".zd-su-card-name", ".er-it-name", ".hvf-name",
               ".iv-name", ".cn-name", ".cn-pv-opt-nm", ".arw-name", ".vm-item-name", ".zd-hg-name strong",
-              ".cw-g-mod", ".cw-reroll-mod", ".hpbar-mods")
+              ".cw-g-mod", ".cw-reroll-mod", ".hpbar-mods",
+              # REG-3814 (#23) - a super-unique monster's name, measured in the console serif on a terror-zone card's line
+              ".su-link")
 #: v3898 - the console's own pieces INSIDE a name (a wall chip's tick, base, badge, qlvl and ETA, the TZ tag, the tier,
 #: LADDER and stash badges, the runeword base's slot label, a button) - they keep the console's face
 BADGES_IN_A_NAME = ("[data-arttip] .si-tier", "[data-arttip] .rwc-ladder", ".rwc-name .rwc-ladder", "[data-arttip] .gf-tick",
@@ -170,6 +172,31 @@ class GameNamesWearTheGameFace(unittest.TestCase):
 
 
 
+class AMonsterNameInsideAThingOfTheirsIsNotLinked(unittest.TestCase):
+    """REG-3814 (#23) - linkifySU wrapped EVERY occurrence of a super-unique's name, so the Tristram terror-zone line
+    "Griswold (drops the Griswold's Legacy set)" linked the set name's first word too, and once the link took the game face
+    the set name read in two faces ("GRISWOLD's Legacy"). A name followed by 's names a thing of theirs, never the monster."""
+
+    def test_the_possessive_stays_plain_and_the_name_is_linked(self):
+        from cb_node_harness import NODE
+        if NODE is None:
+            raise AssertionError("node is not installed on this PC - this law runs the shipped linker in node and does not skip")
+        src = _bible()
+        i = src.index("function linkifySU(str){")
+        j = src.index("window.linkifySU=linkifySU;", i)
+        js = ("var SUPER_UNIQUES = [{name: 'Griswold'}, {name: 'The Smith'}, {name: 'Nihlathak'}];\n" + src[i:j] +
+              "\nprocess.stdout.write(JSON.stringify([linkifySU(\"Griswold (drops the Griswold's Legacy set)\"),"
+              " linkifySU('The Smith and Nihlathak'), linkifySU('Griswold\u2019s Legacy'), linkifySU('nothing here')]));")
+        r = subprocess.run([NODE, "-"], input=js, capture_output=True, text=True, encoding="utf-8", timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr[-600:])
+        gris, two, curly, none = __import__("json").loads(r.stdout)
+        self.assertEqual(gris.count('class="su-link"'), 1, "a monster's name inside a thing of theirs was linked: %s" % gris)
+        self.assertTrue(gris.endswith("(drops the Griswold's Legacy set)"), gris)
+        self.assertEqual(two.count('class="su-link"'), 2, "BASELINE: two names in one line are both linked: %s" % two)
+        self.assertNotIn("su-link", curly, "a curly-apostrophe possessive was linked")
+        self.assertEqual(none, "nothing here")
+
+
 class TheConsolesGameNamesToo(unittest.TestCase):
     """the console's half: its terror-zone names, hunt-history item and boss names, the cross-reference's item names and
     a shelf card's areas - in a monospace console whose own words keep their face"""
@@ -264,15 +291,20 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3889 (#23) - the theme block recolours a name (his 'colors still the same')",
      "file": "bible.html",
-     # v3898 re-anchored: phase 2 grew the selector list, this rule's last line is now the mod chips
-     "find": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods{font-family:var(--ff-game)!important}",
-     "replace": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods{font-family:var(--ff-game)!important;color:#fff}",
+     # v3898 re-anchored: phase 2 grew the selector list, this rule's last line is now the mod chips; REG-3814 adds .su-link
+     "find": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods,.su-link{font-family:var(--ff-game)!important}",
+     "replace": ".cw-g-mod,.cw-reroll-mod,.hpbar-mods,.su-link{font-family:var(--ff-game)!important;color:#fff}",
      "matches": 1},
     {"why": "v3889 (#23, the Grok CLI's catch) - the item card's badge is set in a face it never had",
      "file": "bible.html",
      "find": ".gic-name .gic-grail-badge{font-family:var(--serif-display)!important}",
      "replace": ".gic-name .gic-grail-badge{font-family:var(--sans)!important}",
      "matches": 1},
+    {"why": "REG-3814 (#23) - linkifySU links a monster's name inside a thing of theirs again (Griswold's Legacy in two faces)",
+     "file": "bible.html",
+     "find": "+\"(?![\\u2019']s\\\\b)\",'g');",
+     "replace": "+\"\",'g');",
+     "matches": 1, "needs": "node"},
 ]
 
 
