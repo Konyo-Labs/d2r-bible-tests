@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_game_that_starts_mid_reel_says_its_part_one",
+         [sys.executable, os.path.join(HERE, "test_a_game_that_starts_mid_reel_says_its_part_one.py")], 120,
+         why="v3900 (#188, REG-3742) - GrokBot on the work ALT 11-12: 2 of 21 games read 'part 2 of 2' with no part 1 - the "
+             "reel holding the old game's tail and the character select now says 'then a new game: part 1 of m'"),
     Gate("test_a_half_applied_update_heals_itself",
          [sys.executable, os.path.join(HERE, "test_a_half_applied_update_heals_itself.py")], 60,
          needs_app=False,

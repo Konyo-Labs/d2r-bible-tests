@@ -509,6 +509,10 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, 
             _gp = None
         if isinstance(_gp, dict) and _gp.get("parts", 0) > 1:
             s["game"] = {"part": _gp.get("part"), "parts": _gp.get("parts"), "character": _gp.get("character")}
+        _then = _gp.get("then") if isinstance(_gp, dict) else None
+        if isinstance(_then, dict) and (_then.get("parts") or 0) > 1:   # REG-3742 - the game this part STARTS, mid-reel
+            s.setdefault("game", {})["then"] = {"part": _then.get("part"), "parts": _then.get("parts"),
+                                                "character": _then.get("character")}
         s["scenario"] = scenario_of(games)
         s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
                                     if any(x in runs[k]["names"] for x in games)] or [0]) or None

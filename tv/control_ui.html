@@ -19612,12 +19612,25 @@ window._lockMark = function(isOpen, px, label){
      reel whose game has 2+ parts (the equipped ledger's chain: a character select starts a game, a part with no login
      continues it across the hourly hand-off, a part that never showed the game ends it). No `game` -> nothing is said. */
   function shGamePart(g, after){
-    if (!g || !(g.parts > 1) || !(g.part >= 1)) return '';
-    var who = g.character ? ' as ' + esc(String(g.character)) : '';
-    var tip = 'One game in hourly parts' + who + ': no character select between these parts, and each starts within the '
-      + 'hourly hand-off of the last one\'s seal. A part that never showed the game, or a new character select, starts a new game.';
-    /* its own line, never a dangling '·' when it wraps (seen on the 1440 / 901 render: the span broke after the duration) */
-    return '<span class="shc-game" title="' + esc(tip) + '">part ' + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
+    if (!g) return '';
+    var h = '';
+    if (g.parts > 1 && g.part >= 1) {
+      var who = g.character ? ' as ' + esc(String(g.character)) : '';
+      var tip = 'One game in hourly parts' + who + ': no character select between these parts, and each starts within the '
+        + 'hourly hand-off of the last one\'s seal. A part that never showed the game, or a new character select, starts a new game.';
+      /* its own line, never a dangling '·' when it wraps (seen on the 1440 / 901 render: the span broke after the duration) */
+      h += '<span class="shc-game" title="' + esc(tip) + '">part ' + (g.part | 0) + ' of ' + (g.parts | 0) + ' · one game</span>';
+    }
+    /* REG-3742 (GrokBot, the work ALT 11-11: two games read "part 2 of 2" with no part 1) - a character select INSIDE this
+       part starts the next game here: its part 1 is said on this card, on its own line */
+    var t = g.then;
+    if (t && t.parts > 1 && t.part >= 1) {
+      var tw = t.character ? ' as ' + esc(String(t.character)) : '';
+      h += '<span class="shc-game" title="' + esc('A character select inside this part started a new game' + tw
+        + ' - the hourly parts after it are that game') + '">then a new game' + tw + ': part ' + (t.part | 0) + ' of '
+        + (t.parts | 0) + '</span>';
+    }
+    return h;
   }
   function thShelf(force){
     try { _shFleetLoad(); } catch (eFl) {}   /* v3899 (#213) - every PC's published sessions for the header */

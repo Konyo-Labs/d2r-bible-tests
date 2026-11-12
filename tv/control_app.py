@@ -25250,12 +25250,25 @@ def _shelf_games():
     if not isinstance(d, dict):
         return None
     gs, out = d.get("gameSessions") or {}, {}
-    for sid, gid in (d.get("reelGame") or {}).items():
+    rg = d.get("reelGame") or {}
+    for sid, gid in rg.items():
         g = gs.get(gid) if isinstance(gs, dict) else None
         reels = [str(x) for x in ((g or {}).get("reels") or [])]
         if len(reels) > 1 and str(sid) in reels:
             out[str(sid)] = {"id": gid, "part": reels.index(str(sid)) + 1, "parts": len(reels),
                              "character": (g or {}).get("character") or None}
+    # REG-3742 (GrokBot #230 6809993907, the work ALT 11-11: the 22:00 and 14:00 games read "part 2 of 2" with no part 1)
+    # - A GAME THAT STARTS INSIDE A REEL HAS ITS PART 1 THERE. reelGame files a reel under its OPENING span's game, so the
+    # reel whose later span is the character select (21:54:50, 13:50:18) - the tail of the game before, then the new one -
+    # never said it starts the next game. That reel now also carries `then`: the multi-part game it starts.
+    for gid, g in (gs.items() if isinstance(gs, dict) else []):
+        reels = [str(x) for x in ((g or {}).get("reels") or [])] if isinstance(g, dict) else []
+        if len(reels) < 2:
+            continue
+        for k, sid in enumerate(reels):
+            if str(rg.get(sid)) != str(gid):
+                out.setdefault(sid, {})["then"] = {"id": gid, "part": k + 1, "parts": len(reels),
+                                                   "character": g.get("character") or None}
     return out
 
 

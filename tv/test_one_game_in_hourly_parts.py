@@ -174,8 +174,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3898 (#188, REG-3713) - the card stops saying which part of one game it is",
      "file": "tv/control_ui.html",
-     "find": "    if (!g || !(g.parts > 1) || !(g.part >= 1)) return '';\n",
-     "replace": "    return '';\n",
+     "find": "    if (g.parts > 1 && g.part >= 1) {\n",   # v3900 REG-3742 re-anchor: the card also says the game a part starts
+     "replace": "    if (false) {\n",
      "matches": 1, "needs": "node"},
     {"why": "v3898 (#188, REG-3713) - the published digest stops carrying the part of one game, so a shadow never sees it",
      "file": "tv/shadow_sessions.py",
