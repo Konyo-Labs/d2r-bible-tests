@@ -29,10 +29,16 @@ ATTEMPT9 = "test_the_planner_spinner_stays_under_the_cursor"
 
 class TheLawHolds(unittest.TestCase):
     def test_attempt_9_is_in_the_history(self):
-        owed = SHW.owed_shards()
+        """the rule over a history of our own: attempt 9's shard is owed, with its named test.
+        v3900 - this read the LIVE ledger and pinned one incident in it; GitHub's next red rolled attempt 9 out of the
+        last-N window and the law went red on the history moving, not on the code (a law pinned to a snapshot)."""
+        data = {"rounds": [{"run": 9, "sha": "abc", "when": "2026-11-10", "jobs": [
+            {"name": "agent-suite (2)", "k": 2, "n": 5, "class": "real", "failed": [ATTEMPT9],
+             "why": "named test failure"}]}], "flags": []}
+        owed = SHW.owed_shards(data=data)
         names = [j.get("name") for j in owed]
         self.assertIn("agent-suite (2)", names, owed)
-        self.assertIn(ATTEMPT9, SHW.owed_tests())
+        self.assertIn(ATTEMPT9, SHW.owed_tests(data=data))
 
     def test_failed_shards_is_in_the_box_rehearsal(self):
         self.assertIn("failed_shards", P.BOX_ORDER)

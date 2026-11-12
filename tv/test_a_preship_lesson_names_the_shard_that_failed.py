@@ -34,7 +34,12 @@ class TheLawHolds(unittest.TestCase):
 
     def test_the_named_shard_is_in_the_history(self):
         row = next(r for r in P.load_lessons() if r["id"] == "bundle-attempt-9")
-        names = [j.get("name") for j in SHW.owed_shards()]
+        # v3900 - over a history of our own: the LIVE ledger rolls its last-N window with every round, so a law that read it
+        # held only while the same shard kept failing (test_a_failed_shard_is_rehearsed_before_the_ci_push went red on it)
+        data = {"rounds": [{"run": 9, "sha": "abc", "when": "2026-11-10", "jobs": [
+            {"name": row["shard"], "k": 2, "n": 5, "class": "real", "failed": ["x"], "why": "named test failure"}]}],
+                "flags": []}
+        names = [j.get("name") for j in SHW.owed_shards(data=data)]
         self.assertIn(row["shard"], names)
 
     def test_remember_refusal_stores_the_shard(self):
