@@ -85,8 +85,9 @@ class _Box(object):
             return None
 
 
-def _refused(box, ledger_obj=None, raw=None, hist=None):
-    """One attempt: True when the drop was refused AND the ledger bytes did not move."""
+def _refused(box, ledger_obj=None, raw=None, hist=None, why_has=None):
+    """One attempt: True when the drop was refused AND the ledger bytes did not move (and, given why_has, the refusal
+    names that reason - an unreadable ledger must be said as UNKNOWN, not as a save that happened to fail)."""
     box.write(ledger_obj, raw)
     if hist is not None:
         box.ca.HIST_DIR = hist
@@ -95,7 +96,7 @@ def _refused(box, ledger_obj=None, raw=None, hist=None):
     after = box.ledger_bytes()
     box.ca.HIST_DIR = box.hist
     return (isinstance(r, dict) and r.get("refused") is True and r.get("ledgerCleared") is False
-            and before == after)
+            and before == after and (why_has is None or why_has in str(r.get("why") or "")))
 
 
 def _attempt_reel_gone(box):
@@ -170,12 +171,12 @@ def _attempt_mixed_one_gone(box):
 
 def _attempt_ledger_wrong_shape(box):
     """the ledger file parses but holds a list - UNKNOWN, never an empty ledger"""
-    return _refused(box, raw=json.dumps([_row("x", [SESSION])]))
+    return _refused(box, raw=json.dumps([_row("x", [SESSION])]), why_has="would not read")
 
 
 def _attempt_ledger_corrupt(box):
     """the ledger file will not parse - UNKNOWN, never an empty ledger"""
-    return _refused(box, raw='{"owned": [ {"name": "half a write"')
+    return _refused(box, raw='{"owned": [ {"name": "half a write"', why_has="would not read")
 
 
 def _attempt_store_missing(box):
@@ -336,9 +337,9 @@ RED_PROOF = [
     },
     {
         "why": "REG-3819 - the tamper ignores an unreadable ledger, so a corrupt or wrong-shape file reads as an empty "
-               "ledger with nothing to protect and the drop goes ahead. The save still refuses on its own, so the door "
-               "must SAY refused - and with this tamper it says cleared-or-not without refusing: wrong-shape and "
-               "corrupt LEAK.",
+               "ledger with nothing to protect. The save's own guard still keeps the bytes (defence in depth), but the "
+               "answer says 'would not save' instead of UNKNOWN - he and the doctor are told the wrong reason: "
+               "wrong-shape and corrupt LEAK on the reason.",
         "file": "control_app.py",
         "find": "    gone = None if VAULT_LEDGER_PATH in _UNREADABLE else _ledger_rows_past_their_reels(led)",
         "replace": "    gone = _ledger_rows_past_their_reels(led)",
