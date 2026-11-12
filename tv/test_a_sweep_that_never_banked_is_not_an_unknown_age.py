@@ -113,9 +113,10 @@ class ASweepThatNeverBanked(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-1778 - a sweep memory that was never written reads as an unknown age, and an unknown is not counted",
      "file": "console_doctor.py",
+     # v3901 (REG-3757) - re-anchored: the row now carries the signed-out note too
      "find": "    except FileNotFoundError:\n"
-             "        return MISSING, (\"%d reel(s) owe a read and no read has ever been banked on this console%s\"\n"
-             "                         % (len(owed), tail + _ret))\n",
+             "        return MISSING, (\"%d reel(s) owe a read and no read has ever been banked on this console%s%s\"\n"
+             "                         % (len(owed), _paid_reads_blocked_note(), tail + _ret))   # REG-3757 - the sweep's reads are paid\n",
      "replace": "",
      "matches": 1},
 ]
