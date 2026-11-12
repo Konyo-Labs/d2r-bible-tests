@@ -80,6 +80,25 @@ class ACardSaysWhenTheGameBegan(unittest.TestCase):
                   "                    _r[\"door\"] = _d\n")
         self.assertEqual(code.count(anchor), 1, "the sessions rows no longer carry the reel's door")
 
+    def test_a_shadow_carries_the_door_too(self):
+        """REG-3759 (#212) - the shadow digest each PC publishes carries the door, and the shadow row draws the same line"""
+        import shadow_sessions as SS
+        rows = [{"sessionId": "s_1", "ts": T0, "captureTs": T0, "frameId": "f_1", "scene": "town"},
+                {"sessionId": "s_1", "ts": T0 + 1000, "captureTs": T0 + 1000, "scene": "session_end"}]
+        d = SS.digest(rows, tempfile.gettempdir(), lambda r: False, T0, make=lambda *a, **k: None,
+                      door_of={"s_1": DOOR}.get)
+        self.assertEqual(d["sessions"][0].get("door"), {k: DOOR[k] for k in ("startTs", "logoTs", "titleTs",
+                                                                               "connectingTs", "charTs")})
+        d2 = SS.digest(rows, tempfile.gettempdir(), lambda r: False, T0, make=lambda *a, **k: None, door_of={}.get)
+        self.assertNotIn("door", d2["sessions"][0], "a session with no door was handed one")
+        with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
+            ui = fh.read()
+        self.assertEqual(ui.count("(typeof shDoorPart === 'function' ? shDoorPart(s.door, s.t0) : '')"), 1,
+                         "the shadow row no longer draws when its game began")
+        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+            app = "\n".join(l.split("#", 1)[0].rstrip() for l in fh.read().split("\n"))
+        self.assertEqual(app.count("door_of=(_session_doors() or {}).get)"), 1, "the published digest lost the door")
+
     def test_the_card_says_when_the_game_began(self):
         """* THE POINT - a reel that opened 12 min before the D2 logo says the game began at the logo, 12 min in"""
         if NODE is None:
@@ -116,6 +135,11 @@ class ACardSaysWhenTheGameBegan(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3759 - a shadow session loses its door (the owner's card says when the game began, the shadow does not)",
+     "file": "tv/shadow_sessions.py",
+     "find": "        if isinstance(_dr, dict) and isinstance(_dr.get(\"startTs\"), int):\n",
+     "replace": "        if False:\n",
+     "matches": 1},
     {"why": "REG-3755 - the sessions rows lose the reel's door again (the lane's chain is computed and never shown)",
      "file": "tv/control_app.py",
      "find": "                    _r[\"door\"] = _d\n",

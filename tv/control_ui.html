@@ -24086,7 +24086,8 @@ window._lockMark = function(isOpen, px, label){
     if (!imgs.length) note = '<div class="ssv-why">no pictures - ' + esc(String(s.why || (bad ? 'its pictures would not draw' : 'why UNKNOWN, the record names none'))) + '</div>';
     else if (bad) note = '<div class="ssv-why">' + bad + ' of its pictures would not draw</div>';
     return '<div class="ssv-row"><div class="ssv-t">' + esc(when + ' · ' + span + ' · ' + reads)
-        + (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '') + '</div>'   /* v3898 (#188) - the owner's 'part k of m · one game', drawn the same way */
+        + (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '')   /* v3898 (#188) - the owner's 'part k of m · one game', drawn the same way */
+        + (typeof shDoorPart === 'function' ? shDoorPart(s.door, s.t0) : '') + '</div>'   /* REG-3759 (#212) - when its game began, the same line as the Shelf card */
       + (farmed ? '<div class="ssv-names ssv-farmed">' + farmed + '</div>' : '<div class="ssv-names">' + names + '</div>')
       + '<div class="ssv-facts">' + esc(facts) + '</div>'
       + '<div class="ssv-facts ssv-place">' + esc(place) + '</div>'

@@ -454,7 +454,7 @@ def witness_frames(ids, hist_dir, make=_make_thumb):
 
 
 def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, chron_count=None, is_game=None,
-           game_of=None):
+           game_of=None, door_of=None):
     """rows: the journal's rows. is_read: the Shelf's read rule. -> {v, sessions: [...], bytes, dropped, left}
 
     ⚠ REG-2772 - NO BUILD TIME IN IT. The first cut carried `at`, so its hash moved on every build and the publish lane's
@@ -513,6 +513,15 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, 
         if isinstance(_then, dict) and (_then.get("parts") or 0) > 1:   # REG-3742 - the game this part STARTS, mid-reel
             s.setdefault("game", {})["then"] = {"part": _then.get("part"), "parts": _then.get("parts"),
                                                 "character": _then.get("character")}
+        # REG-3759 (#212 / #188) - where this session's reel ENTERED the game (control_app._session_doors: the chronicle
+        # lane's chain, the D2 logo -> Connecting -> character select), so a shadow draws the same "game began" line the
+        # owner's Shelf draws (REG-3755); nothing when the lane has not walked the reel or no door was filmed
+        try:
+            _dr = door_of(str(sid)) if (door_of is not None and sid) else None
+        except Exception:
+            _dr = None
+        if isinstance(_dr, dict) and isinstance(_dr.get("startTs"), int):
+            s["door"] = {k: _dr.get(k) for k in ("startTs", "logoTs", "titleTs", "connectingTs", "charTs")}
         s["scenario"] = scenario_of(games)
         s["gameRunSessions"] = max([len(runs[k]["sessions"]) for k in runs
                                     if any(x in runs[k]["names"] for x in games)] or [0]) or None

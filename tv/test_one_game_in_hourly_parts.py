@@ -144,12 +144,14 @@ class OneGameInHourlyParts(unittest.TestCase):
         self.assertNotIn("game", d1["sessions"][0], "a one-part game is published as a link")
         with io.open(os.path.join(HERE, "control_ui.html"), encoding="utf-8") as fh:
             ui = fh.read()
-        self.assertEqual(ui.count("+ (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '') + '</div>'"), 1,
+        # v3901 (REG-3759) - the door's line now follows this one inside the same row, so the anchor is the call itself
+        self.assertEqual(ui.count("+ (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '')"), 1,
                          "the shadow row no longer draws the link")
         self.assertEqual(ui.count("  function shGamePart(g, after){"), 1, "the helper the shadow row asks for is gone")
         with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
             ca = "\n".join(l.split("#", 1)[0] for l in fh.read().split("\n"))
-        self.assertEqual(ca.count("game_of=(_shelf_games() or {}).get)"), 1, "the published digest no longer carries the game link")
+        # v3901 (REG-3759) - the door now rides the same call after it, so the anchor is the argument itself
+        self.assertEqual(ca.count("game_of=(_shelf_games() or {}).get"), 1, "the published digest no longer carries the game link")
 
 RED_PROOF = [
     {"why": "v3898 (#188, REG-3713) - a part that filmed no D2R chains the game before it to the game after it again",
