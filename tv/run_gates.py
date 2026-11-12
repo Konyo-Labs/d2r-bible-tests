@@ -13969,6 +13969,16 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_bump_refuses_a_proof_law_with_no_timing_row",
+         [sys.executable, os.path.join(HERE, "test_a_bump_refuses_a_proof_law_with_no_timing_row.py")], 60,
+         needs_app=False,
+         why="v3902 (#200, REG-3778) - three versions running the pre-flight went red right after the bump on a proof law "
+             "with no shard-timing row; the bump refuses first now and names shard_timings --write"),
+    Gate("test_the_post_land_check_reads_the_consoles_ver",
+         [sys.executable, os.path.join(HERE, "test_the_post_land_check_reads_the_consoles_ver.py")], 60,
+         needs_app=False,
+         why="v3902 (REG-3777) - v3900's landing said '/api/status says None': the check asked for keys his console never "
+             "sends; it reads ver (the bump's stamp) now"),
     Gate("test_a_relaunch_does_not_re_rehearse_the_box",
          [sys.executable, os.path.join(HERE, "test_a_relaunch_does_not_re_rehearse_the_box.py")], 60,
          needs_app=False,

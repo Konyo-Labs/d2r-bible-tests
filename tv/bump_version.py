@@ -309,6 +309,23 @@ def bump(ver, name, note, repo=None, items=None):
             "REFUSED to bump %s: %s\n"
             "   Wait for it to finish, then bump again. Nothing has been written."
             % (ver, _busy))
+    # REG-3778 (#200, 11-12) - A VERSION IS NOT BANKED WHILE A REGISTERED PROOF LAW HAS NO SHARD-TIMING ROW. Three versions
+    # running (v3899 f1fd499a6, v3900 ac3eb1747, v3901 6c14c97f1) the pre-flight stopped on
+    # test_the_shard_balance_file_covers_every_proof_test after the bump, and each paid a fix commit and a pre-flight
+    # restart. The new laws are registered before the bump, so this is the moment to say it. UNKNOWN (the module or its
+    # file will not read) refuses nothing - the law still holds the line.
+    try:
+        import shard_timings as _st
+        if os.path.isfile(_st.path(repo or REPO)) and _st.load(repo or REPO) is not None:
+            _ok, _miss, _ = _st.coverage(root=repo or REPO)
+        else:
+            _ok, _miss = True, []          # no timings file here (a fixture repo) or it will not read: UNKNOWN
+    except Exception:
+        _ok, _miss = True, []
+    if not _ok:
+        raise SystemExit("REFUSED to bump %s: tv/shard_timings.json has no row for %d registered proof law(s) (%s%s) - run "
+                         "`python3 tv/shard_timings.py --write`, commit it, then bump. Nothing has been written."
+                         % (ver, len(_miss), ", ".join(_miss[:4]), " ..." if len(_miss) > 4 else ""))
     for _label, _txt in (("name", name), ("note", note)):
         _leak = leak_problem(_txt)
         if _leak:  # BUMP-LEAK-REFUSE
