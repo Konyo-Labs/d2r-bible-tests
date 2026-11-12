@@ -173,14 +173,61 @@ def live_ship_runs(runs):
     return out
 
 
+#: REG-3766 - the statuses a Publish waits in before GitHub gives it a runner
+WAITING = ("queued", "waiting", "pending", "requested")
+
+
+def orphaned_by(run, runs):
+    """REG-3766 (11-12 07:00) - the later Publish that ran past this WAITING one, or None. Pure.
+
+    Measured: Publish 43096436723 (a v3898 fix commit) sat queued with no jobs from 11-11 22:30 IST; Publish 43137497174
+    (v3899, created 01:52Z) ran and SUCCEEDED past it, and it was still queued at 07:00. The group runs one Publish at a
+    time, so a later Publish that STARTED or FINISHED means GitHub passed this one over - it will not run, and main only
+    moves forward, so the later one carried its content to the site. Counted as live it armed the yield rule for 8.5 h:
+    every grok/ and dry/ push was refused "a real ship is live", and the ship log said it was queued every 80 s.
+    Only a Publish on main, only while it WAITS, only past a Publish created later that is in progress or completed."""
+    if not isinstance(run, dict) or not is_publish_run(run) or _status(run) not in WAITING:
+        return None
+    mine = _epoch(run.get("createdAt") or run.get("created_at"))
+    if mine is None:
+        return None
+    for r in (runs or []):
+        if r is run or not isinstance(r, dict) or not is_publish_run(r) or _rid(r) == _rid(run):
+            continue
+        if _status(r) not in ("in_progress", "completed"):
+            continue
+        theirs = _epoch(r.get("createdAt") or r.get("created_at"))
+        if theirs is not None and theirs > mine:
+            return r
+    return None
+
+
 def live_publish_runs(runs):
-    """Queued or in-progress Publish runs on main (REG-3654)."""
+    """Queued or in-progress Publish runs on main (REG-3654), never one GitHub orphaned (REG-3766)."""
     out = []
     for r in (runs or []):
         if not isinstance(r, dict) or not is_live(r) or not is_publish_run(r):
             continue
+        if orphaned_by(r, runs) is not None:
+            continue
         out.append(r)
     return out
+
+
+_SAID_ORPHANS = set()
+
+
+def _say_orphans(runs, say):
+    """REG-3766 - name each orphaned Publish ONCE per process, with the run that went past it."""
+    for r in (runs or []):
+        later = orphaned_by(r, runs) if isinstance(r, dict) else None
+        if later is None or _rid(r) in _SAID_ORPHANS:
+            continue
+        _SAID_ORPHANS.add(_rid(r))
+        say("ship: REG-3766 ORPHANED - Publish run %s (%s) is still queued, but Publish run %s (%s, created later) "
+            "already %s - GitHub passed it over; it holds nothing here and nothing waits on it"
+            % (_rid(r) or "?", (_sha(r) or "?")[:9], _rid(later) or "?", (_sha(later) or "?")[:9],
+               "ran" if _status(later) == "completed" else "started"))
 
 
 def live_priority_runs(runs):
@@ -531,6 +578,7 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
             if main_sha is None:
                 main_sha = state.get("main")
         done = []
+        _say_orphans(state_runs, say)
         if sweep:
             done.extend(sweep_stale(state_runs, run, say=say, tips=tips))
         for rid in cancel_competing(state_runs, run, say=say, main=main_sha, now=now):

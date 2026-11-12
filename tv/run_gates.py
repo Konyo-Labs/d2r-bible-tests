@@ -13951,6 +13951,11 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_an_orphaned_publish_holds_nothing",
+         [sys.executable, os.path.join(HERE, "test_an_orphaned_publish_holds_nothing.py")], 60,
+         needs_app=False,
+         why="v3902 (#200, REG-3766) - a Publish GitHub passed over sat queued 8.5 h after v3899's ran past it; read as "
+             "live it refused every grok/ push and the ship log called it queued every 80 s - orphaned now, said once"),
     Gate("test_a_string_is_not_a_browser_call",
          [sys.executable, os.path.join(HERE, "test_a_string_is_not_a_browser_call.py")], 60,
          needs_app=False,
