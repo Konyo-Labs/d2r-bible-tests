@@ -298,7 +298,10 @@ def frozen_non_d2r(paths):
         prints.append(bytes(a.tobytes()))
     if len(kinds) < 2:
         return None
-    if any(k in ("logo", "title", "hud", "char-select", "lobby", "town") for k in kinds):
+    # REG-3789 (the second eye on v3901, #231 grok-4.7) - CONNECTING TO BATTLE.NET is a D2R screen: v3898 (REG-3715) taught
+    # screen_of to name it and left it out of this list, so two identical Connecting frames read as a frozen idle page and a
+    # cloud route's shadow reel sealed mid-connect, before the door his 11-11 ruling makes the trigger's middle link
+    if any(k in ("logo", "title", "connecting", "hud", "char-select", "lobby", "town") for k in kinds):
         return False
     return len(set(prints)) == 1
 

@@ -79,6 +79,25 @@ class TheConnectingScreenIsADoor(unittest.TestCase):
         """the River of Flame false match: fire around a dark centre IN A GAME (both orbs) is not this screen"""
         self.assertNotEqual(_kind(_orbs(_plaque(_title()))), "connecting")
 
+    def test_a_held_connecting_screen_is_never_a_frozen_idle_page(self):
+        """REG-3789 (the second eye on v3901): a cloud route seals a shadow reel on a frozen NON-D2R screen; two identical
+        Connecting frames read as one, so a slow connect sealed the reel before character select"""
+        d = tempfile.mkdtemp(prefix="connecting_frozen_")
+        try:
+            def two(im):
+                out = []
+                for n in ("a.png", "b.png"):
+                    p = os.path.join(d, n)
+                    im.save(p)
+                    out.append(p)
+                return out
+            self.assertTrue(DS.frozen_non_d2r(two(Image.new("RGB", (W, H), (40, 60, 90)))),
+                            "BASELINE - two identical non-D2R frames no longer read frozen; the case would not distinguish")
+            self.assertIs(DS.frozen_non_d2r(two(_plaque(_title()))), False,
+                          "a Connecting screen held for two frames read as a frozen idle page")
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_a_tinted_centre_is_not_the_colourless_plaque(self):
         self.assertNotEqual(_kind(_plaque(_title(), fill=(26, 19, 14))), "connecting")
 
@@ -95,6 +114,11 @@ class TheConnectingScreenIsADoor(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3789 - a Connecting screen held for two frames reads as a frozen idle page and seals a cloud reel mid-connect",
+     "file": "tv/d2r_screens.py",
+     "find": "    if any(k in (\"logo\", \"title\", \"connecting\", \"hud\", \"char-select\", \"lobby\", \"town\") for k in kinds):\n",
+     "replace": "    if any(k in (\"logo\", \"title\", \"hud\", \"char-select\", \"lobby\", \"town\") for k in kinds):\n",
+     "matches": 1},
     {"why": "v3898 (#188, REG-3715) - the Connecting screen reads None again (the trigger's middle link is invisible)",
      "file": "tv/d2r_screens.py",
      "find": "    if is_connecting_stats(st):\n",

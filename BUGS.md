@@ -142,6 +142,15 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3789 - A HELD "CONNECTING TO BATTLE.NET" SCREEN READ AS A FROZEN IDLE PAGE: A CLOUD REEL COULD SEAL MID-CONNECT (v3903, the second eye on v3901)
+#231 (SECOND-EYE, grok-4.7, read on origin/main 4208bc0d6) on REG-3715: "frozen_non_d2r does not treat Connecting as a D2R
+screen. Two identical Connecting frames come back true". Reproduced by reading: v3898 taught screen_of the "connecting" kind
+and every other kind list took it (chain, PRE_GAME, chronicle_line, tv_diablo) except frozen_non_d2r's. On Boosteroid and
+GeForce NOW the shadow watcher seals a reel whose film is a frozen non-D2R screen for the 3-minute grace, so a slow connect
+sealed the reel before character select - the door his 11-11 ruling makes the trigger's middle link. Now connecting is a
+D2R kind there. Law: test_the_connecting_screen_is_a_door::test_a_held_connecting_screen_is_never_a_frozen_idle_page (drawn
+Connecting frames; the baseline still reads two identical non-D2R frames frozen; +1 red-proof).
+
 ### REG-3788 - ON GITHUB THE PROOF SHARDS DIFFED THE COMMIT AGAINST ITSELF: EVERY VERSION READ "0 CHANGED" (v3903, #200)
 MEASURED on v3901's proof shards (11-12): every one printed "#42 FAIL FAST: ... 0 entr(ies) new or changed since @{push}, 0 whose
 tampered file changed" for a version whose proofs tamper 4,749 changed-file anchors. heart2._push_changed takes @{push}, else
