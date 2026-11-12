@@ -356,8 +356,9 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "REG-2810 - an answer that lands after Close paints the list anyway",
      "file": "tv/control_ui.html",
-     "find": "      .then(function(d){ if (gen === _ssvGen) ov._ssvBody.innerHTML = _shadowSessionsHtml(d); })\n",
-     "replace": "      .then(function(d){ ov._ssvBody.innerHTML = _shadowSessionsHtml(d); })\n",
+     # #208 (v3905) - the answer now also asks the reel bucket, so the guard is its own line: re-aimed, same tamper
+     "find": "        if (gen !== _ssvGen) return;\n        ov._ssvBody.innerHTML = _shadowSessionsHtml(d);\n",
+     "replace": "        ov._ssvBody.innerHTML = _shadowSessionsHtml(d);\n",
      "matches": 1, "needs": "node"},
     {"why": "REG-2810 - THE SHELF goes back to the refusal toast in a shadow",
      "file": "tv/control_ui.html",

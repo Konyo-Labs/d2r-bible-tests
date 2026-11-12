@@ -2955,7 +2955,7 @@
       "bank_into_proof_queue",
       "main"
     ],
-    "gotcha": "It never applies anything: every row carries an EMPTY evidence list, so the v1595 re-gate refuses before the board is ever asked. Banking is OPT-IN (`--bank`) because an audit that writes evidence is not an audit — and there are TWO bank doors, the shared `bank_into_proof_queue` and a separate LIVE-witness bank in main(); guarding only the first still moved his ledger. `vault.forget` is UNPROVABLE by construction (no refusal path) and `forget_note()` says so rather than leaving a blank.",
+    "gotcha": "It never applies anything: every row carries an EMPTY evidence list, so the v1595 re-gate refuses before the board is ever asked. Banking is OPT-IN (`--bank`) because an audit that writes evidence is not an audit — and there are TWO bank doors, the shared `bank_into_proof_queue` and a separate LIVE-witness bank in main(); guarding only the first still moved his ledger. `vault.forget` is attacked by its own harness, vault_forget_wilson.py (REG-3819); `forget_note()` says so.",
     "purpose": "Sabotage harness for the `vault.apply` lock — six proposals the write door must refuse, Wilson-scored offline and again against the running console.",
     "territory": "vault"
   },
@@ -3539,5 +3539,32 @@
     "gotcha": "UNKNOWN (GitHub unread) refuses a dry/ or grok/ push and never cancels a run. ci/ ship refs, main, and Publish itself are never cancelled or held. ci/*dry* names are always refused. Leftover proof-keys windows on a real ship branch do not keep the ship live (REG-3652).",
     "purpose": "REG-3653/3654 - while a real ship (ci/claude-* or ci/proof-keys-*) or a Publish run on main is live, or in the window after a main push until Publish finishes, dry/ and grok/ CI pushes yield the runners so a ship's or Publish's jobs never wait on our own test jobs. A sweeper cancels stale dry runs and any ci/*dry* name (never used again).",
     "territory": "push"
+  },
+  "shadow_reels.py": {
+    "entryPoints": [
+      "done_sessions",
+      "writing_now",
+      "plan",
+      "summary_frames",
+      "start_frame",
+      "logo_frame",
+      "upload",
+      "server_index",
+      "batches"
+    ],
+    "gotcha": "Read-only on his footage: frames are re-encoded to 1280 px into its own tvd-reelup- scratch folder and removed after each session. plan() returns None (UNKNOWN, nothing sent) when the reel store or the bucket did not answer, never 'all sent'. The newest 3 done sessions go whole, 4..16 as summaries; a reel still being written is never sent, and control_app's lane sends nothing while one is (he is playing).",
+    "purpose": "#208 - what this PC sends to the private reel bucket (functions/api/roster.js kind 'reel'): done sessions, full or summary, play starting on the first D2 logo frame else frame 1.",
+    "territory": "shadow"
+  },
+  "vault_forget_wilson.py": {
+    "entryPoints": [
+      "score",
+      "control",
+      "bank_into_proof_queue",
+      "main"
+    ],
+    "gotcha": "Every attempt runs on a scratch ledger, swept file and reel store under the system temp dir; it refuses to run if any resolves inside the repo, and counts a refusal only when the ledger bytes did not move. A control that must CLEAR runs first - a door that refuses everything scores nothing. Banking is opt-in (--bank).",
+    "purpose": "REG-3819 - sabotage harness for the vault.forget lock: ledgers the drop must KEEP (rows whose witness frames are gone, unreadable ledgers, path tricks), Wilson-scored.",
+    "territory": "vault"
   }
 }

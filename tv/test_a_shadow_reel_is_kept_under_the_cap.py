@@ -86,7 +86,9 @@ for (const step of (CFG.steps || [])) {
 }
 out.keys = [...objs.keys()].sort();
 out.index = {};
-for (const k of out.keys) if (k.endsWith('/index.json')) out.index[k] = JSON.parse(asText(objs.get(k)));
+for (const k of out.keys) if (k.endsWith('/index.json')) {
+  try { out.index[k] = JSON.parse(asText(objs.get(k))); } catch (e) { out.index[k] = { unreadable: asText(objs.get(k)) }; }
+}
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -108,6 +110,12 @@ def _ses(k):
 
 def _fr(j):
     return "f_%d.jpg" % (T0 + j)
+
+
+def _many(n):
+    """n frame names: a 200 MB session is ~300 frames of 1920 px film, and the door refuses an estimate its frames
+    could not reach (700 KB a frame at most)"""
+    return [_fr(j) for j in range(n)]
 
 
 def _sealed_index(sessions):
@@ -190,7 +198,7 @@ class TheReelBucket(unittest.TestCase):
         """THE POINT of his cost question: 8.95 GB held, a 200 MB session begins - the oldest sealed session anywhere goes."""
         other = _sealed_index({_ses(30): int(4.5 * GB), _ses(2): int(4.45 * GB)})
         out = _node({"seed": self.seed, "r2": {"reel/OLD_PC_ALT/index.json": other},
-                     "steps": [self._begin(_ses(0), [_fr(0)], est=200 * 1024 * 1024)]})
+                     "steps": [self._begin(_ses(0), _many(300), est=200 * 1024 * 1024)]})
         st = out["steps"][0]
         self.assertTrue(st["reply"].get("ok"), st["reply"])
         self.assertEqual(st["reply"]["evicted"], ["OLD_PC_ALT/" + _ses(30)], "not the OLDEST session was evicted")
@@ -202,7 +210,7 @@ class TheReelBucket(unittest.TestCase):
         held = _sealed_index({_ses(1): int(8.9 * GB)})
         held["sessions"][_ses(1)]["sealed"] = False      # mid-upload: never evicted under another PC
         out = _node({"seed": self.seed, "r2": {"reel/OLD_PC_ALT/index.json": held},
-                     "steps": [self._begin(_ses(0), [_fr(0)], est=200 * 1024 * 1024)]})
+                     "steps": [self._begin(_ses(0), _many(300), est=200 * 1024 * 1024)]})
         st = out["steps"][0]
         self.assertFalse(st["reply"].get("ok"), "a begin past the cap with nothing to evict was accepted: %r" % st["reply"])
         self.assertIn("cap", st["reply"]["why"])

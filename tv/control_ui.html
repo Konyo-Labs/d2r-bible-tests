@@ -24593,7 +24593,8 @@ window._lockMark = function(isOpen, px, label){
       .then(function(d){
         if (gen !== _ssvGen) return;
         ov._ssvBody.innerHTML = _shadowSessionsHtml(d);
-        _shadowReelDecorate(owner, ov._ssvBody, gen);   /* #208 - which of these sessions the bucket holds whole */
+        /* #208 - which of these sessions the bucket holds whole; a decorate that fails never takes the drawn list with it */
+        try { _shadowReelDecorate(owner, ov._ssvBody, gen); } catch (eR) {}
       })
       .catch(function(e){
         if (gen === _ssvGen) ov._ssvBody.innerHTML = _shadowSessionsHtml({ ok: false, owner: owner,
