@@ -6875,6 +6875,10 @@
       "s": 1.437,
       "src": "measured"
     },
+    "test_a_price_row_names_its_seller": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_d2jsp_page_is_kept_for_the_backfill": {
       "s": 1.437,
       "src": "measured"

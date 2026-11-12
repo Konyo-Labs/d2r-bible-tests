@@ -13719,12 +13719,16 @@ function d2jspBackendHtml(db, painted, opts) {
       var band = p.band === 'in' ? 'agrees' : (p.band === 'out' ? 'outside the band' : 'set aside');
       var weight = (p.out ? ('set aside, ' + p.out) : (p.w != null ? String(p.w) : 'weight not on record'));
       return '<tr data-d2jsp-post><td>' + d2jspEscText(p.day) + '</td><td>' + d2jspEscText(d2jspFgText(p.fg) || 'no fg')
-        + ' fg</td><td>' + d2jspEscText(p.tier || '') + '</td><td>' + d2jspEscText(p.ageDays != null ? p.ageDays : 'age unknown')
+        + ' fg</td><td>' + d2jspEscText(p.tier || '')
+        /* REG-3815 (GrokBot's #151 look 11-12: "the data has sellers, but the page doesn't show them") - the seller a row
+           carries (REG-3790), or said unread - never a blank that reads as nobody */
+        + '</td><td data-d2jsp-seller>' + d2jspEscText(p.author ? p.author : 'seller not read')
+        + '</td><td>' + d2jspEscText(p.ageDays != null ? p.ageDays : 'age unknown')
         + '</td><td>' + d2jspEscText(weight) + '</td><td>' + d2jspEscText(p.decayed != null ? p.decayed : '')
         + '</td><td>' + d2jspEscText(band) + '</td><td>' + d2jspEscText(p.src ? p.src : 'source not on record')
         + '</td><td>' + d2jspEscText(d2jspSeenText(p.seenAt)) + '</td><td>' + open + '</td></tr>';
     }).join('');
-    parts.push('<table data-d2jsp-proof><thead><tr><th>date</th><th>price</th><th>tier</th><th>age days</th><th>weight</th><th>decayed</th><th>band</th><th>source</th><th>seen</th><th>post</th></tr></thead><tbody>'
+    parts.push('<table data-d2jsp-proof><thead><tr><th>date</th><th>price</th><th>tier</th><th>seller</th><th>age days</th><th>weight</th><th>decayed</th><th>band</th><th>source</th><th>seen</th><th>post</th></tr></thead><tbody>'
       + body + '</tbody></table>' + _leftLine);
   }
   return parts.join('');
