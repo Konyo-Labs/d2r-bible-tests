@@ -292,6 +292,20 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
 QUEUED_SAID = {}
 
 
+def _ci_branches_hold(run, remote, version, sha):
+    """REG-3776 - do ci/claude-<v> and ci/proof-keys-<v> both point at sha on the remote? -> True | False | None (git would not
+    say). Never raises."""
+    try:
+        refs = ("refs/heads/ci/claude-%s" % version, "refs/heads/ci/proof-keys-%s" % version)
+        have = _git(run, "ls-remote", remote, *refs)
+        if getattr(have, "returncode", 1) != 0:
+            return None
+        at = dict((ln.split()[1], ln.split()[0]) for ln in (have.stdout or "").splitlines() if len(ln.split()) == 2)
+        return all(at.get(r) == sha for r in refs)
+    except Exception:
+        return None
+
+
 def red_shard_tries(rid, tot, run):
     """REG-3770 (#200, v3900's round 11-12) - HOW MANY TIMES WERE THE SHARDS A LAW WENT RED IN REALLY GRADED? -> int | None.
 
@@ -710,6 +724,14 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     def _step(name, code, t_start):
         steps.append({"name": name, "code": int(code), "s": (clock() - t_start)})
 
+    # REG-3776 (#200, 11-12) - A RELAUNCH ON A COMMIT BOTH ci BRANCHES ALREADY HOLD DOES NOT RE-RUN THE BOX REHEARSAL. It exists
+    # only to keep a red off the ci push, and that push does not happen (v3866: "not pushed again"). MEASURED: v3900's ship,
+    # relaunched by hand on e0513929e after its flake re-run, spent ~7 min re-rehearsing the box before reading the verdict
+    # GitHub was already grading. Unknown (git would not say) rehearses as before.
+    if box_rehearse and _ci_branches_hold(run, remote, version, sha) is True:
+        say("ship: both ci branches already hold %s - the box rehearsal (it keeps a red off the ci push, and none is made) "
+            "is not run again" % sha[:9])
+        box_rehearse = False
     # REG-3646 - BOX REHEARSAL first: a red never reaches the ci/ push (attempts 6/7 would have died here
     # in minutes). Off unless the caller (main / tv/ship.py) turned it on.
     if box_rehearse:
