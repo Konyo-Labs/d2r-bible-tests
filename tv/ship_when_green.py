@@ -741,6 +741,9 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
     if box_rehearse:
         _t = clock()
         fn = default_box_rehearse if box_rehearse is True else box_rehearse
+        # REG-3779 (11-12) - SAID WHEN IT STARTS, not only when it ends: v3900's relaunched ship wrote NOTHING to its log for
+        # ~6 min while this ran (its table prints at the end), and a silent ship reads exactly like a hung one.
+        say("ship: box rehearsal running for %s - its table prints when it ends (several minutes)" % sha[:9])
         bcode, _brows = _call_gate(fn, say)
         _step("box-rehearse", bcode, _t)
         if bcode != 0:

@@ -13969,6 +13969,11 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_ship_says_its_box_rehearsal_has_started",
+         [sys.executable, os.path.join(HERE, "test_a_ship_says_its_box_rehearsal_has_started.py")], 60,
+         needs_app=False,
+         why="v3902 (REG-3779) - v3900's relaunched ship wrote nothing to its log for ~6 min while the box rehearsal ran; "
+             "the ship says the rehearsal started"),
     Gate("test_a_bump_refuses_a_proof_law_with_no_timing_row",
          [sys.executable, os.path.join(HERE, "test_a_bump_refuses_a_proof_law_with_no_timing_row.py")], 60,
          needs_app=False,
