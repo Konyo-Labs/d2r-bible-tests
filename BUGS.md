@@ -148,6 +148,95 @@ BROWSER_FLAGS (whole text) and BROWSER_CALL_ONLY (strings blanked) and left the 
 the red-proof kept cutting the dead copy while drives_browser matched the live one. Fix: the dead BROWSER_CALLS is gone (one pattern,
 its REG-3310 note moved onto BROWSER_CALL_ONLY) and proof [4] cuts BROWSER_CALL_ONLY's line. heart2 --prove: 17 of 17 PROVEN, [4] among
 them; the anchor census holds. The v3901 pre-flight could not see it: 1426 laws changed since main, over the 40 it proves here.
+### REG-3773 - THE SHIP SAID THE SAME QUEUED RUN ON EVERY PASS (v3902 #200)
+
+v3900's ship log 11-12 carried "ship: REG-3654 QUEUED - Publish ... run 43096436723 queued 29847s ..." 30+ times in 40
+minutes: shard_watch.watch_jobs_live calls the yield rule every 60 s+ while the ship waits for GitHub's vouch, and the Publish
+watch every pass, and each pass said it again. A watch on the log drowned in it. The ship now hands the yield rule its own
+{run id: when said} (ship_when_green.QUEUED_SAID): a queued run is said when first seen, then once every 10 minutes while it
+stays queued, and a pass that cancelled something is always said; any other caller says every pass as before. The two laws
+that pin the call lines were re-anchored. Guard: test_a_queued_run_is_said_once_then_every_ten_minutes (2 RED proofs
+PROVEN; baseline: no quiet says every pass); test_own_ci_never_queues_a_ship_or_publish 6/6 PROVEN.
+
+### REG-3772 - GITHUB'S PROOF-KEYS FINISHER ASKED THE MAKE-UP RULE WITH NO ATTEMPT (v3902 #200)
+
+finish_plan called makeup_due(tot) with no attempt, so a law red ONCE untampered on a round's first attempt - the ship's own
+#146 flake rule ("a flake until it reds twice; only its shard re-runs") - read to it as "red AGAIN on attempt None - real".
+On v3900's run 43156415620 it re-ran only cut shard 10 (rerun-jobs), the run became attempt 2, and shards 11 and 14 (the
+war-stash flake) were left for a human - and the ship then misread them too (REG-3770). The finisher now passes the round's
+attempt: on attempt 1 the cut shards and the first-attempt flakes are re-run together (rerun-failed); on attempt 2 a clean red
+is real and only cut-only shards are re-run. The workflow's header comment says so. Guard: test_a_timeout_is_finished_on_
+github_never_failed (new v3900 case, red-proof [0]; proof [4] re-anchored after it went INVALID on the moved line; 6/6 PROVEN).
+
+### REG-3771 - THE DOCTOR'S "OUR SCRATCH IS COLLECTED" ROW COULD NEVER GO GREEN (two leaks)
+
+His console's doctor (and the UNKNOWN ERRORS feed) read MISSING 11-12: "4 of 149 scratch directories WE made are older than 3
+days - oldest 6.3 days". Measured: tvd-vision-cwd and tvd-g5-home are the console's fixed homes (v3900's REG-3738 exempts
+them); the other two were real leaks. (1) tvd-gate-ledgers-iq0fktsv (3.3 days) was made before v3897 and names no owner pid,
+and REG-3696's sweep kept every pidless dir forever; it now removes one older than a day (no gate run lasts a day) - and the
+first v3902 run on this Mac did collect it. (2) tvd-artifacts/<tag> (4.1 days): the v3767 and v3771 visual laws drop their
+shots into a FIXED dir under his temp dir on a Mac (no CI drop) and never removed it; each run now gets a mkdtemp drop
+removed at exit (checked: none left after import). This corrects REG-3738's note that tvd-artifacts "has no owner in the code" - its owners are those two laws (a grep of
+the console code alone missed them). Guard: test_our_old_scratch_is_collected (2 new cases + 2 RED proofs; 13 of 13 PROVEN).
+
+### REG-3770 - A SHARD NOBODY RE-RAN WAS READ AS "RED UNTAMPERED AGAIN" (v3902 #200, v3900's proof run)
+
+Run 43156415620 (v3900 attempt 2): attempt 1 left shard 10 (proofs cut by the bound) and shards 11 and 14 (the war-stash flake,
+REG-3767) red. GitHub's proof-keys finisher re-ran ONLY shard 10, which made the run attempt 2, and makeup_due - asked with the
+RUN's attempt - would read shards 11 and 14, never re-run, as "red untampered AGAIN on attempt 2 - real" and stop the ship.
+MEASURED in the REST job lists: a job carried into a later attempt keeps its first started_at (its id changes); a job really
+re-run starts again. red_shard_tries counts each red shard's DISTINCT start times across the attempts; a first attempt answers
+1 without asking; an attempt whose jobs will not read is UNKNOWN (never a first try). v3900 itself was rescued by hand the
+memory's way (gh run rerun --failed on the same sha, ship relaunched). Guard: test_a_shard_never_rerun_is_not_red_twice (3 RED
+proofs PROVEN; baseline: the run's attempt alone calls it real).
+
+### REG-3769 - THE TZ CARDS WENT TWO-UP BEFORE A CARD COULD HOLD ITS LINES (1480-1860 and 2080-2500, his 1512 included)
+
+GrokBot 11-12 at his 1512: the TZ cards cut "880 density ·…". Swept 900-2600 in the render sandbox: the zone grid's 238px
+floor let a slot go two-up from 1480 at a 245px card with a 137px text column; all 5 density lines and verdicts were cut
+("650 density ·…", "→ 96 terroriz…") 1480-1860 and again 2080-2500 (three across); 1000-1464 and 1880-2040 fit, and the
+render gate's widths (1440/1120/901/375) never enter either band. A first try (wrap at every width) cut the verdict worse -
+"terroriz… d" with the d below the card - and was reverted. MEASURED: the card's fixed parts are 108px (art 68 + padding 27 +
+gap 11 + border 2) and its widest line is "→ 96 terrorized" at --fs-md, 211px at 23px (9.2 x --fs-md). The slot's zone grid
+floors each track at 108px + 9.2 x --fs-md now: 0 of 5 lines cut at every width 900-2600, 1512 stacks like 1440, 1920 stays
+two-up at 324.5px; rows that were uneven before (a PRIME card's why line) are unchanged. Grok CLI (cold) on 1512/1920:
+nothing cut. Guard: test_tz_cards_go_two_up_only_when_their_lines_fit (reads the parts and the floor from the stylesheet; 3
+RED proofs PROVEN).
+
+### REG-3768 - ANOTHER PC'S RUN WAS CUT ON THE SHELF CARD'S ONE VALUE LINE AT HIS 1512 (v3902 #213)
+
+GrokBot 11-12 05:30 on his live console at 1512 (shelf-header-1512.png): TOP READS/HR read "Konyo · ALT · Nov …". The card's
+value line (.shi-val) is one ellipsised line, and another PC's run was named "<PC> · <day>" there - longer than "Session 205".
+The value line now carries the run's NAME only and another PC's day rides the sub line ("600 /hr · Nov 12"), with the full
+name on the value's tooltip. Rendered at 1512 and 1440 in the render sandbox with a fleet run stubbed in; the Grok CLI (cold)
+transcribed "Konyo · ALT" / "600 /hr · Nov 12" and found nothing cut. The header law's own check now reads the VALUE line
+(">Konyo · ALT</div>") - with the name also on the tooltip its red-proof [1] went BLIND, caught by --prove. Guard:
+test_a_card_names_another_pcs_run_in_one_line (2 RED proofs PROVEN), test_the_shelf_header_counts_every_pc (4/4 PROVEN).
+
+### REG-3767 - THE WAR-STASH LAW'S SEED WAS WRITTEN OVER BY THE PAGE BEFORE IT (v3902 #200, 4 GitHub rounds lost a shard)
+
+test_vault_l1_war_stash_overflow went red untampered on GitHub on v3884 round 4, v3897 (shard 14), v3900 attempt 1 (shard
+13) and v3900 attempt 2 (shard 11, run 43156415620): "WAR1 did not fill next: [('WAR-B', 'stash:c1r8'), ...]". WAR-B is the
+war mule the case before it (the take-back case, alphabetically first) makes. Board.seed writes the stores on the page the
+previous case left behind and then navigates, so a write that page makes on its way out lands over the seed. Measured
+locally with a planted pagehide write: a plain navigate lands it (the roster read back carries the stale mule); the seed now
+makes the old page's Storage.prototype writes no-ops after seeding (its realm only), and the planted write never lands. A
+new premise in roster_with asserts the board's war mules ARE the seeded ones, so a recurrence names itself instead of
+reading as "WAR1 did not fill next". Which exit write did it on the runner is not measured (green 3/3 locally before); the
+mechanism is. Guard: the law's new case test_the_page_before_a_seed_cannot_write_over_it (red-proof [0], red by hand with
+the freeze out). Only this law's seed changed; the shared Board harness is untouched.
+
+### REG-3766 - A PUBLISH GITHUB PASSED OVER SAT QUEUED 8.5 H AND HELD THE YIELD RULE ARMED (v3902 #200)
+
+MEASURED 11-12 07:00 IST: Publish 43096436723 (main, a v3898 fix commit, created 11-11 20:30Z) sat queued with no jobs;
+Publish 43137497174 (v3899, created 01:52Z) ran past it and succeeded, and v3899 went live. ship_yield counted the ghost as a
+live Publish, so may_push refused every grok/ and dry/ push ("a real ship is live") for the whole night, and the v3900 ship
+log printed "REG-3654 QUEUED ... queued 30893s" every 80 s. The group runs one Publish at a time: a later Publish that
+started or finished means GitHub passed the waiting one over, and main only moves forward, so the later one carried its
+content. orphaned_by() now names that case; live_publish_runs and queued_priority_runs skip it, and the ship says
+"REG-3766 ORPHANED - ... GitHub passed it over" ONCE per process with the run that went past it. Nothing is cancelled (the
+yield rule never cancels on main). Guard: test_an_orphaned_publish_holds_nothing (3 RED proofs PROVEN, baseline: a waiting
+Publish with only earlier siblings stays live).
 
 ### REG-3765 - AT HIS MACBOOK'S 1512 px THE CONSOLE'S TV·D TAB WRAPPED ALONE ONTO A SECOND ROW (v3901, GrokBot's v3899 look)
 GrokBot (#230, 11-12, his live console): "At 1512 the TV·D tab wraps alone onto a second tab row". Reproduced on the render gate's own scratch console at 1512: TV·D on its own full-width gold bar under the other nine. MEASURED with a headless sweep (4 px steps): with the 1700 px step's tab padding (7px 8px) the strip wraps from 1504 to 1544 px and fits from 1548; the tighter step (padding 7px 6px, gap 3px) entered only at max-width 1500, and the render gate's widths (1440 / 1280 / 1120 / 901 / 1120x628) never landed in the band, so it went green for every ship since. The tighter step now enters at 1600 - the band plus ~50 px for his console's WebKit type, which can measure wider than headless Chrome's. Re-swept with the fix: 1500-1640, all 36 widths one row; looked at the 1512 render; the Grok CLI, cold, read image 1 as two rows (TV·D alone) and image 2 as one row. Law: test_the_console_tabs_fit_at_his_macbook_width (a stylesheet parse - a font-metric band is not a render assertion that holds on every machine; the step must start at or above the measured band end plus the margin). SEEN RED: heart2 --prove 1 of 1 PROVEN. Not fixed here, named: the same look's Shelf "TOP READS/HR" value cut at 1512 and the TZ cards' density line.
