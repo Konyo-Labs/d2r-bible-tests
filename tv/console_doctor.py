@@ -2034,6 +2034,32 @@ def _check_the_board_store_did_not_come_up_empty():
                      "python3 ~/d2r_ledger_backups/restore_ledger.py --apply" % _when)
 
 
+def _check_the_shadow_reels_reach_the_bucket(root=None):
+    """#208 (his 11-13 calls) - does this PC's reel upload lane reach the private bucket? -> (state, why)
+
+    Read from the lane's own receipt (.shadow_reels_state.json, written every tick by control_app._shadow_reels_once):
+    a lane that waits (he is playing, the beacon held) or has nothing owed is OK and says so; a refusal, a bucket that did
+    not answer or a plan that could not be made is MISSING with the lane's own words - the first one he will meet is
+    "the REELS bucket is not bound to the site", which is his Cloudflare step, not a code defect. No receipt is UNKNOWN."""
+    if root is None and os.environ.get("TV_HIST"):
+        return UNKNOWN, "a fixture world - this PC's reel lane receipt is not read here"
+    path = os.path.join(root or HERE, ".shadow_reels_state.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            st = json.load(fh)
+    except FileNotFoundError:
+        return UNKNOWN, "the reel lane has not ticked on this console yet"
+    except Exception as e:
+        return UNKNOWN, "the reel lane receipt would not read (%s)" % type(e).__name__
+    if not isinstance(st, dict):
+        return UNKNOWN, "the reel lane receipt is not a record"
+    why = str(st.get("why") or "")
+    head = "%s session(s) sent, %s owed - " % (st.get("worked", "?"), "?" if st.get("owed") is None else st.get("owed"))
+    if why.startswith("waits") or why.startswith("sent ") or why.startswith("every done session"):
+        return OK, head + why
+    return MISSING, head + (why or "the lane left no reason")
+
+
 def _check_the_shadow_gate_is_learning():
     """The Wilson lane, in the console. Konyo: "make it self improving and really accurate so its
     locked and locks in the console."
@@ -11525,6 +11551,7 @@ CHECKS = [
     ("this process runs the code on disk", _check_this_process_runs_the_code_on_disk),
     ("nothing we started is a corpse", _check_nothing_this_console_started_is_a_corpse_right_now),
     ("our scratch is collected", _check_nothing_we_made_is_still_on_his_disk_days_later),
+    ("shadow reels reach the bucket", _check_the_shadow_reels_reach_the_bucket),   # #208
     ("a verdict comes from a declared field",
      _check_a_verdict_comes_from_a_declared_field),
     ("a queue zero came from a read that worked",

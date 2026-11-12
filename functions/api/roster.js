@@ -509,6 +509,8 @@ export async function onRequestPost(context) {
   if (body.kind === "profile") return profilePost(env, bytes, sig, body);
   // #218 phase 2 - the owner's sessions, summarized (shadow_sessions.digest), under the same registered key
   if (body.kind === "frames") return framesPost(env, bytes, sig, body);
+  // #208 (his 11-13 calls) - a session's frames into the private REELS bucket, under the same registered key
+  if (body.kind === "reel") return reelPost(env, bytes, sig, body);
   if (bytes.byteLength > MAX_BODY) {
     return refuse("roster would not take this publish: the body is too large to be rows");
   }
@@ -669,6 +671,11 @@ export async function onRequestGet(context) {
   let framesOwner = null;
   try { framesOwner = new URL(context.request.url).searchParams.get("frames"); } catch (e) { framesOwner = null; }
   if (framesOwner !== null) return framesGet(kv, framesOwner);
+  let reelParams = null;
+  try { reelParams = new URL(context.request.url).searchParams; } catch (e) { reelParams = null; }
+  if (reelParams && (reelParams.get("reels") !== null || reelParams.get("reel") !== null)) {
+    return reelsGet(context.env, reelParams);   // #208
+  }
   let wantRequests = null;
   try { wantRequests = new URL(context.request.url).searchParams.get("requests"); } catch (e) { wantRequests = null; }
   if (wantRequests !== null) return requestsGet(kv);   // v3862 (item 11)
@@ -1179,4 +1186,264 @@ async function framesGet(kv, owner) {
   }
   return pJson({ ok: true, owner: owner, published: true, corrupt: false, t: prev.t, hash: prev.hash,
                  digest: prev.digest, intentVerified: prev.intentVerified === true });
+}
+
+// ── #208 (his 11-13 calls) - SHADOW REELS: each PC's sessions in a private R2 bucket, watchable while that PC is off ──
+// His words: "when a player is offline to see his last 16 reels somehow", then "maybe just the last 3 sessions recorded
+// for each pc so those are online and always reachable even when a user is offline ... a type of summary almost like it is
+// now just not 3 frames for each session". And on cost: "it doesnt stack and charge me more for clouflare?" - so the
+// bucket stays under REEL_CAP_BYTES (R2's free tier is 10 GB-month), oldest sessions go first, and every byte is counted.
+//
+// Each PC posts through this same signed door (the roster key it already registered - no new credential on any PC):
+//   begin  {session, mode: "full" | "summary", frames: [names], estBytes, logo, start}  -> {have, want, evicted}
+//   frames {session, frames: [{name, b64}]}                                             -> {stored, bytes}
+//   seal   {session}                                                                    -> {manifest}
+// Per PC (slot): the newest REEL_SESSIONS_PER_SLOT sessions are kept; the PC decides which of them are full and sends
+// the summary list for the rest (a demotion drops the frames not on it). Across the bucket: a begin whose estimate would
+// pass REEL_CAP_BYTES evicts the oldest sealed sessions of ANY slot first; if that cannot make room it refuses.
+// UNKNOWN stays UNKNOWN: an index that will not read refuses the upload, it is never treated as an empty bucket.
+export const REEL_MAX_BODY = 12 * 1024 * 1024;
+export const REEL_CAP_BYTES = 9 * 1024 * 1024 * 1024;
+export const REEL_SESSIONS_PER_SLOT = 16;
+export const REEL_FULL_PER_SLOT = 3;
+export const REEL_SUMMARY_MAX = 80;
+export const REEL_FULL_MAX = 2000;
+export const REEL_FRAME_MAX = 700 * 1024;
+export const REEL_SESSION_SHAPE = /^s_\d{10,16}_\d{1,6}$/;
+export const REEL_FRAME_SHAPE = /^f_\d{10,16}\.jpg$/;
+
+export function reelSlotDir(owner, slot) {
+  const base = String(owner || "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return slot ? base + "@" + slot : base;
+}
+
+export function reelSessionMs(session) {
+  const m = /^s_(\d{10,16})_/.exec(String(session || ""));
+  return m ? Number(m[1]) : null;
+}
+
+// -> null when the begin body is well formed, else the reason
+export function reelBeginWhy(b) {
+  if (!REEL_SESSION_SHAPE.test(String(b.session || ""))) return "the session is not an s_<ms>_<n> name";
+  if (b.mode !== "full" && b.mode !== "summary") return "mode is neither full nor summary";
+  const fr = b.frames;
+  if (!Array.isArray(fr) || !fr.length) return "no frames were named";
+  const cap = b.mode === "full" ? REEL_FULL_MAX : REEL_SUMMARY_MAX;
+  if (fr.length > cap) return b.mode + " names " + fr.length + " frames, over its " + cap;
+  for (const n of fr) if (!REEL_FRAME_SHAPE.test(String(n))) return "a frame is not an f_<ms>.jpg name";
+  if (new Set(fr).size !== fr.length) return "a frame is named twice";
+  for (const k of ["logo", "start"]) {
+    if (b[k] !== null && b[k] !== undefined && fr.indexOf(b[k]) === -1) return k + " is not one of the named frames";
+  }
+  if (typeof b.estBytes !== "number" || !Number.isFinite(b.estBytes) || b.estBytes <= 0
+      || b.estBytes > fr.length * REEL_FRAME_MAX) return "estBytes is missing or larger than its frames could be";
+  return null;
+}
+
+// The slot's index: {sessions: {<session>: {mode, want, have: {name: bytes}, bytes, logo, start, t, sealed}}}.
+// -> the index | {} when absent | null when it will not read (UNKNOWN)
+async function reelIndexGet(r2, dir) {
+  let obj;
+  try { obj = await r2.get("reel/" + dir + "/index.json"); } catch (e) { return null; }
+  if (obj === null) return { sessions: {} };
+  try {
+    const d = JSON.parse(await obj.text());
+    return d && typeof d === "object" && d.sessions && typeof d.sessions === "object" && !Array.isArray(d.sessions) ? d : null;
+  } catch (e) { return null; }
+}
+
+async function reelIndexPut(r2, dir, idx) {
+  await r2.put("reel/" + dir + "/index.json", JSON.stringify(idx), { httpMetadata: { contentType: "application/json" } });
+}
+
+// every object under one session's folder, gone (frames and its manifest) -> bytes freed by the index's count
+async function reelDropSession(r2, dir, session, entry) {
+  const keys = Object.keys((entry && entry.have) || {}).map((n) => "reel/" + dir + "/" + session + "/" + n);
+  keys.push("reel/" + dir + "/" + session + "/manifest.json");
+  for (let i = 0; i < keys.length; i += 500) await r2.delete(keys.slice(i, i + 500));
+  return (entry && entry.bytes) || 0;
+}
+
+// -> [dir] of every slot in the bucket | null (UNKNOWN)
+async function reelSlotDirs(r2) {
+  const dirs = [];
+  let cursor;
+  try {
+    do {
+      const page = await r2.list({ prefix: "reel/", delimiter: "/", cursor: cursor });
+      for (const p of page.delimitedPrefixes || []) dirs.push(p.slice(5, -1));
+      cursor = page.truncated ? page.cursor : undefined;
+    } while (cursor);
+  } catch (e) { return null; }
+  return dirs;
+}
+
+function reelRefuse(why, extra) {
+  return pJson(Object.assign({ ok: false, why: "the reel store would not take this: " + why }, extra || {}));
+}
+
+export async function reelPost(env, bytes, sig, body) {
+  const kv = env && env.TZ_HISTORY;
+  const r2 = env && env.REELS;
+  if (!kv || !r2) return reelRefuse("storage unavailable (the REELS bucket is not bound to the site)");
+  if (bytes.byteLength > REEL_MAX_BODY) return reelRefuse("the body is larger than " + REEL_MAX_BODY + " bytes");
+  const owner = body.owner;
+  if (OWNERS.indexOf(owner) === -1) return reelRefuse("the key is an owner label, not a machine");
+  const intent = await signedOwnerIntent(kv, owner, sig);
+  if (intent instanceof Response) return intent;
+  const now = Date.now();
+  if (typeof body.signedAt !== "number" || !Number.isFinite(body.signedAt) || Math.abs(now - body.signedAt) > SKEW_MS) {
+    return reelRefuse("signedAt is missing or not within 15 min of now (a replayed or stale upload)");
+  }
+  if (!REEL_SESSION_SHAPE.test(String(body.session || ""))) return reelRefuse("the session is not an s_<ms>_<n> name");
+  const dir = reelSlotDir(owner, intent.slot);
+  const idx = await reelIndexGet(r2, dir);
+  if (idx === null) return reelRefuse("this PC's reel index would not read - UNKNOWN, nothing written");
+  const session = body.session;
+  if (body.op === "begin") {
+    const why = reelBeginWhy(body);
+    if (why) return reelRefuse(why);
+    const prev = idx.sessions[session] || null;
+    const have = {};
+    let kept = 0;
+    if (prev && prev.have) {
+      const dropped = [];
+      for (const n of Object.keys(prev.have)) {
+        if (body.frames.indexOf(n) !== -1) { have[n] = prev.have[n]; kept += prev.have[n]; } else dropped.push(n);
+      }
+      for (let i = 0; i < dropped.length; i += 500) {
+        await r2.delete(dropped.slice(i, i + 500).map((n) => "reel/" + dir + "/" + session + "/" + n));
+      }
+    }
+    idx.sessions[session] = { mode: body.mode, want: body.frames.slice(), have: have, bytes: kept, logo: body.logo || null,
+                              start: body.start || null, t: now, sealed: false };
+    // this PC: the newest REEL_SESSIONS_PER_SLOT sessions, by the session's own clock
+    const evicted = [];
+    const mine = Object.keys(idx.sessions).sort((a, b) => (reelSessionMs(b) || 0) - (reelSessionMs(a) || 0));
+    for (const s of mine.slice(REEL_SESSIONS_PER_SLOT)) {
+      if (s === session) return reelRefuse("this session is older than the " + REEL_SESSIONS_PER_SLOT + " this PC keeps");
+      await reelDropSession(r2, dir, s, idx.sessions[s]);
+      delete idx.sessions[s];
+      evicted.push(dir + "/" + s);
+    }
+    // the bucket: the estimate must fit under the cap, oldest sealed sessions of any slot go first
+    const dirs = await reelSlotDirs(r2);
+    if (dirs === null) return reelRefuse("the bucket would not list - UNKNOWN, nothing written");
+    if (dirs.indexOf(dir) === -1) dirs.push(dir);
+    const all = [];
+    let total = 0;
+    const idxOf = {};
+    for (const d of dirs) {
+      const x = d === dir ? idx : await reelIndexGet(r2, d);
+      if (x === null) return reelRefuse("the reel index of " + d + " would not read - UNKNOWN, nothing written");
+      idxOf[d] = x;
+      for (const s of Object.keys(x.sessions)) {
+        const e = x.sessions[s];
+        total += (e && e.bytes) || 0;
+        if (!(d === dir && s === session) && e && e.sealed) all.push([reelSessionMs(s) || 0, d, s]);
+      }
+    }
+    const need = body.estBytes - kept;
+    all.sort((a, b) => a[0] - b[0]);
+    while (total + need > REEL_CAP_BYTES && all.length) {
+      const [, d, s] = all.shift();
+      total -= await reelDropSession(r2, d, s, idxOf[d].sessions[s]);
+      delete idxOf[d].sessions[s];
+      evicted.push(d + "/" + s);
+      if (d !== dir) await reelIndexPut(r2, d, idxOf[d]);
+    }
+    if (total + need > REEL_CAP_BYTES) {
+      await reelIndexPut(r2, dir, idx);
+      return reelRefuse("the bucket is at its " + REEL_CAP_BYTES + "-byte cap and nothing older is left to evict",
+                        { evicted: evicted });
+    }
+    await reelIndexPut(r2, dir, idx);
+    return pJson({ ok: true, owner: owner, session: session, have: Object.keys(have),
+                   want: body.frames.filter((n) => !(n in have)), evicted: evicted, totalBytes: total });
+  }
+  const entry = idx.sessions[session];
+  if (!entry) return reelRefuse("this session was never begun");
+  if (body.op === "frames") {
+    if (!Array.isArray(body.frames) || !body.frames.length) return reelRefuse("no frames were sent");
+    const stored = [];
+    for (const f of body.frames) {
+      if (!f || entry.want.indexOf(f.name) === -1) return reelRefuse("a frame was sent that the begin did not name");
+      const raw = bytesOfB64(f.b64);
+      if (!raw || !raw.length) return reelRefuse("a frame's bytes are not base64");
+      if (raw.length > REEL_FRAME_MAX) return reelRefuse("a frame is larger than " + REEL_FRAME_MAX + " bytes");
+      if (raw[0] !== 0xff || raw[1] !== 0xd8) return reelRefuse("a frame is not a JPEG");
+      await r2.put("reel/" + dir + "/" + session + "/" + f.name, raw, { httpMetadata: { contentType: "image/jpeg" } });
+      entry.bytes += raw.length - (entry.have[f.name] || 0);
+      entry.have[f.name] = raw.length;
+      stored.push(f.name);
+    }
+    entry.t = now;
+    await reelIndexPut(r2, dir, idx);
+    return pJson({ ok: true, owner: owner, session: session, stored: stored, bytes: entry.bytes });
+  }
+  if (body.op === "seal") {
+    const missing = entry.want.filter((n) => !(n in entry.have));
+    if (missing.length) return reelRefuse(missing.length + " named frame(s) never arrived", { missing: missing.slice(0, 20) });
+    const manifest = { owner: owner, slot: dir, session: session, mode: entry.mode, frames: entry.want.slice().sort(),
+                       logo: entry.logo, start: entry.start, bytes: entry.bytes, sealedAt: now };
+    await r2.put("reel/" + dir + "/" + session + "/manifest.json", JSON.stringify(manifest),
+                 { httpMetadata: { contentType: "application/json" } });
+    entry.sealed = true;
+    entry.t = now;
+    await reelIndexPut(r2, dir, idx);
+    return pJson({ ok: true, owner: owner, session: session, manifest: manifest });
+  }
+  return reelRefuse("op is not begin, frames or seal");
+}
+
+function bytesOfB64(text) {
+  try {
+    const bin = atob(String(text || ""));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch (e) { return null; }
+}
+
+// GET ?reels=<owner>                         -> that owner's sealed sessions, every slot of the label
+// GET ?reel=<slotDir>&session=<s>            -> its manifest
+// GET ?reel=<slotDir>&session=<s>&frame=<f>  -> the frame's JPEG bytes
+export async function reelsGet(env, params) {
+  const r2 = env && env.REELS;
+  if (!r2) return pJson({ ok: false, why: "the REELS bucket is not bound to the site - UNKNOWN, not empty" });
+  const owner = params.get("reels");
+  if (owner !== null) {
+    if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "not an owner label" });
+    const dirs = await reelSlotDirs(r2);
+    if (dirs === null) return pJson({ ok: false, why: "the bucket would not list - UNKNOWN, not empty" });
+    const base = reelSlotDir(owner, null);
+    const sessions = [];
+    for (const d of dirs) {
+      if (d !== base && d.indexOf(base + "@") !== 0) continue;
+      const x = await reelIndexGet(r2, d);
+      if (x === null) return pJson({ ok: false, why: "the reel index of " + d + " would not read - UNKNOWN, not empty" });
+      for (const s of Object.keys(x.sessions)) {
+        const e = x.sessions[s];
+        if (!e || !e.sealed) continue;
+        sessions.push({ slot: d, session: s, mode: e.mode, frames: e.want.length, bytes: e.bytes, logo: e.logo,
+                        start: e.start, t: e.t });
+      }
+    }
+    sessions.sort((a, b) => (reelSessionMs(b.session) || 0) - (reelSessionMs(a.session) || 0));
+    return pJson({ ok: true, owner: owner, sessions: sessions });
+  }
+  const dir = params.get("reel"), session = params.get("session"), frame = params.get("frame");
+  if (!/^[A-Za-z0-9_]+(@[0-9a-f]{12})?$/.test(String(dir || "")) || !REEL_SESSION_SHAPE.test(String(session || ""))) {
+    return pJson({ ok: false, why: "not a reel slot and session" });
+  }
+  const name = frame === null ? "manifest.json" : frame;
+  if (frame !== null && !REEL_FRAME_SHAPE.test(String(frame))) return pJson({ ok: false, why: "not a frame name" });
+  let obj;
+  try { obj = await r2.get("reel/" + dir + "/" + session + "/" + name); } catch (e) {
+    return pJson({ ok: false, why: "the bucket would not answer - UNKNOWN" });
+  }
+  if (obj === null) return pJson({ ok: false, why: "not in the bucket (evicted, or never uploaded)", absent: true });
+  return new Response(obj.body, { status: 200, headers: {
+    "content-type": frame === null ? "application/json; charset=utf-8" : "image/jpeg",
+    "cache-control": frame === null ? "no-store" : "private, max-age=86400" } });
 }

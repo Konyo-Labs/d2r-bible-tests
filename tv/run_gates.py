@@ -14225,6 +14225,20 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,
          why="v3889 (#23, his theme pass: the in-game fonts on in-game text only, colours unchanged) - item, zone, terror-zone, monster, boss, runeword and set names wear --ff-game (the builder's D2 Exocet, then the display serif); the block sets the font and nothing else; the console's words keep the face they had (the Grok CLI caught the item card badge); the zone name is wrapped apart from its words; the game's font is never tracked in this public repo."),
+    Gate("test_a_shadow_reel_is_kept_under_the_cap",
+         [sys.executable, os.path.join(HERE, "test_a_shadow_reel_is_kept_under_the_cap.py")], 120,
+         needs_app=False,
+         why="#208 (his 11-13 calls: offline PCs watchable, free R2 under its cap) - the site's reel door keeps each PC's "
+             "newest 16 sessions, evicts the oldest sealed session of any PC before the bucket passes 9 GB, refuses when "
+             "nothing older is left, drops a demoted session's extra frames, and treats an unreadable index or an unbound "
+             "bucket as UNKNOWN; every write rides the PC's registered roster key"),
+    Gate("test_a_shadow_reel_upload_sends_the_newest_three_whole",
+         [sys.executable, os.path.join(HERE, "test_a_shadow_reel_upload_sends_the_newest_three_whole.py")], 120,
+         needs_app=False,
+         why="#208 (his 11-13 calls) - a PC sends its newest 3 done sessions whole and sessions 4..16 as summary reels "
+             "(ends, the start, every door change, one frame per 20 s, at most 80); play starts on the first D2 logo or "
+             "frame 1; a reel still being written, an unlistable store or an unanswered bucket sends nothing; the doctor "
+             "row says a refusal in the lane's own words"),
     Gate("test_a_door_unprovable_by_design_never_shuts_its_group",
          [sys.executable, os.path.join(HERE, "test_a_door_unprovable_by_design_never_shuts_its_group.py")], 60,
          needs_app=False,

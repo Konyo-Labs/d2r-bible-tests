@@ -5411,7 +5411,7 @@ def _roster_reads(now_ms):
     return reads
 
 
-def _roster_post(url, body, key_path=None):
+def _roster_post(url, body, key_path=None, timeout=8):
     """POST one roster body. #95: the exact bytes sent are the bytes signed (roster_sign.sign_headers,
     X-Roster-Key / X-Roster-Sig), and the answer comes back with `signing` beside it - a key id and
     words, never the seed. A key that cannot be read or made, or a signer that fails, posts UNSIGNED
@@ -5430,7 +5430,7 @@ def _roster_post(url, body, key_path=None):
         except Exception as e:
             signing = {"signed": False, "why": "the signer raised %s" % type(e).__name__}
         req = urllib.request.Request(url, data=raw, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             text = resp.read().decode("utf-8", "replace")
         got = json.loads(text)
     except Exception as e:
@@ -5661,6 +5661,88 @@ def _frames_publish_once(boot):
     reply = _roster_post(_ROSTER_URL, body, os.path.join(_log_root(), ".roster_key.json"))
     _profile_json_save(_frames_state_path(), _ss.apply_reply(state, body["hash"], reply, now_ms))
     return True
+
+
+def _shadow_reels_state_path():
+    return os.path.join(_log_root(), ".shadow_reels_state.json")
+
+
+SHADOW_REELS_EVERY_S = 600
+SHADOW_REELS_POST_TIMEOUT_S = 120
+
+
+def _shadow_reels_once(now_s=None, _get=None, _post=None, hist=None):
+    """#208 (his 11-13 calls) - ONE planned session of this PC up to the private reel bucket per tick. -> the lane's state
+
+    The heart's vocabulary (on / worked / lastTs / owed / why), saved every tick: owed None means the plan could not be
+    made (the reel store or the bucket did not answer) - UNKNOWN, never "nothing owed". Nothing is sent while a reel is
+    being written (he is playing) or while the beacon is held. shadow_reels decides what; the site's reel door keeps the
+    bucket under its cap and this PC to its newest 16."""
+    import shadow_reels as _sr
+    now_s = time.time() if now_s is None else float(now_s)
+    hist = hist or HIST_DIR
+    state = _profile_json_load(_shadow_reels_state_path()) or {}
+    state["on"], state["checkedAt"] = True, int(now_s * 1000)
+    state.setdefault("worked", 0)
+    state.setdefault("lastTs", None)
+
+    def _done(why, owed=None):
+        state["why"], state["owed"] = str(why)[:200], owed
+        _profile_json_save(_shadow_reels_state_path(), state)
+        return state
+    held = _beacon_suppressed_by()
+    if held:
+        return _done("waits: the beacon is held (%s)" % str(held)[:120])
+    owner = _profile_owner()
+    if not owner:
+        return _done("this PC has no roster label - nothing can be signed for the bucket")
+    busy = _sr.writing_now(hist, now_s)
+    if busy is None:
+        return _done("the reel store would not list - UNKNOWN")
+    if busy:
+        return _done("waits: a reel is being written (he is playing) - nothing is sent beside the game",
+                     state.get("owed"))
+    local = _sr.done_sessions(hist, now_s)
+    from urllib.parse import quote as _q
+    reply = (_get or _roster_get)(_ROSTER_URL + "?reels=" + _q(owner))
+    server = _sr.server_index(reply)
+    if server is None:
+        return _done("the bucket did not answer (%s) - UNKNOWN" % str((reply or {}).get("why") if isinstance(reply, dict)
+                                                                     else reply)[:120])
+    try:
+        import chronicle_line as _cl
+        _lines = (_cl.load_cached() or {}).get("reels") or {}
+    except Exception:
+        _lines = {}
+    items = _sr.plan(local, server, marks_of=lambda s: (_lines.get("reel_" + s) or {}).get("marks"))
+    if items is None:
+        return _done("the plan could not be made - UNKNOWN")
+    if not items:
+        return _done("every done session is in the bucket", 0)
+    key = os.path.join(_log_root(), ".roster_key.json")
+    post = _post or (lambda b: _roster_post(_ROSTER_URL, b, key, timeout=SHADOW_REELS_POST_TIMEOUT_S))
+    r = _sr.upload(items[0], hist, post, owner)
+    if r.get("ok"):
+        state["worked"] = int(state.get("worked") or 0) + 1
+        state["lastTs"] = int(time.time() * 1000)
+        return _done("sent %s (%s, %d frame(s))" % (items[0]["session"], items[0]["mode"], r.get("sent") or 0),
+                     len(items) - 1)
+    return _done("%s: %s" % (items[0]["session"], r.get("why")), len(items))
+
+
+def _shadow_reels_loop():
+    """#208 - the reel upload lane: one session per tick, every SHADOW_REELS_EVERY_S. Its own thread, so a 200 MB session
+    never holds the roster publish (60 s) behind it."""
+    time.sleep(90)
+    while True:
+        _lane_tick("_shadow_reels_loop", SHADOW_REELS_EVERY_S)
+        try:
+            _shadow_reels_once()
+        except Exception as e:
+            _st = _profile_json_load(_shadow_reels_state_path()) or {}
+            _st["why"] = "the tick raised %s" % type(e).__name__
+            _profile_json_save(_shadow_reels_state_path(), _st)
+        time.sleep(SHADOW_REELS_EVERY_S)
 
 
 def _roster_frames_tick(boot):
@@ -55397,6 +55479,7 @@ def main():
     threading.Thread(target=_bridge_prober, daemon=True, name="tvd-prober").start()   # v872
     threading.Thread(target=_console_beacon_loop, daemon=True, name="tvd-beacon").start()   # v875
     threading.Thread(target=_roster_publish_loop, daemon=True, name="tvd-roster").start()
+    threading.Thread(target=_shadow_reels_loop, daemon=True, name="tvd-shadow-reels").start()   # #208
     threading.Thread(target=_roster_fetch_loop, daemon=True, name="tvd-roster-fetch").start()
     threading.Thread(target=_task_board_loop, daemon=True, name="tvd-task-board").start()   # v3864 (card 57) - his Mac only
     threading.Thread(target=_fleet_change_loop, daemon=True, name="tvd-fleet-change").start()

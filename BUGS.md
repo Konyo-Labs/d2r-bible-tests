@@ -189,6 +189,30 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3824 - AN OFFLINE PC's SESSIONS WERE 3 FRAMES EACH: THIS PC NOW SENDS ITS NEWEST 3 WHOLE AND 13 SUMMARY REELS (v3905, #208)
+His words 11-13: "when a player is offline to see his last 16 reels somehow", "maybe just the last 3 sessions recorded for
+each pc so those are online and always reachable even when a user is offline ... a type of summary almost like it is now
+just not 3 frames for each session", and on Dean "of course he agreed". GrokBot measured 11-13: only the Mac's reels show
+the D2 logo (frame 56 of 290, after GeForce NOW's Loading page); the ALT reels open mid-play. tv/shadow_reels.py: a done
+session (not being written, newest frame 10 min old) goes up re-encoded to 1280 px - the newest 3 whole, sessions 4..16 as
+a summary (first and last frame, the start, every door change from chronicle_line's marks, one frame per 20 s, at most
+80); play starts on the first logo frame, else frame 1. control_app._shadow_reels_loop (its own thread, every 10 min, one
+session a tick) sends nothing while a reel is being written - re-encoding and uploading beside a cloud-gaming stream would
+be his lag - and keeps on / worked / lastTs / owed / why in .shadow_reels_state.json; the doctor's "shadow reels reach the
+bucket" row reads it (a refusal in the lane's own words is MISSING; no receipt is UNKNOWN). Law:
+test_a_shadow_reel_upload_sends_the_newest_three_whole (+5 red-proofs).
+
+### REG-3823 - THE SITE KEEPS EACH PC's REELS IN A PRIVATE R2 BUCKET THAT NEVER PASSES ITS FREE TIER (v3905, #208)
+His question: "it doesnt stack and charge me more for clouflare?" - R2's free tier is 10 GB-month. functions/api/roster.js
+kind "reel" (begin / frames / seal), on the PC's registered roster key like the profile and the frames digest: each PC keeps
+its newest 16 sessions; a begin whose estimate would pass 9 GB evicts the oldest SEALED session of any PC first and refuses
+when nothing older is left; a demotion to summary deletes the frames not on the new list; a frame the begin did not name,
+or not a JPEG, is refused; an index that will not read is UNKNOWN and nothing is written; an unbound bucket says "not
+bound", never an empty list. GET ?reels=<owner> lists a label's sealed sessions, ?reel=&session=[&frame=] serves the
+manifest and the JPEG, behind the site's password gate. KNOWN LIMIT: two PCs beginning at the same instant can race on an
+evicted slot's index (read-modify-write without an etag check). Law: test_a_shadow_reel_is_kept_under_the_cap (node on a
+fake R2 and KV with real signing keys, +4 red-proofs).
+
 ### REG-3819 - THE VAULT LEDGER DROP CALLED ITSELF REBUILDABLE WITH 24 OF 184 ROWS PAST THEIR REELS (v3905, his 11-13 "okay then do it")
 His question: "vault.forget shut by design but if the vault works didnt it prove itself and unlock already?" - it could not:
 vault_forget() had one return and no refusal path, so its lock was declared unprovable. Its docstring called dropping the
