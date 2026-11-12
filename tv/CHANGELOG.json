@@ -1,5 +1,27 @@
 [
   {
+    "ver": "v3904",
+    "date": "2026-11-12",
+    "items": [
+      "REG-3807 - a Windows laws push runs only its own run, a new branch started four other suites (#107)",
+      "REG-3808 - on Windows the proof trace sees exists and realpath, gitignored state could be carried (#107)",
+      "REG-3809 - the rehearsal browser finder asks the bash resolver, never the Windows WSL launcher (#107)",
+      "REG-3809 - two prune cases compare a normalised path, on Windows the paths come back with forward slashes",
+      "REG-3810 - two of the heart2 trace laws are declared POSIX, its trace is off on Windows by design (#107)",
+      "REG-3811 - the mask encoder law waits out a board frame that re-binds its LSR once, never a disagreement",
+      "REG-3812 - the builder law narrows one label until it wraps, Windows fonts wrapped none at 1280 (#107)",
+      "REG-3812 - the planner law is unmeasured on Windows, where its edit pane never scrolls (#107)",
+      "REG-3813 - the show toggle law pins motion on, the Windows runner had reduced motion (#107)",
+      "REG-3814 - super unique names on a terror zone line wear the in-game face (#23)",
+      "REG-3814 - the monster linker never splits a set name like Griswold Legacy across two faces (#23)",
+      "REG-3814 - the endgame road key names wear the in-game face (#23)",
+      "REG-3814 - his call, boss subtitles and the item names in a run better odds line wear the in-game face (#23)",
+      "REG-3815 - the d2jsp price table names each post seller, or says it was not read (#151)",
+      "REG-3816 - a shadow frame caption claims no size it never measured, it said 160 px over 1920",
+      "REG-3816 - the Theatre head buttons never shrink, CLOSE was cut to CLOS at 1512"
+    ]
+  },
+  {
     "ver": "v3903",
     "date": "2026-11-12",
     "items": [

@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3903",
+  "ver": "v3904",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3903: clean Theatre, the site task board whole, seven Windows laws and the Fleet boot window",
+  "note": "v3904: Windows proofs clean, the in-game face on monster names, d2jsp sellers on the price table",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
