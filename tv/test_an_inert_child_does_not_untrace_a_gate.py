@@ -90,7 +90,10 @@ RED_PROOF = [
      "matches": 1},
     {"why": "a path in a pgrep pattern untraces the gate", "file": "gate_trace/sitecustomize.py",
      "find": "        if head in (\"ps\", \"pgrep\", \"sleep\"):\n",
-     "replace": "        if head in (\"ps\", \"pgrep\", \"sleep\") and not any(rel(a) is not None for a in args[1:] if \"/\" in a):\n",
+     # v3901 (REG-3760) - EITHER SEPARATOR. With "/" alone the tamper never bit on Windows: the case's path is C:\\...\\t_child.py,
+     # so the sabotage changed nothing there and the OLD ALT's census filed this law BLIND ("a proof of it stayed green
+     # tampered here", win32) - one BLIND shuts every lock on that PC (REG-1677)
+     "replace": "        if head in (\"ps\", \"pgrep\", \"sleep\") and not any(rel(a) is not None for a in args[1:] if (\"/\" in a or \"\\\\\" in a)):\n",
      "matches": 1},
     {"why": "bash is called inert", "file": "gate_trace/sitecustomize.py",
      "find": "        if head in (\"ps\", \"pgrep\", \"sleep\"):\n", "replace": "        if head in (\"ps\", \"pgrep\", \"sleep\", \"bash\"):\n",
