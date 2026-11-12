@@ -43,7 +43,12 @@ def _art_dir(tag):
     ci = "/opt/cursor/artifacts"
     if _o.path.isdir(ci) and _o.access(ci, _o.W_OK):
         return _o.path.join(ci, tag)
-    return _o.path.join(_t.gettempdir(), "tvd-artifacts", tag)
+    # REG-3771 - a per-run drop, removed at exit: the fixed tvd-artifacts/<tag> stayed in his temp dir after every Mac run and
+    # held the doctor's "our scratch is collected" row MISSING (measured 11-12: tvd-artifacts 4.1 days old)
+    import atexit as _ae, shutil as _sh
+    d = _t.mkdtemp(prefix="tvd-artifacts-%s-" % tag)
+    _ae.register(_sh.rmtree, d, True)
+    return d
 ART = _art_dir("v3771")
 # was pinned 17981/17982 - shard_suite.PORT_BASE, shard 0's agent port in the same CI job; the OS hands out free ones
 HTTP_PORT, CDP_PORT = _free_ports(2)

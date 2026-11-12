@@ -159,13 +159,18 @@ _LAW_LEDGER = {"dir": None, "n": 0}
 LAW_LEDGER_PREFIX = "tvd-gate-ledgers-"
 
 
-def sweep_dead_law_ledgers(root=None, alive=None, own=None):
+#: REG-3771 - a ledger dir with no owner pid in its name was made before v3897; no gate run lasts a day, so one older is litter
+LEGACY_LEDGER_AGE_S = 86400
+
+
+def sweep_dead_law_ledgers(root=None, alive=None, own=None, now=None):
     """v3897 (REG-3696) - A RUN THAT WAS KILLED LEAVES ITS LEDGER DIR, SO THE NEXT RUN TAKES IT. MEASURED 11-11 on his Mac: 37
     tvd-gate-ledgers-* dirs in his temp dir, 8 of them older than 3 days - the doctor's "our scratch is collected" MISSING row.
     The dir is removed by atexit, and atexit never runs when the process is KILLED: a law run past its timeout, a prover the
     console stands aside with SIGTERM. A dir is removed here only when its name carries an owner pid and that pid is not
-    alive; a dir with no pid in its name (made before v3897), our own, a live owner's, or an owner that cannot be asked is
-    kept. -> how many were removed (None when the root cannot be listed)"""
+    alive; our own, a live owner's, or an owner that cannot be asked is kept. REG-3771: a dir with no pid in its name (made
+    before v3897) is removed once it is older than LEGACY_LEDGER_AGE_S - it was kept forever before, and held the row MISSING.
+    -> how many were removed (None when the root cannot be listed)"""
     import re as _re
     import shutil
     import tempfile
@@ -181,8 +186,21 @@ def sweep_dead_law_ledgers(root=None, alive=None, own=None):
     except OSError:
         return None
     gone = 0
+    now = time.time() if now is None else now
     for nm in names:
         m = _re.match(r"^%s(\d+)-" % _re.escape(LAW_LEDGER_PREFIX), nm)
+        if not m and nm.startswith(LAW_LEDGER_PREFIX):
+            # REG-3771 (11-12) - a dir made before v3897 names no owner, so it was kept forever and held the doctor's "our
+            # scratch is collected" row MISSING (tvd-gate-ledgers-iq0fktsv, 3.3 days). Older than a day, it is no live run's.
+            p = os.path.join(root, nm)
+            try:
+                if now - os.stat(p).st_mtime <= LEGACY_LEDGER_AGE_S:
+                    continue
+            except OSError:
+                continue
+            shutil.rmtree(p, True)
+            gone += 0 if os.path.exists(p) else 1
+            continue
         if not m or int(m.group(1)) == own:
             continue
         try:

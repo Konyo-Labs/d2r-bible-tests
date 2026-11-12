@@ -20,6 +20,7 @@ tvd-nogit / tvd-par-dirty are disk_growers' law-scratch-win (declared, graduatin
 Fixtures only (contained temp, fake process tables). RED_PROOF below. [[heart-first]] [[unknown-stays-unknown]]
 """
 import inspect
+import io
 import json
 import os
 import shutil
@@ -98,6 +99,26 @@ class AKilledRunsLedgerDirIsTakenByTheNextRun(unittest.TestCase):
 
     def test_an_unlistable_root_is_unknown_never_zero(self):
         self.assertIsNone(rg.sweep_dead_law_ledgers(root=os.path.join(self.root, "nope"), alive=self.alive, own=44))
+
+    def test_a_pidless_dir_older_than_a_day_is_collected(self):
+        """REG-3771 (11-12) - tvd-gate-ledgers-iq0fktsv, made before v3897, named no owner and sat 3.3 days: kept forever"""
+        t = os.stat(self.d["legacy"]).st_mtime
+        n = rg.sweep_dead_law_ledgers(root=self.root, alive=self.alive, own=44, now=t + rg.LEGACY_LEDGER_AGE_S - 60)
+        self.assertTrue(os.path.exists(self.d["legacy"]), "a pidless dir under a day old was taken - it may be a live run's")
+        self.assertEqual(n, 1)
+        n = rg.sweep_dead_law_ledgers(root=self.root, alive=self.alive, own=44, now=t + rg.LEGACY_LEDGER_AGE_S + 60)
+        self.assertFalse(os.path.exists(self.d["legacy"]), "a pidless dir older than a day is still kept forever")
+        self.assertTrue(os.path.exists(self.d["other"]), "a dir that is not a ledger dir was taken")
+        self.assertEqual(n, 1)
+
+    def test_the_visual_laws_drop_their_shots_per_run(self):
+        """REG-3771 - two visual laws wrote into a FIXED tvd-artifacts/<tag> in his temp dir and never removed it"""
+        for fn in ("test_v3767_copy_witness_visual.py", "test_v3771_vault_console_face_visual.py"):
+            raw = io.open(os.path.join(HERE, fn), encoding="utf-8").read()
+            code = "\n".join(l.split("#", 1)[0] for l in raw.split("\n"))
+            self.assertEqual(code.count('d = _t.mkdtemp(prefix="tvd-artifacts-%s-" % tag)'), 1, fn)
+            self.assertEqual(code.count("_ae.register(_sh.rmtree, d, True)"), 1, "%s: the drop is not removed at exit" % fn)
+            self.assertNotIn('"tvd-artifacts", tag)', code, "%s writes into the fixed drop again" % fn)
 
     def test_a_new_run_asks_the_sweep_first(self):
         src = inspect.getsource(rg._law_ledger_path)
@@ -221,6 +242,16 @@ class TheCharacterReadersCropsDoNotStrand(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3771 - a pidless (pre-v3897) ledger dir is kept forever again and the doctor row stays MISSING",
+     "file": "tv/run_gates.py",
+     "find": "                if now - os.stat(p).st_mtime <= LEGACY_LEDGER_AGE_S:\n",
+     "replace": "                if True:\n",
+     "matches": 1},
+    {"why": "REG-3771 - the v3767 visual law's drop is not removed at exit",
+     "file": "tv/test_v3767_copy_witness_visual.py",
+     "find": "    _ae.register(_sh.rmtree, d, True)\n",
+     "replace": "    pass\n",
+     "matches": 1},
     {"why": "v3897 (REG-3696) - the sweep removes a dir whose owner is alive or cannot be asked",
      "file": "tv/run_gates.py",
      "find": "            if alive(int(m.group(1))) is not False:\n",
