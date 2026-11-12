@@ -147,6 +147,35 @@ class TheLawHolds(unittest.TestCase):
         SY.yield_to_ship(run=_GH(), say=said.append, runs=LIVE_PUBLISH + COMPETING, now=NOW, sweep=True)
         self.assertIn("2 run(s) of this repo held runners", "\n".join(said))
 
+    def test_an_unread_in_progress_poll_is_unknown_never_none_running(self):
+        """REG-3750 (the second eye on REG-3732, #231 11-12): fetch_live asks each status on its own and DROPPED a poll that
+        threw, so a queued Publish beside an unread in-progress poll was told "NO run of this repo is in progress - GitHub
+        has not started it" - a certainty built on a reading that never happened. Now the unread status travels and the
+        count is UNKNOWN."""
+        import json as _json
+
+        class _R(object):
+            def __init__(self, rc, out):
+                self.returncode, self.stdout = rc, out
+
+        def run(argv, **kw):
+            if "--status" in argv:
+                st = argv[argv.index("--status") + 1]
+                if st == "in_progress":
+                    raise OSError("gh timed out")
+                return _R(0, _json.dumps(LIVE_PUBLISH if st == "queued" else []))
+            if "--workflow" in argv:
+                return _R(0, "[]")
+            return _R(1, "")
+        live = SY.fetch_live(run=run)
+        self.assertEqual(live.unread, ["in_progress"], "a poll that threw was not named as unread")
+        said = []
+        SY.yield_to_ship(run=run, say=said.append, now=NOW, sweep=False)
+        blob = "\n".join(said)
+        self.assertIn("REG-3654 QUEUED", blob, "PREMISE: the queued Publish was not logged - the case would not distinguish")
+        self.assertNotIn("NO run of this repo is in progress", blob, "an unread poll was spoken as nothing running")
+        self.assertIn("UNKNOWN (the live runs were not read)", blob)
+
     def test_a_publish_queued_under_two_minutes_is_not_the_queued_lesson(self):
         fresh = [_run("main", "queued", 42833420352, PUBLISH, sha=MAIN_SHA,
                       created="2026-11-10T14:45:00Z")]
@@ -214,6 +243,11 @@ class TheProofsNameOnePlace(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3750 - an unread in-progress poll is spoken as no run in progress again (the second eye on REG-3732)",
+     "file": "tv/ship_yield.py",
+     "find": "    running = (None if runs is None or \"in_progress\" in (unread or ())\n",
+     "replace": "    running = (None if runs is None\n",
+     "matches": 1},
     {"why": "REG-3732 - a Publish queued with nothing of ours running is blamed on our runners again",
      "file": "tv/ship_yield.py",
      "find": "    if running == 0:\n",

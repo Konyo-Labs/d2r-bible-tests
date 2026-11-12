@@ -26,6 +26,8 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 from console_safe import enable as _console_safe_enable  # noqa: E402
 _console_safe_enable()
+import fixture_tmp as _fx_tmp  # noqa: E402  #171 - this run's scratch dirs leave with it
+_fx_tmp.contain()
 
 import console_doctor as CD  # noqa: E402
 

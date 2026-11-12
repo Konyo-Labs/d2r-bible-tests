@@ -380,12 +380,15 @@ def sweep_stale(runs, run, say=print, tips=None):
     return done
 
 
-def _log_queued(queued, cancelled, now, say, runs=None):
+def _log_queued(queued, cancelled, now, say, runs=None, unread=()):
     """REG-3732 (v3898's Publish, 11-11 22:40) - the line said "while our own non-ship runs held runners" every time; that
     night GitHub had started NONE of the repo's 11 queued runs (0 in progress) and the cause it named was never measured.
     It now counts what is really running: 0 is a queue on GitHub's side, nothing here to cancel."""
     now = time.time() if now is None else now
-    running = None if runs is None else sum(1 for r in runs if isinstance(r, dict) and _status(r) == "in_progress")
+    # REG-3750 (the second eye on REG-3732, #231) - a poll for in-progress runs that was NOT read leaves the count UNKNOWN:
+    # the partial list held no in_progress rows because nobody read them, and 0 took the certain "GitHub has not started it"
+    running = (None if runs is None or "in_progress" in (unread or ())
+               else sum(1 for r in runs if isinstance(r, dict) and _status(r) == "in_progress"))
     bits = []
     for r in queued:
         created = _epoch(r.get("createdAt") or r.get("created_at"))
@@ -402,28 +405,41 @@ def _log_queued(queued, cancelled, now, say, runs=None):
         % ("; ".join(bits), why, cancelled or "none", LESSON_ID))
 
 
+class _LiveRows(list):
+    """REG-3750 - the live runs, and the statuses whose poll was NOT read (thrown, non-zero, not JSON)."""
+
+    def __init__(self, *a):
+        list.__init__(self, *a)
+        self.unread = []
+
+
 def fetch_live(run=None, repo=None):
     """In-progress / queued / waiting / pending runs across the repo. -> [dict] | None."""
     if run is None:
         return None
     repo = repo or CV.REPO_SLUG
-    out, asked = [], 0
+    out, asked = _LiveRows(), 0
     for st in LIVE:
         try:
             r = run(["gh", "run", "list", "--repo", repo, "--status", st, "--limit", "100",
                      "--json", RUN_JSON],
                     capture_output=True, text=True, encoding="utf-8", errors="replace")
         except Exception:
+            out.unread.append(st)          # REG-3750 - a status nobody read is UNKNOWN, never "no such run"
             continue
         asked += 1
         if getattr(r, "returncode", 1) != 0:
+            out.unread.append(st)
             continue
         try:
             rows = json.loads(r.stdout or "null")
         except ValueError:
+            out.unread.append(st)
             continue
         if isinstance(rows, list):
             out.extend(rows)
+        else:
+            out.unread.append(st)
     if asked == 0:
         return None
     # If every status poll failed, we could not ask.
@@ -493,7 +509,7 @@ def fetch_state(run=None, repo=None):
     pubs = fetch_publish(run=run, repo=repo) or []
     sha = fetch_main_sha(run=run, repo=repo)
     main = {"sha": sha, "current": True} if sha else None
-    return {"runs": _merge_runs(live, pubs), "main": main}
+    return {"runs": _merge_runs(live, pubs), "main": main, "unread": list(getattr(live, "unread", ()) or ())}
 
 
 def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=True, tips=None):
@@ -505,12 +521,13 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
     bundle-v3893-publish-queued.
     """
     try:
-        state_runs, main_sha = runs, main
+        state_runs, main_sha, unread = runs, main, ()
         if state_runs is None:
             state = fetch_state(run=run)
             if state is None:
                 return []
             state_runs = state["runs"]
+            unread = state.get("unread") or ()
             if main_sha is None:
                 main_sha = state.get("main")
         done = []
@@ -526,7 +543,7 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
             for rid in more:
                 if rid not in done:
                     done.append(rid)
-            _log_queued(queued, done, now, say, runs=state_runs)
+            _log_queued(queued, done, now, say, runs=state_runs, unread=unread)
         return done
     except Exception as e:
         say("ship: REG-3654 yield could not run (%s)" % type(e).__name__)
