@@ -2411,7 +2411,8 @@
   .shc-when { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); color: #b9c9be; }
   .sh-fleet-src { font: var(--fw-medium) var(--fs-2xs)/1.3 var(--mono); color: #8f8a78; margin: 2px 0 8px; }   /* v3899 (#213) */
   .shc-game { display: block; margin-top: 3px; color: #d8c27a; white-space: nowrap; }
-  .shc-door { display: block; margin-top: 3px; color: #c9b38a; white-space: nowrap; }   /* REG-3755 (#188) - "game began 9:04 PM at the D2 logo", its own line */   /* v3898 (#188) - "part k of m · one game", its own line */
+  .shc-door { display: block; margin-top: 3px; color: #c9b38a; }   /* REG-3755 (#188) - "game began 9:04 PM at the D2 logo", its own line */
+  .shc-door-u { display: inline-block; white-space: nowrap; }   /* REG-3755 - each half stays whole; the line wraps between them */   /* v3898 (#188) - "part k of m · one game", its own line */
   .shc-when .shc-dur { color: #8a7e68; }
   /* ══ v2987 — THE RIVER AS FOUR LANES, named the way he names them ═══════════════════════
      Konyo, 2026-09-12: "i want it down a river lane. from top to bottom intake/WHATEVER IS REALLY
@@ -19642,15 +19643,20 @@ window._lockMark = function(isOpen, px, label){
     if (!dr || !(+dr.startTs > 0)) return '';
     var hm = function(ts){ return new Date(+ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }); };
     var what = dr.logoTs ? 'D2 logo' : (dr.titleTs ? 'D2 title' : 'Connecting');
+    /* the reel opens on the route's own page and the door comes inside it: a lag outside 1-240 min is a clock that does not
+       belong to this reel (an unknown start, a re-dated row) and says nothing rather than an absurd figure */
     var lag = (+t0 > 0) ? Math.round((+dr.startTs - +t0) / 60000) : null;
+    if (lag !== null && (lag < 0 || lag > 240)) lag = null;
     var tip = 'The game\'s own door, read from this reel\'s film: '
       + (dr.logoTs ? 'the D2 logo ' + hm(dr.logoTs) + ', ' : '')
       + (dr.titleTs ? 'the title ' + hm(dr.titleTs) + ', ' : '')
       + (dr.connectingTs ? 'Connecting to Battle.net ' + hm(dr.connectingTs) + ', ' : '')
       + (dr.charTs ? 'character select ' + hm(dr.charTs) : 'no character select filmed after it')
       + (lag !== null && lag >= 1 ? '. The reel opened ' + lag + ' min before the game began.' : '.');
-    return '<span class="shc-door" title="' + esc(tip) + '">game began ' + esc(new Date(+dr.startTs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))
-      + ' at the ' + what + (lag !== null && lag >= 1 ? ' · ' + lag + ' min in' : '') + '</span>';
+    /* two units that wrap BETWEEN them, never inside one (the 1440 render cut "game began 14:35 at the D2" at the card's edge) */
+    return '<span class="shc-door" title="' + esc(tip) + '"><span class="shc-door-u">game began '
+      + esc(new Date(+dr.startTs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })) + '</span> '
+      + '<span class="shc-door-u">at the ' + what + (lag !== null && lag >= 1 ? ' · ' + lag + ' min in' : '') + '</span></span>';
   }
   function thShelf(force){
     try { _shFleetLoad(); } catch (eFl) {}   /* v3899 (#213) - every PC's published sessions for the header */

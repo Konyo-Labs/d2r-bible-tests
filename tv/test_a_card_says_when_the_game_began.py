@@ -92,7 +92,7 @@ class ACardSaysWhenTheGameBegan(unittest.TestCase):
         fn = ui[i:ui.index("\n  }\n", i) + 4]
         prog = ("function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;'); }\n"
                 + fn + "\nvar D = %s;\nconsole.log(JSON.stringify([shDoorPart(D, %d), shDoorPart(null, %d),"
-                       " shDoorPart({startTs: %d, logoTs: null, titleTs: %d}, %d), shDoorPart(D, 0)]));\n"
+                       " shDoorPart({startTs: %d, logoTs: null, titleTs: %d}, %d), shDoorPart(D, 0), shDoorPart(D, 1000)]));\n"
                 % (json.dumps(DOOR), T0, T0, T0 + 5000, T0 + 5000, T0))
         d = tempfile.mkdtemp(prefix="door_card_js_")
         try:
@@ -103,9 +103,11 @@ class ACardSaysWhenTheGameBegan(unittest.TestCase):
         finally:
             shutil.rmtree(d, True)
         self.assertEqual(r.returncode, 0, r.stderr.decode("utf-8", "replace")[-600:])
-        logo, none, title, no_t0 = json.loads(r.stdout.decode("utf-8").strip().splitlines()[-1])
+        logo, none, title, no_t0, foreign = json.loads(r.stdout.decode("utf-8").strip().splitlines()[-1])
         self.assertIn("game began", logo)
         self.assertIn("at the D2 logo · 12 min in", logo)
+        self.assertEqual(logo.count('class="shc-door-u"'), 2, "the line no longer wraps between its two units")
+        self.assertNotIn("min in", foreign, "a start clock that does not belong to this reel gave an absurd lag")
         self.assertIn("Connecting to Battle.net", logo, "the door's witness is not named in its detail")
         self.assertEqual(none, "", "a card with no door says something anyway")
         self.assertIn("at the D2 title", title)
