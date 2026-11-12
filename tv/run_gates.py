@@ -13969,6 +13969,16 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_relaunch_does_not_re_rehearse_the_box",
+         [sys.executable, os.path.join(HERE, "test_a_relaunch_does_not_re_rehearse_the_box.py")], 60,
+         needs_app=False,
+         why="v3902 (#200, REG-3776) - v3900's ship, relaunched on the same commit after its flake re-run, re-ran the box "
+             "rehearsal ~7 min for a ci push it does not make; a commit both ci branches hold skips it"),
+    Gate("test_the_stray_sweep_keeps_its_last_sample",
+         [sys.executable, os.path.join(HERE, "test_the_stray_sweep_keeps_its_last_sample.py")], 60,
+         needs_app=False,
+         why="v3902 (REG-3774) - his console doctor's 'stray processes' read UNKNOWN for 6 days, 885 asks: each pass runs "
+             "in a short-lived child and the second CPU sample lived in memory - it is kept on disk now"),
     Gate("test_a_queued_run_is_said_once_then_every_ten_minutes",
          [sys.executable, os.path.join(HERE, "test_a_queued_run_is_said_once_then_every_ten_minutes.py")], 60,
          needs_app=False,

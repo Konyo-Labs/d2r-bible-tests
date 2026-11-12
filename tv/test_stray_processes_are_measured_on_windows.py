@@ -79,6 +79,14 @@ class _Sweep(unittest.TestCase):
         p = mock.patch.object(MO.subprocess, "run", _windows_has_no_lsof_or_ps)
         p.start()
         self.addCleanup(p.stop)
+        # REG-3774 - the sweep keeps its last sample on disk too: each case gets its own file, never the machine's
+        import shutil
+        import tempfile
+        _sd = tempfile.mkdtemp(prefix="tvd-orphan-sample-law-")
+        self.addCleanup(shutil.rmtree, _sd, True)
+        p = mock.patch.dict(os.environ, {MO.SAMPLE_ENV: os.path.join(_sd, "sample.json")})
+        p.start()
+        self.addCleanup(p.stop)
         saved_last, saved_scan = dict(MO._LAST_WIN), dict(MO._SCAN)
         MO._LAST_WIN.update(at=0.0, cpu={})
         MO._SCAN.update(n=None, how=None, at=None, portsSay=None)

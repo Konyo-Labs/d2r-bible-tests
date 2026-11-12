@@ -255,6 +255,51 @@ def _cpu_sample():
 #: kind of cost it exists to find. Consecutive calls are separated by real time — far more than a
 #: sleep would buy — so the samples are better AND free. [[poll-slower-than-its-interval]]
 _LAST_SAMPLE = {"at": 0.0, "cpu": {}}
+#: REG-3774 (11-12) - THE PREVIOUS SAMPLE ALSO LIVES ON DISK. Since REG-2987 a console runs each doctor pass in a SHORT-LIVED
+#: CHILD, so the in-memory sample above died with every pass: his console's "stray processes" row read UNKNOWN ("only ONE
+#: cpu sample is available") for 6 days across 885 asks, and Dean's Windows row the same. The last sample is kept beside the
+#: memory copy (one file per machine, never in the repo's history) and a pass with no memory copy compares against it while
+#: it is younger than PREV_MAX_AGE_S. Older, unreadable or from the future: no previous sample (UNKNOWN), never a guess.
+SAMPLE_ENV = "TV_ORPHAN_SAMPLE"
+PREV_MAX_AGE_S = 2 * 3600
+
+
+def _sample_path():
+    return os.environ.get(SAMPLE_ENV) or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".orphan_cpu_sample.json")
+
+
+def _prev_sample(kind, mem, now):
+    """REG-3774 - (cpu, at): the in-memory previous sample, else the one on disk while it is fresh. Never raises."""
+    if mem.get("cpu"):
+        return mem.get("cpu") or {}, float(mem.get("at") or 0.0)
+    try:
+        with io.open(_sample_path(), encoding="utf-8") as fh:
+            row = (json.load(fh) or {}).get(kind) or {}
+        at, cpu = float(row.get("at") or 0.0), row.get("cpu")
+        if isinstance(cpu, dict) and cpu and 0 < now - at <= PREV_MAX_AGE_S:
+            return cpu, at
+    except Exception:
+        pass
+    return {}, 0.0
+
+
+def _keep_sample(kind, cpu, at):
+    """REG-3774 - the sample just taken, kept for the next pass's process (atomic replace). Never raises."""
+    path = _sample_path()
+    try:
+        try:
+            with io.open(path, encoding="utf-8") as fh:
+                body = json.load(fh)
+            body = body if isinstance(body, dict) else {}
+        except Exception:
+            body = {}
+        body[kind] = {"at": at, "cpu": cpu}
+        tmp = "%s.%d.tmp" % (path, os.getpid())
+        with io.open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(body, fh)
+        os.replace(tmp, path)
+    except Exception:
+        pass
 #: what the last sweep actually measured: how many processes, by which instrument, when. health_engine's OK sentence
 #: reads it, so "nothing busy" always names its denominator. n None = no sweep has measured yet.
 _SCAN = {"n": None, "how": None, "at": None, "portsSay": None}
@@ -418,11 +463,12 @@ def _unmeasured_win(cur):
 def _suspects_win(busy, old_min):
     """#171 (REG-2482) — suspects() on Windows: busy in the CPU time burned BETWEEN two samples, and old. -> rows"""
     now = _now()
-    prev, prev_at = _LAST_WIN.get("cpu") or {}, float(_LAST_WIN.get("at") or 0.0)
+    prev, prev_at = _prev_sample("win", _LAST_WIN, now)              # REG-3774 - memory, else the last pass's file
     cur = _win_cpu_sample()
     if not cur:
         return [_unmeasured_win(cur)]
     _LAST_WIN["cpu"], _LAST_WIN["at"] = cur, now
+    _keep_sample("win", cur, now)
     _SCAN.update(n=len(cur), at=now,
                  how="the Windows kernel's own per-process CPU time (GetProcessTimes), two samples",
                  portsSay=("His ports cannot be read on this PC (there is no lsof on Windows), so no busy process is "
@@ -480,7 +526,7 @@ def suspects(busy=BUSY_PCT, old_min=OLD_MIN, settle=0.0):
         return _suspects_win(busy, old_min)     # #171 (REG-2482) - no ps there; the kernel's own counters
     out = []
     _now = time.time()
-    _prev, _prevAt = _LAST_SAMPLE.get("cpu") or {}, float(_LAST_SAMPLE.get("at") or 0.0)
+    _prev, _prevAt = _prev_sample("ps", _LAST_SAMPLE, _now)        # REG-3774 - memory, else the last pass's file
     _cur = _cpu_sample()
     if _cur is None:
         # the instrument could not be read — that is UNKNOWN, and the previous sample is NOT
@@ -489,6 +535,7 @@ def suspects(busy=BUSY_PCT, old_min=OLD_MIN, settle=0.0):
                  "why": "`ps` could not be asked for a CPU sample, so nothing can be judged about "
                         "runaways right now. This is UNMEASURED, not clean."}]
     _LAST_SAMPLE["cpu"], _LAST_SAMPLE["at"] = _cur, _now
+    _keep_sample("ps", _cur, _now)
     _SCAN.update(n=len(_cur), at=_now, how="`ps` %CPU, two samples", portsSay=None)
     # ⚠ `settle` REMAINS, so a caller that genuinely wants an immediate second reading can ask for
     # one — but it is OFF by default, because the timer path must stay cheap.

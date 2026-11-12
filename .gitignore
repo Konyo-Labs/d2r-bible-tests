@@ -332,6 +332,9 @@ tv/.eagle_last.json
 tv/.unknown_age.json
 tv/.unknown_age.json.tmp
 tv/.eagle_slow.json
+# REG-3774 - the stray-process sweep's last CPU sample, per machine (its next pass may run in another process)
+tv/.orphan_cpu_sample.json
+tv/.orphan_cpu_sample.json.*.tmp
 tv/.eagle_slow.json.tmp
 tv/.unknown_age.scratch-*.json
 tv/.eagle_slow.scratch-*.json
