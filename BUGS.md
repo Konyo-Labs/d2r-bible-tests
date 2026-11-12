@@ -195,10 +195,11 @@ vault_forget() had one return and no refusal path, so its lock was declared unpr
 ledger (ledger=true, API only; his Vault "forget" button posts {} and only clears the swept memory) safe "because the
 ledger is rebuildable from the reels". MEASURED on his Mac 11-13: 24 of 184 ledger rows cite only reels the river has
 released - for them the ledger is the last record. Now: clearing the swept memory never refuses; the ledger drop REFUSES
-while any row's every witness reel is gone (a session must be a plain s_ name - a separator or .. could join outside the
-reel store, Windows folds .. by text) and while the ledger or the reel store will not read (UNKNOWN keeps it). Each half
+while any row has no witness whose FRAME is still on disk (the river releases single frames from reels it keeps, so the
+folder is not the evidence; session and frame must be plain names - a separator or .. could join outside the reel store,
+Windows folds .. by text; a witnesses field that is not a list cannot be read) and while the ledger or the reel store will not read (UNKNOWN keeps it). Each half
 reports what its own write did: forgot/ledgerCleared follow the saves (a refused save was reported as a clear), and the
-button's line reads forgot. vault.forget is provable now: vault_forget_wilson.py (new gate) hands it 11 ledgers it must
+button's line reads forgot. vault.forget is provable now: vault_forget_wilson.py (new gate) hands it 14 ledgers it must
 keep on a scratch ledger, counted only when the bytes did not move, after a control it must clear. Laws re-pinned off
 "vault.forget is unprovable": test_self_arming (unprovable claim CHECKED, UNTESTED vs UNPROVABLE on a fixture lock,
 UNPROVEN-with-no-rows), test_every_lock_declares_its_attacks (carve-out asked of every lock with rows=[]), test_control.

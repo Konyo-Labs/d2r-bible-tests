@@ -1535,7 +1535,7 @@ GATES = [
          why="REG-3819 (his 11-13 'okay then do it') - vault.forget drops the ledger, and the drop was called safe "
              "because the ledger is rebuildable from the reels; on his Mac 24 of 184 rows already cited only reels "
              "the river had released. The drop now refuses while any row cites only reels gone from disk, or while "
-             "the ledger or the reel store will not read. This hands it eleven ledgers it MUST keep, each on a "
+             "the ledger or the reel store will not read. This hands it fourteen ledgers it MUST keep, each on a "
              "scratch ledger under the system temp dir and counted only when the ledger bytes did not move, after a "
              "control it MUST clear (a door that refuses everything proves nothing). Exit 1 on a LEAK or a control "
              "that did not clear. Banks only with --bank."),

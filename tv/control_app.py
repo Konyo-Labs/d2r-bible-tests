@@ -42992,24 +42992,38 @@ _VAULT_LAST_PROPOSAL = None
 
 
 def _ledger_rows_past_their_reels(led, hist=None):
-    """REG-3819 - the ledger rows whose EVERY witness reel is gone from disk (their evidence cannot be rebuilt). -> list | None
+    """REG-3819 - the ledger rows whose evidence can no longer be rebuilt from the reel store. -> list | None
 
-    A row is any dict carrying a "witnesses" list; a witness names its "session" (s_...), whose reel is HIST/reel_<session>.
-    A row with no session on any witness is past rebuilding too. None: the ledger or the reel store would not read (UNKNOWN)."""
+    A row is any dict carrying a "witnesses" key. It can be rebuilt while at least one witness still points at a frame on
+    disk: its "session" (s_...) names HIST/reel_<session>, and its "frame" names a file in that folder - the river can
+    release single frames from a reel it keeps, so the folder alone is not the evidence. A witness that names no frame
+    counts on its folder. Session and frame must be plain names: a separator or a .. could join outside the reel store
+    (Windows folds .. by text). A "witnesses" that is not a list cannot be read, so its row cannot be rebuilt either.
+    None: the ledger or the reel store would not read (UNKNOWN)."""
     hist = hist or HIST_DIR
     if not isinstance(led, dict) or not os.path.isdir(hist):
         return None
     gone = []
 
+    def plain(v):
+        return isinstance(v, str) and v and not any(c in v for c in ("/", "\\", "..", "\0"))
+
+    def on_disk(x):
+        if not isinstance(x, dict):
+            return False
+        ses, frame = x.get("session"), x.get("frame")
+        if not (plain(ses) and ses.startswith("s_")):
+            return False
+        reel = os.path.join(hist, "reel_" + ses)
+        if frame is None:
+            return os.path.isdir(reel)
+        return plain(frame) and os.path.isfile(os.path.join(reel, frame))
+
     def walk(o):
         if isinstance(o, dict):
-            w = o.get("witnesses")
-            if isinstance(w, list):
-                # a session is a plain reel name: one with a separator or a dot-dot could join to a directory OUTSIDE the
-                # reel store (reel_s_x/../.. is the store's parent) and read as a reel still on disk
-                sess = [str(x.get("session")) for x in w if isinstance(x, dict) and x.get("session")]
-                sess = [s_ for s_ in sess if s_.startswith("s_") and not any(c in s_ for c in ("/", "\\", ".."))]
-                if not any(os.path.isdir(os.path.join(hist, "reel_" + s_)) for s_ in sess):
+            if "witnesses" in o:
+                w = o.get("witnesses")
+                if not (isinstance(w, list) and any(on_disk(x) for x in w)):
                     gone.append(o.get("name") or o.get("key") or "a row")
                 return
             for v in o.values():

@@ -31,11 +31,12 @@ sys.path.insert(0, HERE)
 REPO = os.path.dirname(HERE)
 
 SESSION = "s_1790000000000_00001"
+FRAME = "f_1790000000001.jpg"
 
 
 def _row(name, sessions):
     return {"name": name, "kind": "charm", "lane": "owned", "conf": 0.9, "count": 1, "lastSeenTs": 1790000000,
-            "witnesses": [{"session": s, "frame": 3} for s in sessions]}
+            "witnesses": [{"session": s, "frame": FRAME} for s in sessions]}
 
 
 def _ledger(*rows, by_key=None):
@@ -50,6 +51,8 @@ class _Box(object):
         self.root = tempfile.mkdtemp(prefix="vault_forget_wilson_")
         self.hist = os.path.join(self.root, "hist")
         os.makedirs(os.path.join(self.hist, "reel_" + SESSION))
+        with open(os.path.join(self.hist, "reel_" + SESSION, FRAME), "wb") as fh:
+            fh.write(b"\xff\xd8 a frame")
         self.ledger = os.path.join(self.root, "vault_accum.json")
         self.swept = os.path.join(self.root, "vault_swept.json")
         self._real = (ca.VAULT_LEDGER_PATH, ca._VAULT_SWEPT_PATH, ca.HIST_DIR)
@@ -102,7 +105,7 @@ def _attempt_reel_gone(box):
 
 def _attempt_no_session(box):
     """a row whose witnesses name no session at all"""
-    led = _ledger({"name": "nameless", "witnesses": [{"frame": 1}, {"frame": 2}]})
+    led = _ledger({"name": "nameless", "witnesses": [{"frame": FRAME}, {"frame": FRAME}]})
     return _refused(box, led)
 
 
@@ -129,6 +132,23 @@ def _attempt_not_a_reel_name(box):
 def _attempt_witness_not_a_dict(box):
     """witnesses that are bare strings naming a reel that is on disk"""
     return _refused(box, _ledger({"name": "strings", "witnesses": [SESSION, SESSION]}))
+
+
+def _attempt_frame_released(box):
+    """the reel folder is still there but the witness frame was released from it - the folder is not the evidence"""
+    return _refused(box, _ledger({"name": "released", "witnesses": [{"session": SESSION, "frame": "f_1790000000999.jpg"}]}))
+
+
+def _attempt_frame_climbs(box):
+    """a frame name spelled to reach a file outside the reel folder that does exist"""
+    with open(os.path.join(box.hist, "outside.jpg"), "wb") as fh:
+        fh.write(b"x")
+    return _refused(box, _ledger({"name": "climbing frame", "witnesses": [{"session": SESSION, "frame": "../outside.jpg"}]}))
+
+
+def _attempt_witnesses_not_a_list(box):
+    """a row whose witnesses field is a dict naming a frame that IS on disk - it cannot be read as a witness list"""
+    return _refused(box, _ledger({"name": "dict witnesses", "witnesses": {"session": SESSION, "frame": FRAME}}))
 
 
 def _attempt_hidden_in_by_key(box):
@@ -164,6 +184,9 @@ CLAIMS = (
     ("traversal", "a session spelled to climb out of the reel store is no witness", _attempt_traversal),
     ("not-a-reel", "a session without the s_ prefix is no witness even if its folder exists", _attempt_not_a_reel_name),
     ("string-witness", "a witness that is a bare string is no witness", _attempt_witness_not_a_dict),
+    ("frame-released", "a witness frame released from a reel that is still on disk keeps the ledger", _attempt_frame_released),
+    ("frame-climbs", "a frame name spelled to reach outside its reel is no witness", _attempt_frame_climbs),
+    ("witnesses-dict", "a witnesses field that is not a list keeps the ledger", _attempt_witnesses_not_a_list),
     ("by-key", "a gone row nested under byKey keeps the ledger", _attempt_hidden_in_by_key),
     ("mixed", "one gone row beside a fine one keeps the whole ledger", _attempt_mixed_one_gone),
     ("wrong-shape", "a ledger that parses as a list is UNKNOWN and kept", _attempt_ledger_wrong_shape),
@@ -285,14 +308,22 @@ def main(argv=None):
 
 RED_PROOF = [
     {
-        "why": "REG-3819 - the tamper drops the reel check, so a row whose every witness reel was released reads as "
-               "rebuildable and the ledger is dropped with its evidence. The gone-reel, no-session, traversal and "
-               "by-key claims must LEAK and the run must exit 1.",
+        "why": "REG-3819 - the tamper drops the rebuild check, so a row whose every witness reel or frame was released "
+               "reads as rebuildable and the ledger is dropped with its evidence. reel-gone, no-session, traversal, "
+               "frame-released and by-key must LEAK and the run must exit 1.",
         "file": "control_app.py",
-        "find": '                if not any(os.path.isdir(os.path.join(hist, "reel_" + s_)) for s_ in sess):\n'
+        "find": '                if not (isinstance(w, list) and any(on_disk(x) for x in w)):\n'
                 '                    gone.append(o.get("name") or o.get("key") or "a row")',
         "replace": '                if False:\n'
                    '                    gone.append(o.get("name") or o.get("key") or "a row")',
+        "matches": 1,
+    },
+    {
+        "why": "REG-3819 - the tamper lets a witness count on its reel FOLDER even when it names a frame, so a frame the "
+               "river released from a reel it keeps reads as evidence still on disk: frame-released must LEAK.",
+        "file": "control_app.py",
+        "find": "        if frame is None:\n            return os.path.isdir(reel)",
+        "replace": "        if True:\n            return os.path.isdir(reel)",
         "matches": 1,
     },
     {
