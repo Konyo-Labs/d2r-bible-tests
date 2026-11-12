@@ -341,7 +341,7 @@ RED_PROOF = [
      "replace": "    } else if (false) {\n      key = 'lost';", "matches": 1},
     {"why": "v3880 - stuck while proving reads as healing (the wound hidden under the healing)",
      "file": "tv/control_ui.html",
-     "find": "    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n      key = \'wounded\';",   # v3896 re-anchor
+     "find": "    } else if ((drainAlert && !drainWaits) || pullStuck || (hurt.length && !_healsItself)) {\n      key = \'wounded\';",   # v3900 REG-3741 re-anchor
      "replace": "    } else if (pullStuck || (hurt.length && !proving)) {\n      key = 'wounded';",
      "matches": 1},
     {"why": "v3880 - the hover card stops leading with the PC's status",
@@ -369,8 +369,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3896 (REG-3671) - a refused pull rides the line but proving with its routing door open still wins the word",
      "file": "tv/control_ui.html",
-     "find": "    } else if (drainAlert || pullStuck || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",
-     "replace": "    } else if (drainAlert || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",
+     "find": "    } else if ((drainAlert && !drainWaits) || pullStuck || (hurt.length && !_healsItself)) {\n",   # v3900 REG-3741 re-anchor
+     "replace": "    } else if ((drainAlert && !drainWaits) || (hurt.length && !(proving && _routeOpen && !_blindsLock))) {\n",
      "matches": 1},
 ]
 

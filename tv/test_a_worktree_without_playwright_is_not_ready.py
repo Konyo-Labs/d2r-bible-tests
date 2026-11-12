@@ -49,6 +49,7 @@ class TheLawHolds(unittest.TestCase):
         os.makedirs(main)
         git = lambda *a: subprocess.check_call(["git", "-C", main] + list(a), stdout=subprocess.DEVNULL)
         subprocess.check_call(["git", "init", "-q", main])
+        git("config", "core.autocrlf", "false")   # REG-3626 - the case's line endings, never the PC's global autocrlf
         git("config", "user.email", "t@example.com")
         git("config", "user.name", "t")
         with open(os.path.join(main, ".gitignore"), "w") as fh:

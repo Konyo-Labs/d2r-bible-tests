@@ -570,8 +570,8 @@ def _paint(fn, learned):
 RED_PROOF = [
     {"why": "v3890 (#183) - the panel path is gone: the work ALT's lobby is refused again and it learns no character",
      "file": "tv/char_select.py",
-     "find": "    if len(stats) == 9:\n        rv, rsd, lv, lsd, tv = stats[4:]\n",
-     "replace": "    if False:\n        rv, rsd, lv, lsd, tv = stats[4:]\n",
+     "find": "    if len(stats) >= 9:\n        rv, rsd, lv, lsd, tv = stats[4:9]\n",   # v3900 REG-3747 re-anchor
+     "replace": "    if False:\n        rv, rsd, lv, lsd, tv = stats[4:9]\n",
      "matches": 1},
     {"why": "v3890 (#183) - the top strip is not asked: a dark street with lobby-grey panels passes as the lobby",
      "file": "tv/char_select.py",

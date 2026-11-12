@@ -241,7 +241,7 @@ RED_PROOF = [
      "find": "_why.toLowerCase() === fresh.toLowerCase() ? fresh + '.' : fresh + '. ' + _why",
      "replace": "fresh + '. ' + _why", "matches": 1},
     {"why": "REG-3390 - Find narrows nothing",
-     "file": "bible.html", "find": "      var hit = !q || String(it.getAttribute('data-name')).indexOf(q) !== -1;\n",
+     "file": "bible.html", "find": "      var hit = !q || _nm.indexOf(q) !== -1 || _nick.indexOf(_nm.toLowerCase()) !== -1;   /* REG-3746 - a nickname finds its item */\n",   # v3900 re-anchor
      "replace": "      var hit = true;\n", "matches": 1},
     {"why": "REG-3390 - the database loses its own scroll panel",
      "file": "bible.html", "find": "#tab-d2jsp .d2jsp-db-scroll{max-height:min(62vh,560px);overflow:auto;",

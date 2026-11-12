@@ -184,8 +184,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "v3898 (#206) - the ship watches Publish with no marker path",
      "file": "tv/ship_when_green.py",
-     "find": "                             phase_path=_SP.ship_phase_path(REPO))\n",
-     "replace": "                             phase_path=None)\n",
+     "find": "                             phase_path=_SP.ship_phase_path(REPO),\n",   # v3900 REG-3736 re-anchor
+     "replace": "                             phase_path=None,\n",
      "matches": 1},
 ]
 

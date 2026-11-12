@@ -382,7 +382,7 @@ RED_PROOF = [
                "days ago - and ships PERMANENTLY RED. That is exactly the state it was in for an "
                "hour before the survivors were read.",
         "file": "console_doctor.py",
-        "find": "                if not e.name.startswith(MINE):\n                    continue          # somebody else's container; not ours to report on\n",
+        "find": "                if not e.name.startswith(MINE) or e.name in FIXED_HOMES:\n                    continue          # somebody else's container, or a fixed home in use; not litter to report on\n",   # v3900 REG-3738 re-anchor
         "replace": "                if False:\n                    continue\n",
         "matches": 1,
     },
