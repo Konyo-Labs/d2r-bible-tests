@@ -29,8 +29,10 @@ MONO_EM = 0.61                        # measured: 211px / 23px / 15 characters
 
 
 def _css():
-    s = io.open(UI, encoding="utf-8").read()
-    return re.sub(r"/\*.*?\*/", "", s, flags=re.S)
+    # the laws' one comment stripper (test_one_comment_stripper_for_the_laws): an unbounded /* ... */ over the whole page
+    # eats live markup from a MIME wildcard to the next comment
+    import js_strip
+    return js_strip.strip_js_comments(io.open(UI, encoding="utf-8").read())
 
 
 def _one(css, pat, what):

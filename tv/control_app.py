@@ -5949,7 +5949,8 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
 
 
 def _local_claude_branches(run=None):
-    """REG-3781 - this repo's local claude/* branch names (the versions being built here). -> [str] | None (git would not say)"""
+    """REG-3781 - this repo's local claude/vNNNN branch names (the versions being built here). -> [str] | None (git would not
+    say). (Never write a slash-star pair here: ten laws strip this file with the JavaScript comment rules.)"""
     try:
         r = (run or subprocess.run)(["git", "-C", REPO, "for-each-ref", "--format=%(refname:short)", "refs/heads/claude/"],
                                     capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
