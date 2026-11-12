@@ -148,6 +148,25 @@ BROWSER_FLAGS (whole text) and BROWSER_CALL_ONLY (strings blanked) and left the 
 the red-proof kept cutting the dead copy while drives_browser matched the live one. Fix: the dead BROWSER_CALLS is gone (one pattern,
 its REG-3310 note moved onto BROWSER_CALL_ONLY) and proof [4] cuts BROWSER_CALL_ONLY's line. heart2 --prove: 17 of 17 PROVEN, [4] among
 them; the anchor census holds. The v3901 pre-flight could not see it: 1426 laws changed since main, over the 40 it proves here.
+### REG-3778 - A VERSION WAS BANKED WHILE A NEW PROOF LAW HAD NO SHARD-TIMING ROW (three versions running)
+
+The pre-flight stopped right after the bump on test_the_shard_balance_file_covers_every_proof_test ("shard_timings.json is
+missing 13 proof(s)") on v3899 (fix f1fd499a6), v3900 (ac3eb1747) and v3901 (6c14c97f1, 11-12 08:40) - each a fix commit
+and a pre-flight restart. The new laws are registered before the bump, so bump_version.bump now refuses while
+shard_timings.coverage() names a missing row, says `python3 tv/shard_timings.py --write`, and writes nothing. A repo with no
+timings file (a fixture) or one that will not read refuses nothing - UNKNOWN, and the law still holds the line. Guard:
+test_a_bump_refuses_a_proof_law_with_no_timing_row (the real bump() into a scratch dir, tree_busy and coverage stubbed; 2
+RED proofs).
+
+### REG-3777 - THE SHIP'S POST-LAND CHECK ASKED FOR VERSION KEYS HIS CONSOLE NEVER SENDS (it said None after every ship)
+
+v3900's landing 11-12 08:35: "ship: post-land /api/status says None, expected v3900 - the live console has not moved onto this
+version yet". His console's /api/status said {"ver": "v3899", "liveVer": "v3899", "bibleVer": "v3899"} at that moment.
+post_land_status read "version", "build" and "ship.version" - names the console never sends - so the line said None after
+every ship and had never once measured whether the live console moved. It reads "ver" (the stamp bump_version writes into
+control_app.py) first now. Guard: test_the_post_land_check_reads_the_consoles_ver (the real post_land_status against a
+throwaway HTTP server on an ephemeral port, never :17772; baseline: a body with no version key still says None; RED proof).
+
 ### REG-3776 - A SHIP RELAUNCHED ON THE SAME COMMIT RE-RAN THE BOX REHEARSAL FOR A CI PUSH IT DOES NOT MAKE (v3902 #200)
 
 11-12 08:02: v3900's ship was relaunched by hand on e0513929e after its flaked shards were re-run - both ci branches already
