@@ -160,6 +160,8 @@ def index(reaps, tombstones):
     for r in (reaps or []):
         if not isinstance(r, dict):
             continue
+        if r.get("intent") is True:
+            continue        # REG-3751 - the reaper's INTENT line (written before the delete) took nothing; its outcome row does
         for n in (r.get("names") or []):
             names.setdefault(_stem(n), []).append(r)
         # a whole-reel reap carries no `kept`; a partial release names exactly what it took, so it is matched by name

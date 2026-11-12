@@ -273,14 +273,17 @@ def _recorder(reel, session, src, list_frames):
                 frames = None
     # the recorder's reap record: rows naming this reel. None = the record could not be read.
     reaps = src.get("reaps")
-    mine = None
+    mine = intents = None
     if reaps is not None:
-        mine = [r for r in reaps if str(r.get("reel") or "") in (reel, session)]
+        _rows = [r for r in reaps if str(r.get("reel") or "") in (reel, session)]
+        # REG-3751 - the reaper's INTENT lines (written before each delete) are not reaps; every count below is outcomes
+        intents = [r for r in _rows if r.get("intent") is True]
+        mine = [r for r in _rows if r.get("intent") is not True]
     removed = None if mine is None else any(bool(r.get("removed")) for r in mine)
-    # REG-3751 - the reaper's INTENT line (written before the delete) with no outcome line after it: stopped mid-delete
-    intended = bool(mine) and not removed and any(r.get("intent") is True for r in mine) and not any(
-        isinstance(r.get("removed"), bool) for r in mine)
-    last_reap = None if not mine else max((_int(r.get("ts")) or 0) for r in mine) or None
+    # REG-3751 - an INTENT line with no outcome line after it: the recorder stopped mid-delete
+    intended = bool(intents) and not mine
+    last_reap = (None if not (mine or intents) else
+                 max((_int(r.get("ts")) or 0) for r in (mine or intents)) or None)
     # REG-1678 — a reap row says what the river had the reel at when it was taken. True only when a row that
     # REMOVED it carries readOwed true; a row from before the field (or one where the river could not be asked)
     # says nothing either way, and None is never read as "it was finished". [[unknown-stays-unknown]]

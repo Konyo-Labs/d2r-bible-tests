@@ -98,6 +98,17 @@ class AReapWritesItsIntentFirst(unittest.TestCase):
         src["reaps"] = []
         self.assertIn("does not name it", RC._recorder(A, "s_1500000000000_00001", src, False)["why"])
 
+    def test_the_counters_count_outcomes_not_intents(self):
+        """an intent row is not a reap: the picture reader never takes it for the deleter, custody counts outcomes"""
+        import read_pictures as RP
+        rows = [{"ts": 1, "reel": A, "removed": None, "intent": True, "names": ["f_1.jpg"], "kept": []},
+                {"ts": 2, "reel": A, "removed": True, "names": ["f_1.jpg"], "kept": []}]
+        idx = RP.index(rows, [])
+        self.assertEqual([r.get("intent") for r in idx["names"].get(RP._stem("f_1.jpg"), [])], [None],
+                         "the picture reader indexed the reaper's intent as a deleter")
+        h = RC._recorder(A, "s_1500000000000_00001", {"shelf": set(), "paths": {"hist": self.hist}, "reaps": rows}, False)
+        self.assertEqual(h["reaps"], 1, "custody counted the intent line as a reap")
+
     def test_the_reaper_writes_the_intent_before_each_delete(self):
         code = _code("tv_diablo.py")
         whole = ("                                             intent=True)\n"
@@ -109,6 +120,11 @@ class AReapWritesItsIntentFirst(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3751 - the picture reader takes the reaper's intent line for the deleter",
+     "file": "tv/read_pictures.py",
+     "find": "        if r.get(\"intent\") is True:\n            continue        # REG-3751",
+     "replace": "        if False:\n            continue        # REG-3751",
+     "matches": 1},
     {"why": "REG-3751 - the whole-reel reaper deletes before any record again (no intent line)",
      "file": "tv/tv_diablo.py",
      "find": "                                _reap_record(_pick[\"reel\"], _n, None, len(_all), names=_pick[\"gone\"], river=_rv,\n"

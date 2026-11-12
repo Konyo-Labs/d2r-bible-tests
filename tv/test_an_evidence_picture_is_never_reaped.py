@@ -119,7 +119,8 @@ class _Shelf(unittest.TestCase):
         T._JFID_STATE.update({"path": None, "ids": None})
 
     def reaps(self):
-        return RP.load_jsonl(os.path.join(self.root, RP.REAPS)) or []
+        # v3901 (REG-3751) - the reaper writes an INTENT line before each delete; the reaps this law counts are the outcomes
+        return [r for r in (RP.load_jsonl(os.path.join(self.root, RP.REAPS)) or []) if r.get("intent") is not True]
 
     def refusals(self):
         return RP.load_jsonl(os.path.join(self.root, RP.REFUSALS)) or []
