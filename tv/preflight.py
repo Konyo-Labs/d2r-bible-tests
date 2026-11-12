@@ -414,6 +414,16 @@ def run_demos(_run=None):
     node = _sh.which("node")
     if not node and _run is None:
         return None, "node is not on this PC - the console demos could not run (UNKNOWN, not a pass)"
+    # REG-3743 - MEASURED 11-12: v3899's pre-flight ran 33 min of laws in a fresh worktree, then went RED on the demos with
+    # the tail "Node.js v24.13.0" - the worktree had no node_modules. A push worktree is seeded first (a copy from its main
+    # checkout, the ship's own readiness fix); a checkout that still has none says so.
+    _root = os.path.dirname(HERE)
+    if _run is None and not os.path.isdir(os.path.join(_root, "node_modules")):
+        try:
+            import preship as _ps
+            _ps.maybe_seed_node_modules(_root)
+        except Exception:
+            pass
     try:
         r = (_run or subprocess.run)([node or "node", os.path.join("tv", "demo_console.mjs")], cwd=os.path.dirname(HERE),
                                      capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -422,7 +432,14 @@ def run_demos(_run=None):
         return False, "the console demos ran past %d s" % DEMO_TIMEOUT_S
     lines = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
     bad = [l.strip() for l in lines if l.lstrip().startswith("\u274c")]
-    tail = " | ".join(sorted(set(bad))[:4]) if bad else " | ".join(lines[-2:])
+    if bad:
+        tail = " | ".join(sorted(set(bad))[:4])
+    else:   # REG-3743 - a crash names its error line, never only node's version banner
+        err = [l.strip() for l in lines if re.search(r"Cannot find module|\bError\b|Traceback", l)]
+        tail = " | ".join(err[:2]) if err else " | ".join(lines[-2:])
+    if r.returncode != 0 and any("Cannot find module 'playwright'" in l for l in lines):
+        tail = ("this checkout has no node_modules for playwright (a fresh worktree: python3 tv/seed_worktree.py <tree>) | "
+                + tail)
     return r.returncode == 0, tail[:400]
 
 

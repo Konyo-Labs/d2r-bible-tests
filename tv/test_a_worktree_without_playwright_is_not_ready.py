@@ -25,29 +25,54 @@ class TheLawHolds(unittest.TestCase):
     def test_a_tree_with_no_node_modules_is_red(self):
         d = tempfile.mkdtemp(prefix="preship-ready-")
         self.addCleanup(shutil.rmtree, d, ignore_errors=True)
-        # no node_modules, and auto-fix cannot find the Mac install in this sandbox. v3896 (REG-3667) - MEASURED on his Mac:
-        # the real ~/d2r_bible_tests/node_modules WAS found and linked in, so the case read the PC, not the tree, and went
-        # red on whatever check came next (the second eye). The install it may link is pointed at nothing here.
-        from unittest import mock
-        with mock.patch.object(P, "MAC_NODE_MODULES", os.path.join(d, "no-install-here")):
-            code, rows = P.mac_ready(root=d, auto_fix=True)
+        # no node_modules, and this sandbox is no worktree, so the auto-fix (REG-3743: a COPY from the worktree's own main
+        # checkout) has nothing to seed from. v3896 (REG-3667) - the old symlink fix found his real install and linked it in,
+        # so the case read the PC, not the tree.
+        code, rows = P.mac_ready(root=d, auto_fix=True)
         self.assertEqual(code, 1, rows)
         say = " ".join(r.get("say") or "" for r in rows)
         self.assertIn("node_modules", say)
 
-    def test_auto_fix_links_only_the_known_install(self):
-        d = tempfile.mkdtemp(prefix="preship-link-")
-        src = tempfile.mkdtemp(prefix="preship-nm-")
+    def test_auto_fix_seeds_by_copy_never_a_link(self):
+        """REG-3743 - the auto-fix COPIES node_modules from the worktree's own main checkout (tv/seed_worktree.py); the
+        symlink it used to make is the v3525 shape seed_worktree refuses"""
+        import subprocess
+        _gitenv = {_k: os.environ.pop(_k) for _k in list(os.environ) if _k.startswith("GIT_")}
+        self.addCleanup(os.environ.update, _gitenv)
+        _free = os.environ.get("TV_SEED_FREE_BYTES")
+        os.environ["TV_SEED_FREE_BYTES"] = str(50 * 10 ** 9)
+        self.addCleanup(lambda: os.environ.pop("TV_SEED_FREE_BYTES", None) if _free is None
+                        else os.environ.__setitem__("TV_SEED_FREE_BYTES", _free))
+        d = tempfile.mkdtemp(prefix="preship-seed-")
         self.addCleanup(shutil.rmtree, d, ignore_errors=True)
-        self.addCleanup(shutil.rmtree, src, ignore_errors=True)
-        # a fake install directory is enough for the symlink; playwright still will not resolve
-        changed, why = P.maybe_link_node_modules(d, target=src)
+        main = os.path.join(d, "main")
+        os.makedirs(main)
+        git = lambda *a: subprocess.check_call(["git", "-C", main] + list(a), stdout=subprocess.DEVNULL)
+        subprocess.check_call(["git", "init", "-q", main])
+        git("config", "user.email", "t@example.com")
+        git("config", "user.name", "t")
+        with open(os.path.join(main, ".gitignore"), "w") as fh:
+            fh.write("/node_modules\n")
+        git("add", "-A")
+        git("commit", "-q", "-m", "a")
+        os.makedirs(os.path.join(main, "node_modules", "playwright"))
+        with open(os.path.join(main, "node_modules", "playwright", "index.js"), "w") as fh:
+            fh.write("module.exports = 1;\n")
+        wt = os.path.join(d, "wt")
+        git("worktree", "add", "-q", "-b", "w", wt)
+        changed, why = P.maybe_seed_node_modules(wt)
         self.assertTrue(changed, why)
-        self.assertTrue(os.path.islink(os.path.join(d, "node_modules")))
-        self.assertEqual(os.readlink(os.path.join(d, "node_modules")), src)
-        # a second call is a no-op
-        changed2, _ = P.maybe_link_node_modules(d, target=src)
-        self.assertFalse(changed2)
+        nm = os.path.join(wt, "node_modules")
+        self.assertTrue(os.path.isdir(nm) and not os.path.islink(nm), "the worktree's node_modules is a link into main")
+        with open(os.path.join(nm, "playwright", "index.js")) as fh:
+            self.assertEqual(fh.read(), "module.exports = 1;\n")
+        self.assertFalse(P.maybe_seed_node_modules(wt)[0], "a second call is not a no-op")
+        plain = os.path.join(d, "plain")
+        os.makedirs(plain)
+        ok, why2 = P.maybe_seed_node_modules(plain)
+        self.assertFalse(ok)
+        self.assertFalse(os.path.lexists(os.path.join(plain, "node_modules")), "a tree that is no worktree got node_modules")
+        self.assertIn("not a worktree root", why2)
 
     def test_require_playwright_is_the_probe(self):
         """The attempt-8 command is exactly `node -e require('playwright')` from the tree."""
@@ -186,6 +211,35 @@ class ReadinessTakesSecondsAndTheRehearsalCarriesTheLessons(unittest.TestCase):
 
 
 
+class ThePreflightSeedsItsWorktreeAndNamesAMissingPlaywright(unittest.TestCase):
+    """REG-3743 - MEASURED 11-12: v3899's pre-flight ran 33 min of laws in a fresh worktree, then went RED on the console
+    demos with the tail "Node.js v24.13.0" - the worktree had no node_modules, and the pre-flight seeded nothing"""
+
+    def _crash(self, *a, **k):
+        class R(object):
+            returncode = 1
+            stdout = ""
+            stderr = ("node:internal/modules/cjs/loader:1424\n  const err = new Error(message);\n\n"
+                      "Error: Cannot find module 'playwright'\nRequire stack:\n- tv/demo_console.mjs\n\nNode.js v24.13.0\n")
+        return R()
+
+    def test_a_missing_playwright_is_named_never_only_the_node_banner(self):
+        import preflight as PF
+        ok, tail = PF.run_demos(_run=self._crash)
+        self.assertFalse(ok)
+        self.assertIn("no node_modules for playwright", tail, "the red does not name the missing install: %r" % tail)
+        self.assertIn("Cannot find module 'playwright'", tail)
+        self.assertNotEqual(tail.strip(), "Node.js v24.13.0")
+
+    def test_the_preflight_seeds_a_worktree_before_the_demos(self):
+        import inspect
+        import preflight as PF
+        code = "\n".join(l.split("#", 1)[0] for l in inspect.getsource(PF.run_demos).split("\n"))
+        self.assertEqual(code.count("_ps.maybe_seed_node_modules(_root)"), 1, "the pre-flight no longer seeds node_modules")
+        self.assertLess(code.index("_ps.maybe_seed_node_modules(_root)"), code.index("os.path.join(\"tv\", \"demo_console.mjs\")"),
+                        "the seed comes after the demos it is for")
+
+
 RED_PROOF = [
     {"why": "v3895 - the rehearsal asks a changed law by its FILE name again (the registry refuses every renamed gate)",
      "file": "tv/preship.py",
@@ -216,6 +270,21 @@ RED_PROOF = [
      "file": "tv/preship.py",
      "find": "    kw.setdefault(\"include_lessons\", False)\n",
      "replace": "",
+     "matches": 1},
+    {"why": "REG-3743 - the readiness auto-fix SYMLINKS main's node_modules into a worktree again (the v3525 shape)",
+     "file": "tv/preship.py",
+     "find": "    rc = _sw.seed(root, say=lines.append)\n",
+     "replace": "    os.symlink(os.path.join(_sw.main_checkout_of(root)[0] or root, \"node_modules\"), dest)\n    rc = 0\n",
+     "matches": 1, "needs": "posix"},
+    {"why": "REG-3743 - a pre-flight demos red names only node's version banner again (v3899, 11-12)",
+     "file": "tv/preflight.py",
+     "find": "    if r.returncode != 0 and any(\"Cannot find module 'playwright'\" in l for l in lines):\n",
+     "replace": "    if False:\n",
+     "matches": 1},
+    {"why": "REG-3743 - the pre-flight runs the demos in an unseeded worktree again",
+     "file": "tv/preflight.py",
+     "find": "            _ps.maybe_seed_node_modules(_root)\n",
+     "replace": "            pass\n",
      "matches": 1}
 ]
 

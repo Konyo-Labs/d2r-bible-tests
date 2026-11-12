@@ -734,7 +734,7 @@ def ship(version, run=None, fetch=None, sleep=None, clock=None, say=print, wait_
         rcode, _rrows = _call_gate(fn, say)
         _step("mac-ready", rcode, _t)
         if rcode != 0:
-            say("ship: Mac readiness is %s - not waiting on CI; fix the worktree (symlink node_modules, install "
+            say("ship: Mac readiness is %s - not waiting on CI; fix the worktree (python3 tv/seed_worktree.py <tree> copies node_modules in, install "
                 "playwright browsers, or take the owed second-eye look)" % ("RED" if rcode == 1 else "UNKNOWN"))
             return 1 if rcode == 1 else 2
 

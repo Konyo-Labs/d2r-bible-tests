@@ -402,7 +402,7 @@ fi
 if ! python3 "$REPO/tv/preship.py" --mac-ready; then
   echo "pre-push: [$(_pp_el)] ❌ this worktree is not ready (playwright, browsers, python deps, or an owed second eye)."
   echo "          Reproduce: python3 tv/preship.py --mac-ready"
-  echo "          Safe auto-fix: symlink node_modules to ~/d2r_bible_tests/node_modules when that install exists."
+  echo "          Safe auto-fix: python3 tv/seed_worktree.py <this worktree> copies node_modules in from its main checkout."
   exit 1
 fi
 # Derive the refs being PUSHED, not the branch I happen to be standing on.

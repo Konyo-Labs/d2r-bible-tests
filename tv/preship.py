@@ -37,7 +37,6 @@ except ImportError:
     pass
 
 LESSONS_NAME = "preship_lessons.json"
-MAC_NODE_MODULES = os.path.expanduser("~/d2r_bible_tests/node_modules")
 PY_DEPS = ("websocket",)
 # WIDTHS in render_check.py: five viewports, no phone width. A full run covers them all.
 RENDER_TIMEOUT_S = 360
@@ -593,35 +592,44 @@ def python_deps_ok():
     return True, "python deps import"
 
 
-def maybe_link_node_modules(root, target=None):
-    """The one safe auto-fix: symlink <root>/node_modules -> ~/d2r_bible_tests/node_modules when the
-    worktree has none and the main install is there. -> (changed: bool, why: str)"""
+def maybe_seed_node_modules(root):
+    """The one auto-fix, and it COPIES: a push worktree with no node_modules is seeded from its own main checkout by
+    tv/seed_worktree.py (a staged copy, his ON AIR floor kept, never over an existing path, never into the main checkout).
+    -> (changed: bool, why: str)
+
+    REG-3743 - it used to SYMLINK ~/d2r_bible_tests/node_modules in: the v3525 shape seed_worktree.py exists to refuse (a
+    link into another checkout is a path the next `git add -A` or `npm ci` acts on in the OTHER tree) - one safety routine
+    written two ways. MEASURED 11-12: the pre-flight, which asked neither, went RED after 33 min of laws on 'Cannot find
+    module playwright' in a fresh worktree. [[copy-drift]]"""
     dest = os.path.join(root, "node_modules")
-    src = target or MAC_NODE_MODULES
     if os.path.isdir(dest) or os.path.islink(dest):
         return False, "node_modules already present"
-    if not os.path.isdir(src):
-        return False, "no install at %s to link" % src
     try:
-        os.symlink(src, dest)
-    except OSError as e:
-        return False, "could not symlink node_modules -> %s (%s)" % (src, e)
-    return True, "symlinked node_modules -> %s" % src
+        import seed_worktree as _sw
+    except Exception as e:
+        return False, "the seeder would not load (%s), so node_modules was not seeded" % type(e).__name__
+    lines = []
+    rc = _sw.seed(root, say=lines.append)
+    if os.path.isdir(dest) and not os.path.islink(dest):
+        return True, "seeded node_modules by copy from the main checkout"
+    said = [l for l in lines if "REFUSED" in l or "NOT SEEDED" in l]
+    return False, "node_modules could not be seeded (seed exit %s): %s" % (
+        rc, (said[0] if said else (lines[-1] if lines else "the seeder said nothing"))[:220])
 
 
 def check_mac_ready(root, timeout=30, auto_fix=True, **_):
     """Attempt 8: a worktree without playwright must fail in seconds, not after CI.
 
-    Auto-fix only the node_modules symlink to ~/d2r_bible_tests/node_modules. Everything
+    Auto-fix only node_modules, COPIED from the worktree's main checkout (REG-3743, maybe_seed_node_modules). Everything
     else (playwright resolve, browsers, python deps, owed second-eye) fails loudly.
     """
     notes = []
     if auto_fix:
-        changed, why = maybe_link_node_modules(root)
+        changed, why = maybe_seed_node_modules(root)
         notes.append(("auto-fix: " if changed else "") + why)
     nm = os.path.join(root, "node_modules")
     if not (os.path.isdir(nm) or os.path.islink(nm)):
-        return 1, "no node_modules in this worktree (and no symlink target). " + "; ".join(notes)
+        return 1, "no node_modules in this worktree (and it could not be seeded). " + "; ".join(notes)
     ok, why = playwright_resolves(root)
     if not ok:
         return 1, "node -e require('playwright') failed: %s. %s" % (why, "; ".join(notes))
