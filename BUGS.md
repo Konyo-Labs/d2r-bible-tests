@@ -148,6 +148,40 @@ BROWSER_FLAGS (whole text) and BROWSER_CALL_ONLY (strings blanked) and left the 
 the red-proof kept cutting the dead copy while drives_browser matched the live one. Fix: the dead BROWSER_CALLS is gone (one pattern,
 its REG-3310 note moved onto BROWSER_CALL_ONLY) and proof [4] cuts BROWSER_CALL_ONLY's line. heart2 --prove: 17 of 17 PROVEN, [4] among
 them; the anchor census holds. The v3901 pre-flight could not see it: 1426 laws changed since main, over the 40 it proves here.
+### REG-3776 - A SHIP RELAUNCHED ON THE SAME COMMIT RE-RAN THE BOX REHEARSAL FOR A CI PUSH IT DOES NOT MAKE (v3902 #200)
+
+11-12 08:02: v3900's ship was relaunched by hand on e0513929e after its flaked shards were re-run - both ci branches already
+pointed at that commit. It spent ~7 minutes (08:02-08:09) re-running the box rehearsal before reading the verdict GitHub was
+already grading. The box rehearsal exists only to keep a red off the ci push (REG-3646), and a resumed ship makes no ci push
+(v3866, "not pushed again"). ship() now asks git first (_ci_branches_hold): both ci branches at HEAD -> the box rehearsal is
+not run again and the ship says so; another commit, or git that will not say -> it rehearses as before. Guard:
+test_a_relaunch_does_not_re_rehearse_the_box (the real ship() over a fake git and GitHub; baseline: a fresh ship rehearses;
+2 RED proofs PROVEN).
+
+### REG-3775 - THE FAULT-EVIDENCE ROW IGNORED THE SERVER'S OWN SNAPSHOT-CARRYING RESCUE (UNKNOWN 14 days on his Mac)
+
+His console doctor 11-12: "fault evidence - no console paint fault (theatre-stuck-black) in 14 days since the snapshot
+shipped, so whether it travels is UNMEASURED ... unaskable for 5d (733 attempts)". His tv/ui_faults.jsonl held 3
+"console-rescued-by-server" rows in those 14 days (11-11 13:03 and 16:34 among them), each with a real pre-rescue snapshot in
+`before` (elsNow, painting, frozenBeats, pixelBlank, beats...): _console_rescue_loop records it with
+before=ui_pre_rescue_snapshot(). REG-3287 had held SNAPSHOT_KINDS to the PAGE's posts that send `before`, and the server is
+the second sender. SNAPSHOT_KINDS now names both, and the law reads both senders - the page's /api/ui_fault posts and every
+control_app ui_fault_record("<kind>", ..., before=) call (one today; the relay that records the page's own posts names no
+literal kind). Guard: test_a_ui_fault_counts_only_the_kinds_that_carry_a_snapshot (+ the server-rescue case; new RED proof,
+the old drift proof re-anchored).
+
+### REG-3774 - THE STRAY-PROCESS ROW COULD NEVER GET ITS SECOND SAMPLE (UNKNOWN 6 days, 885 asks)
+
+His console doctor 11-12: "stray processes - the sweep could not judge yet - only ONE cpu sample is available ... unaskable for
+6d (885 attempts)". my_orphans.suspects() takes its second CPU sample from the PREVIOUS call (never a sleep - a 4 s sleep once
+refused a push), kept in a module-level dict; since REG-2987 a console runs each doctor pass in a SHORT-LIVED CHILD, so the
+dict died with every pass and the second sample never existed - on every PC, the Windows sampler (_LAST_WIN) the same. The
+last sample now also lives on disk (tv/.orphan_cpu_sample.json; TV_ORPHAN_SAMPLE in a law), written atomically after each
+read; a pass with no memory copy compares against it while it is younger than 2 h. An old, corrupt or absent file is no
+previous sample - UNKNOWN, as before. The Windows law's cases each get their own temp file (fixtures never touch the
+machine's). Guard: test_the_stray_sweep_keeps_its_last_sample (POSIX over a fake ps and clock, Windows through that law's
+own harness, the in-memory sample cleared between passes as a new child has it; 3 RED proofs).
+
 ### REG-3773 - THE SHIP SAID THE SAME QUEUED RUN ON EVERY PASS (v3902 #200)
 
 v3900's ship log 11-12 carried "ship: REG-3654 QUEUED - Publish ... run 43096436723 queued 29847s ..." 30+ times in 40
