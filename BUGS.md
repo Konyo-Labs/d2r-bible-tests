@@ -294,14 +294,6 @@ names - and for a whole-reel reap only the reel - that no later row mentions (a 
 disk). test_a_reap_writes_its_intent_before_the_delete[0] re-aimed (an intent row still never enters the outcome index).
 Law: test_an_interrupted_reap_explains_its_missing_frames (5 red-proofs, one went BLIND on a whole-reel fixture first - fixed).
 
-### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3903, #200 card #218)
-Over PROVE_MAX (40) tv/preflight.prove_changed left every changed law to GitHub, and the GREEN line still read "the changed laws
-are proven". GitHub then read the REG-3784 proof BLIND - its anchor sat on line 52 and the hunk that made it dead began on 53.
-MEASURED on v3901: 4,749 proofs tamper a changed file; 67 proofs in 39 laws sit within 10 lines of a changed hunk. Now, over the
-cap, changed_hunks reads base..HEAD's -U0 hunks (an unread diff is UNKNOWN, said) and edit_laws picks the laws whose red-proof
-anchors lie within EDIT_PAD lines of a changed line, nearest first, capped at PROVE_MAX; the GREEN line counts the changed laws
-proven here. Law: test_the_preflight_proves_the_laws_at_the_edit (6 red-proofs).
-
 ### REG-3784 - v3901'S GITHUB ROUND READ THE PRE-FLIGHT'S BROWSER LAW BLIND: ITS RED-PROOF CUT A PATTERN NOTHING READ ANY MORE (v3901, #200)
 Proof shard 9 of run 43178653355 (v3901, 3cd26bce4): test_a_version_is_preflighted_before_github_grades_it[4] BLIND - the REG-3310 tamper
 (drop `_Tab(` and `_chrome_up(` from the browser-call pattern) left the law green. REG-3764 split tv/preflight.py's matching into
