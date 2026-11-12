@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3900",
+  "ver": "v3901",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3900: Dean measured and calibrated, the door kept, the watcher armed",
+  "note": "v3901: game began at the D2 logo, footage pauses said, frozen cloud pages end, Dean char select",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",

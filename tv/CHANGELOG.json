@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3901",
+    "date": "2026-11-12",
+    "items": [
+      "A reel deletion writes its intent line first, so a recorder stopped mid-delete keeps its record (#217, REG-3751)",
+      "The chronicle lane keeps Connecting to Battle net as a door mark of the game (#188, REG-3752)",
+      "Each reel keeps why its footage stopped, and a pause and its end are said (Dean 34 min gap, REG-3753)",
+      "The D2 logo is found inside a whole-desktop capture, in its own window (Dean, REG-3754)",
+      "A Shelf card says when the game began at its own door, the D2 logo (#188, REG-3755)",
+      "A sealed read that found no Chronicle page owes no sighting (Dean river blocked at sighting, REG-3756)",
+      "A dark chronicle or vault lane and a stalled reel extract name a signed-out Claude (Dean, REG-3757)",
+      "Dean darker character select is read by its panels and the fire logo atop the left column (#185, REG-3758)",
+      "A shadow session says when its game began, the same line as the Shelf card (#212, REG-3759)",
+      "The inert-child law tamper bites on either path separator, so Windows no longer files it blind (REG-3760)",
+      "A rolling reel that films nothing for 5 min is a doctor row in its gate words (Dean, REG-3761)",
+      "The frozen-page judge reads the rolling reel loose frames, so a frozen cloud page ends the session (REG-3762)",
+      "The Shelf header says each PC real run count and how many it was shown (#213, REG-3763)",
+      "The pre-flight runs a law that only talks about a browser - v3900 lost a round to two (#200, REG-3764)",
+      "The console tabs fit on one row at his MacBook 1512 px, where TV-D wrapped alone (REG-3765)"
+    ]
+  },
+  {
     "ver": "v3900",
     "date": "2026-11-12",
     "items": [
@@ -17,7 +38,8 @@
       "One nickname list in every search bar, cta and sunders included, none becomes a d2jsp search (REG-3746)",
       "The Join Game lobby is read on a darker PC by its measured box and its centre fire logo (#185, REG-3747)",
       "Battle net open arms the shadow watcher, a 2 s look for the game the moment it starts (#188, REG-3748)",
-      "The prover record says playing for his game only, an import or other yield is named apart (#207, REG-3749)", "An unread in-progress poll leaves the queued line UNKNOWN, never no run in progress (second eye on REG-3732, REG-3750)"
+      "The prover record says playing for his game only, an import or other yield is named apart (#207, REG-3749)",
+      "An unread in-progress poll leaves the queued line UNKNOWN, never no run in progress (second eye on REG-3732, REG-3750)"
     ]
   },
   {
