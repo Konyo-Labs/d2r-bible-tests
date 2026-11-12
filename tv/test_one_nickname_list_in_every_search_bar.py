@@ -56,7 +56,7 @@ class OneNicknameListInEverySearchBar(unittest.TestCase):
         cls.page = _read("bible.html")
         cls.worker = _read(os.path.join("functions", "api", "d2jsp_quote.js"))
         cls.page_slang = _cut(cls.page, "var D2JSP_SLANG = {", "\n};\n")
-        cls.helper = _cut(cls.page, "var D2R_SEARCH_ALIASES = {", "window.d2rNicknameItems = d2rNicknameItems;\n")
+        cls.helper = _cut(cls.page, "var D2R_SEARCH_ALIASES = {", "if (typeof window !== 'undefined') { window.d2rNicknameItems = d2rNicknameItems; window.D2JSP_SLANG = D2JSP_SLANG; }\n")
         cls.arrange = _cut(cls.page, "function d2jspDbArrange(root) {", "\n}\n")
 
     def test_the_page_list_is_the_workers_word_for_word(self):

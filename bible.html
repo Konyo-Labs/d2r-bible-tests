@@ -13858,8 +13858,8 @@ function d2rNicknameItems(q) {
   if (Object.prototype.hasOwnProperty.call(D2R_SEARCH_ALIASES, f)) D2R_SEARCH_ALIASES[f].forEach(add);
   return out;
 }
-window.d2rNicknameItems = d2rNicknameItems;
-window.D2JSP_SLANG = D2JSP_SLANG;
+/* REG-3746 - guarded: the d2jsp desk laws run this block in node, where there is no window (GitHub went red on v3900's first round) */
+if (typeof window !== 'undefined') { window.d2rNicknameItems = d2rNicknameItems; window.D2JSP_SLANG = D2JSP_SLANG; }
 /* REG-3390 - Find narrows the items by name; Sort orders each group. Both act only inside the database panel. */
 function d2jspDbArrange(root) {
   if (!root || !root.querySelector) return 0;
