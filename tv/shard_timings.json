@@ -6671,6 +6671,10 @@
       "s": 1.437,
       "src": "median"
     },
+    "test_python_is_never_stripped_as_javascript": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_an_interrupted_reap_explains_its_missing_frames": {
       "s": 1.437,
       "src": "median"
