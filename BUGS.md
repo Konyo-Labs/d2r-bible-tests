@@ -167,6 +167,10 @@ relaunch_green_light_tick and turned test_relaunch_interlock red in v3902's pre-
 module walks OWED_BY) had been passing over the hidden half. Now Python handed in with a bare JS extension is stripped as
 Python, and both laws pass their real path. Named, not changed: the JavaScript branch itself is an unbounded /* .. */ (a
 private copy the comment-stripper ratchet counts); measured over 531 spec/js files it loses none of their 5 reel references.
+TRIED AND DROPPED the same day: swapping that branch for js_strip.strip_js_comments turned 3 laws red (test_a_kpi_chip_names_
+what_it_counts, test_control, test_the_auto_lanes_have_no_switch) - js_strip opens a "string" at any quote, and an apostrophe
+in HTML prose hides the next real comment from the strip, so laws reading bible.html / control_ui.html through it saw comment
+text as code. A swap needs an HTML-aware string rule first.
 Law: test_python_is_never_stripped_as_javascript (2 red-proofs).
 
 ### REG-3789 - A HELD "CONNECTING TO BATTLE.NET" SCREEN READ AS A FROZEN IDLE PAGE: A CLOUD REEL COULD SEAL MID-CONNECT (v3903, the second eye on v3901)
