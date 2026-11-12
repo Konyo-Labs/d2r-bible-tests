@@ -548,7 +548,13 @@ def hook_browser(root, timeout=15):
     fn = src[src.index(HOOK_BROWSER_BEGIN) + len(HOOK_BROWSER_BEGIN):src.index(HOOK_BROWSER_END)]
     script = "set -u\nREPO=%s\nHOME=%s\n%s\n_d2r_find_render_browser\n" % (
         _sh_quote(os.path.abspath(root)), _sh_quote(os.path.expanduser("~")), fn)
-    p = _run(["bash", "-c", script], root, timeout)
+    # #107 (REG-3809, GitHub windows-latest on v3903: "the hook's own finder found none (exit 1)") - a bare "bash" on Windows
+    # is the WSL launcher, which runs nothing (REG-1642's shape): ask the one resolver, and no real bash is UNKNOWN
+    import posix_shell
+    _bash = posix_shell.bash()
+    if not _bash:
+        return None, "no real POSIX bash on this PC, so the hook's finder cannot run - UNKNOWN"
+    p = _run([_bash, "-c", script], root, timeout)
     lines = (p.stdout or "").strip().splitlines()
     path = lines[-1].strip() if lines else ""
     if p.returncode == 0 and path and os.path.isfile(path) and os.access(path, os.X_OK):

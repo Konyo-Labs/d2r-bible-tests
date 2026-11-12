@@ -274,7 +274,8 @@ class ASalvageThatDoesNotReadBackBlocksThePrune(_Base):
         real_write = DG._write
 
         def short(path, data):
-            return real_write(path, data[:-5] if os.sep + "patches" + os.sep in path else data)
+            # #107 (REG-3809) - on Windows the salvage path comes back with forward slashes: compare it normalised
+            return real_write(path, data[:-5] if "/patches/" in str(path).replace("\\", "/") else data)
         with mock.patch.object(DG, "_write", side_effect=short):
             rec = self.fx.run([_entry()])
         c = _cand(rec, "claude-fx-work")
@@ -654,7 +655,8 @@ class TheGrokCliOnREG3208And3209(_Base):
         fx = self.fx
         wt = self.unmerged()
         gd = fx.g(wt, "rev-parse", "--absolute-git-dir")
-        self.assertIn(os.sep + "worktrees" + os.sep, gd, "premise: a linked worktree's gitdir is under the main .git")
+        self.assertIn("/worktrees/", gd.replace("\\", "/"),      # #107 (REG-3809) - git writes / on Windows too
+                      "premise: a linked worktree's gitdir is under the main .git")
         calls = []
 
         def lsof(*_a, **_k):
