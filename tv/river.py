@@ -223,16 +223,24 @@ def j_read():
         worth = sum(1 for v in (blob or {}).values() if v.get("full") and v.get("panels"))
     except Exception as e:
         return _joint("read", "reels sealed", None, None, str(e)[:70], "reel")
-    sealed = None
+    sealed = with_pages = None
     try:
         p = os.path.join(HERE, "chronicle_swept.json")
         if os.path.isfile(p):
             d = json.load(io.open(p, encoding="utf-8"))
             sealed = len(d) if isinstance(d, (dict, list)) else None
+            if sealed is not None:
+                rows = list(d.values()) if isinstance(d, dict) else d
+                # REG-3756 - a seal that says its read found NO Chronicle page (pages == 0) owes no sighting; a seal that
+                # does not say (an older row, a non-number) still counts as owing one - never assumed empty
+                with_pages = sum(1 for v in rows if not (isinstance(v, dict) and isinstance(v.get("pages"), int)
+                                                         and not isinstance(v.get("pages"), bool) and v.get("pages") == 0))
     except Exception:
-        sealed = None
-    return _joint("read", "reels sealed", sealed, worth,
-                  "a reel the survey says CARRIES something and nobody read is the backlog", "reel")
+        sealed = with_pages = None
+    j = _joint("read", "reels sealed", sealed, worth,
+               "a reel the survey says CARRIES something and nobody read is the backlog", "reel")
+    j["sealedWithPages"] = with_pages
+    return j
 
 
 def _sightings():
@@ -266,8 +274,14 @@ def j_sighting():
         return _joint("sighting", "sightings recorded", None, None,
                       "chron_evidence.json absent or unreadable", "sighting")
     r = j_read()
-    return _joint("sighting", "sightings recorded", len(ss), r.get("crossed"),
-                  "", "sighting")
+    # REG-3756 (Dean's river, 11-11: "blocked at 'sighting'", 0 sightings against 7 sealed reels) - the joint waited on EVERY
+    # sealed reel, and a seal whose read found no Chronicle page (pages: 0) legitimately leaves no sighting behind, so a PC
+    # whose reels held no Chronicle page read DRY - a broken join - when nothing was owed. It waits only on seals that found
+    # a page (or do not say); none read as UNKNOWN.
+    up = r.get("sealedWithPages")
+    return _joint("sighting", "sightings recorded", len(ss), up,
+                  ("" if up is None else "%d of %d sealed reel(s) found a Chronicle page - a sealed read that found none "
+                   "owes no sighting" % (up, r.get("crossed") or 0)), "sighting")
 
 
 def j_surface():

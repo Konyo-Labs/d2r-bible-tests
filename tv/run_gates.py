@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_seal_that_found_no_page_owes_no_sighting",
+         [sys.executable, os.path.join(HERE, "test_a_seal_that_found_no_page_owes_no_sighting.py")], 60,
+         needs_app=False,
+         why="v3901 (#44, REG-3756) - Dean's river read 'blocked at sighting' (0 sightings, 7 sealed reels): a seal whose "
+             "read found no Chronicle page owes no sighting; the joint waits only on seals that found one or do not say"),
     Gate("test_a_card_says_when_the_game_began",
          [sys.executable, os.path.join(HERE, "test_a_card_says_when_the_game_began.py")], 120,
          why="v3901 (#188, REG-3755) - the chronicle lane's door chain (the D2 logo -> Connecting -> character select) "
