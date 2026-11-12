@@ -6413,6 +6413,19 @@
   .ssv-names, .ssv-facts { margin-top: 3px; overflow-wrap: anywhere; }
   .ssv-playline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
   .ssv-play, .ssv-speed { font: inherit; cursor: pointer; min-height: 32px; }
+  /* #208 (his 11-13 calls) - another PC's whole session from the private reel bucket, the window filled, from the logo */
+  .ssv-reel { flex-basis: 100%; }
+  #shadow-reel-ov { position: fixed; inset: 0; z-index: 990; display: flex; flex-direction: column; background: #000;
+    color: var(--text, #e8dcc8); font: var(--fw-medium) var(--fs-xs)/var(--lh-snug) var(--mono); }
+  #shadow-reel-ov[hidden] { display: none !important; }
+  .srv-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; background: #0a0908;
+    border-bottom: 1px solid var(--edge); }
+  .srv-bar > button { flex: none; white-space: nowrap; font: inherit; cursor: pointer; min-height: 32px; }
+  .srv-title { color: var(--gold); flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+  .srv-at { color: var(--text-dim, #9a9a9a); white-space: nowrap; }
+  .srv-stage { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+  .srv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .srv-why { position: absolute; left: 12px; bottom: 12px; right: 12px; color: #e9b96e; overflow-wrap: anywhere; }
   .ssv-stage { flex-basis: 100%; }
   .ssv-thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .ssv-img { width: 160px; max-width: calc(33% - 4px); height: auto; border-radius: 4px; border: 1px solid var(--edge); }
@@ -24199,7 +24212,7 @@ window._lockMark = function(isOpen, px, label){
     var note = '';
     if (!imgs.length) note = '<div class="ssv-why">no pictures - ' + esc(String(s.why || (bad ? 'its pictures would not draw' : 'why UNKNOWN, the record names none'))) + '</div>';
     else if (bad) note = '<div class="ssv-why">' + bad + ' of its pictures would not draw</div>';
-    return '<div class="ssv-row"><div class="ssv-t">' + esc(when + ' · ' + span + ' · ' + reads)
+    return '<div class="ssv-row" data-ssv-session="' + esc(String(s.sessionId || '')) + '"><div class="ssv-t">' + esc(when + ' · ' + span + ' · ' + reads)
         + (typeof shGamePart === 'function' ? shGamePart(s.game, true) : '')   /* v3898 (#188) - the owner's 'part k of m · one game', drawn the same way */
         + (typeof shDoorPart === 'function' ? shDoorPart(s.door, s.t0) : '') + '</div>'   /* REG-3759 (#212) - when its game began, the same line as the Shelf card */
       + (farmed ? '<div class="ssv-names ssv-farmed">' + farmed + '</div>' : '<div class="ssv-names">' + names + '</div>')
@@ -24212,7 +24225,7 @@ window._lockMark = function(isOpen, px, label){
       /* v3859 - the route's trash: farmed, then dropped again and never stashed (older records carry none: no line) */
       + (Array.isArray(s.trashed) && s.trashed.length ? '<div class="ssv-facts ssv-trashed">' + esc('trashed: '
           + s.trashed.filter(function(x){ return typeof x === 'string' && x; }).join(' · ')) + '</div>' : '')
-      + '<div class="ssv-playline">' + playOne + '</div>'
+      + '<div class="ssv-playline">' + playOne + '<span class="ssv-reel ssv-why">whole session: asking the bucket\u2026</span></div>'
       + (imgs.length ? '<div class="ssv-thumbs">' + imgs.join('') + '</div>' : '') + note + '</div>';
   }
   function _shadowSessionsHead(owner){
@@ -24577,7 +24590,11 @@ window._lockMark = function(isOpen, px, label){
     }, 30000);
     fetch(API + '/api/roster-cache?frames=' + encodeURIComponent(owner), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
-      .then(function(d){ if (gen === _ssvGen) ov._ssvBody.innerHTML = _shadowSessionsHtml(d); })
+      .then(function(d){
+        if (gen !== _ssvGen) return;
+        ov._ssvBody.innerHTML = _shadowSessionsHtml(d);
+        _shadowReelDecorate(owner, ov._ssvBody, gen);   /* #208 - which of these sessions the bucket holds whole */
+      })
       .catch(function(e){
         if (gen === _ssvGen) ov._ssvBody.innerHTML = _shadowSessionsHtml({ ok: false, owner: owner,
           why: 'this console did not answer (' + String((e && e.message) || e).slice(0, 80) + ')' });
@@ -24585,6 +24602,157 @@ window._lockMark = function(isOpen, px, label){
     return true;
   }
   window._shadowSessionsOpen = _shadowSessionsOpen;
+
+  /* #208 (his 11-13 calls: "shadow mode must render full screen and ALL frames of that session locally, and show the game
+     recording from when play starts"; then "maybe just the last 3 sessions ... always reachable even when a user is offline
+     ... a type of summary ... not 3 frames"). Each PC sends its newest 3 sessions whole and the rest as summary reels to a
+     private bucket; this asks THIS console which of the listed sessions the bucket holds (the page never holds the site's
+     password) and offers to watch it, the window filled, from the frame play starts on (the first D2 logo, else frame 1).
+     An unanswered bucket is said as UNKNOWN on every row, never "not uploaded". */
+  var _SRV = { owner: '', slot: '', session: '', mode: '', frames: [], start: 0, i: 0, playing: false, timer: 0, speed: 1, gen: 0 };
+  var _SRV_SPEEDS = [1, 2, 4, 8];
+  function _shadowReelDecorate(owner, body, gen){
+    fetch(API + '/api/roster-cache?reels=' + encodeURIComponent(owner), { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .catch(function(e){ return { ok: false, why: 'this console did not answer (' + String((e && e.message) || e).slice(0, 60) + ')' }; })
+      .then(function(d){
+        if (gen !== _ssvGen) return;
+        var ok = !!(d && d.ok === true && Array.isArray(d.sessions));
+        var by = {};
+        if (ok) d.sessions.forEach(function(x){ if (x && typeof x.session === 'string') by[x.session] = x; });
+        Array.prototype.forEach.call(body.querySelectorAll('.ssv-row[data-ssv-session]'), function(row){
+          var cell = row.querySelector('.ssv-reel');
+          if (!cell) return;
+          var x = by[row.getAttribute('data-ssv-session')];
+          if (!ok) {
+            cell.className = 'ssv-reel ssv-why';
+            cell.textContent = 'whole session: UNKNOWN - ' + String((d && d.why) || 'the bucket did not answer').slice(0, 140);
+            return;
+          }
+          if (!x) { cell.className = 'ssv-reel ssv-why'; cell.textContent = 'whole session: not in the bucket (only its newest 16 are kept)'; return; }
+          cell.className = 'ssv-reel';
+          cell.innerHTML = '<button type="button" class="ssv-play ssv-reel-play">▶ WATCH '
+            + (x.mode === 'full' ? 'the whole session' : 'its summary') + ' · ' + esc(String(x.frames)) + ' frames</button>';
+          cell.firstChild.onclick = function(){ _shadowReelOpen(owner, x); };
+        });
+      });
+  }
+  function _srvFrameUrl(i){
+    return API + '/api/roster-cache?reel=' + encodeURIComponent(_SRV.slot) + '&session=' + encodeURIComponent(_SRV.session)
+      + '&frame=' + encodeURIComponent(_SRV.frames[i]);
+  }
+  function _srvClock(name){
+    var m = /^f_(\d{10,16})\.jpg$/.exec(String(name || ''));
+    if (!m) return 'time UNKNOWN';
+    var d = new Date(Number(m[1]));
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+  }
+  function _srvShow(i){
+    var ov = document.getElementById('shadow-reel-ov');
+    if (!ov || !_SRV.frames.length) return;
+    _SRV.i = Math.max(0, Math.min(_SRV.frames.length - 1, i));
+    var img = ov.querySelector('.srv-stage img');
+    ov.querySelector('.srv-why').textContent = '';
+    img.src = _srvFrameUrl(_SRV.i);
+    for (var k = 1; k <= 4 && _SRV.i + k < _SRV.frames.length; k++) { var pre = new Image(); pre.src = _srvFrameUrl(_SRV.i + k); }
+    ov.querySelector('.srv-at').textContent = 'frame ' + (_SRV.i + 1) + ' of ' + _SRV.frames.length + ' · '
+      + _srvClock(_SRV.frames[_SRV.i]) + (_SRV.i === _SRV.start ? ' · play starts here' : '');
+  }
+  function _srvStop(){
+    _SRV.playing = false;
+    if (_SRV.timer) { clearTimeout(_SRV.timer); _SRV.timer = 0; }
+    var b = document.getElementById('srv-play');
+    if (b) b.textContent = '▶ PLAY';
+  }
+  function _srvTick(){
+    if (!_SRV.playing) return;
+    if (_SRV.i >= _SRV.frames.length - 1) { _srvStop(); return; }
+    _srvShow(_SRV.i + 1);
+    _SRV.timer = setTimeout(_srvTick, Math.round(700 / _SRV.speed));
+  }
+  function _srvPlay(){
+    if (_SRV.playing) { _srvStop(); return; }
+    _SRV.playing = true;
+    var b = document.getElementById('srv-play');
+    if (b) b.textContent = '⏸ PAUSE';
+    _SRV.timer = setTimeout(_srvTick, Math.round(700 / _SRV.speed));
+  }
+  function _shadowReelClose(){
+    _srvStop();
+    _SRV.gen++;
+    var ov = document.getElementById('shadow-reel-ov');
+    if (ov) ov.hidden = true;
+  }
+  function _shadowReelOpen(owner, x){
+    var ov = document.getElementById('shadow-reel-ov');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'shadow-reel-ov';
+      ov.setAttribute('role', 'dialog');
+      ov.setAttribute('data-esc-own', '1');
+      ov.tabIndex = -1;
+      ov.innerHTML = '<div class="srv-bar"><span class="srv-title"></span><span class="srv-at"></span>'
+        + '<button type="button" id="srv-start" title="back to where play starts">⏮ START</button>'
+        + '<button type="button" id="srv-prev" title="one frame back">◀</button>'
+        + '<button type="button" id="srv-play">▶ PLAY</button>'
+        + '<button type="button" id="srv-next" title="one frame on">▶▶</button>'
+        + '<button type="button" id="srv-speed">1×</button>'
+        + '<button type="button" id="srv-x" title="close (Esc)">✕ CLOSE</button></div>'
+        + '<div class="srv-stage"><img alt="a frame of this session"><div class="srv-why"></div></div>';
+      document.body.appendChild(ov);
+      ov.querySelector('#srv-start').onclick = function(){ _srvStop(); _srvShow(_SRV.start); };
+      ov.querySelector('#srv-prev').onclick = function(){ _srvStop(); _srvShow(_SRV.i - 1); };
+      ov.querySelector('#srv-next').onclick = function(){ _srvStop(); _srvShow(_SRV.i + 1); };
+      ov.querySelector('#srv-play').onclick = _srvPlay;
+      ov.querySelector('#srv-speed').onclick = function(){
+        _SRV.speed = _SRV_SPEEDS[(_SRV_SPEEDS.indexOf(_SRV.speed) + 1) % _SRV_SPEEDS.length];
+        this.textContent = _SRV.speed + '×';
+      };
+      ov.querySelector('#srv-x').onclick = _shadowReelClose;
+      ov.querySelector('.srv-stage img').onerror = function(){
+        ov.querySelector('.srv-why').textContent = 'frame ' + (_SRV.i + 1) + ' would not load from the bucket (evicted, or the site did not answer)';
+      };
+      ov.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); _shadowReelClose(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); _srvStop(); _srvShow(_SRV.i - 1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); _srvStop(); _srvShow(_SRV.i + 1); }
+        else if (e.key === ' ') { e.preventDefault(); _srvPlay(); }
+        else if (e.key === 'Home') { e.preventDefault(); _srvStop(); _srvShow(_SRV.start); }
+      });
+    }
+    _srvStop();
+    var gen = ++_SRV.gen;
+    _SRV.owner = owner; _SRV.slot = String(x.slot || ''); _SRV.session = String(x.session || ''); _SRV.mode = String(x.mode || '');
+    _SRV.frames = []; _SRV.i = 0; _SRV.start = 0;
+    ov.querySelector('.srv-title').textContent = owner + ' · ' + (_SRV.mode === 'full' ? 'whole session' : 'summary')
+      + ' · ' + _SRV.session;
+    ov.querySelector('.srv-at').textContent = 'reading its manifest…';
+    ov.querySelector('.srv-why').textContent = '';
+    ov.querySelector('.srv-stage img').removeAttribute('src');
+    ov.hidden = false;
+    try { ov.focus(); } catch (eF) {}
+    fetch(API + '/api/roster-cache?reel=' + encodeURIComponent(_SRV.slot) + '&session=' + encodeURIComponent(_SRV.session),
+          { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .catch(function(e){ return { ok: false, why: 'this console did not answer (' + String((e && e.message) || e).slice(0, 60) + ')' }; })
+      .then(function(m){
+        if (gen !== _SRV.gen) return;
+        if (!m || !Array.isArray(m.frames) || !m.frames.length) {
+          ov.querySelector('.srv-at').textContent = '';
+          ov.querySelector('.srv-why').textContent = 'this session would not open: '
+            + String((m && m.why) || 'its manifest named no frames').slice(0, 160);
+          return;
+        }
+        _SRV.frames = m.frames.filter(function(n){ return /^f_\d{10,16}\.jpg$/.test(String(n)); });
+        var st = _SRV.frames.indexOf(m.start);
+        _SRV.start = st >= 0 ? st : 0;
+        _srvShow(_SRV.start);
+        _srvPlay();
+      });
+    return true;
+  }
+  window._shadowReelOpen = _shadowReelOpen;
+  window._shadowReelClose = _shadowReelClose;
   window._shadowSessionsClose = _shadowSessionsClose;
   document.addEventListener('keydown', function(e){
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;

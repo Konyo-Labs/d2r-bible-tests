@@ -6506,6 +6506,103 @@ def _frames_cache_dir():
     return os.path.join(_log_root(), "roster_frames_cache")
 
 
+# ── #208 (his 11-13 calls) - ANOTHER PC's WHOLE SESSION, PLAYED FROM THE PRIVATE REEL BUCKET THROUGH THIS CONSOLE ──────
+# The page never holds the site's password: it asks this console, which asks the site (Basic + the gate) and keeps a copy
+# of each frame it fetched under roster_reels_cache, at most SHADOW_REEL_CACHE_BYTES, the oldest-read session leaving
+# first and never the one being played. Every name is shape-checked before it touches a path.
+SHADOW_REEL_CACHE_BYTES = int(1.5 * 1024 ** 3)
+_REEL_SLOT_RE = re.compile(r"^[A-Za-z0-9_]+(@[0-9a-f]{12})?$")
+_REEL_SESSION_RE = re.compile(r"^s_\d{10,16}_\d{1,6}$")
+_REEL_FRAME_RE = re.compile(r"^f_\d{10,16}\.jpg$")
+
+
+def _reels_cache_dir():
+    return os.path.join(_log_root(), "roster_reels_cache")
+
+
+def _roster_get_bytes(url, timeout=30):
+    """-> (bytes, None) | (None, why) - the site's answer as bytes (a frame), behind its Basic gate"""
+    try:
+        import base64 as _b64
+        req = urllib.request.Request(url, headers={"User-Agent": "TVD-Console/1.0",
+                                                   "Authorization": "Basic " + _b64.b64encode(b"app:DeanDiablo").decode()})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            ctype = resp.headers.get("Content-Type") or ""
+            data = resp.read()
+    except Exception as e:
+        return None, type(e).__name__
+    if not ctype.startswith("image/jpeg"):
+        try:
+            return None, str((json.loads(data.decode("utf-8", "replace")) or {}).get("why") or "not a frame")[:160]
+        except Exception:
+            return None, "the site answered something that is not a frame"
+    return data, None
+
+
+def _reels_cache_prune(cdir, keep_session, cap=None):
+    """the cache at most `cap` bytes: whole sessions leave, least recently read first, never keep_session. -> bytes freed"""
+    cap = SHADOW_REEL_CACHE_BYTES if cap is None else cap
+    sessions, total = [], 0
+    try:
+        for slot in os.listdir(cdir):
+            sd = os.path.join(cdir, slot)
+            if not os.path.isdir(sd):
+                continue
+            for ses in os.listdir(sd):
+                d = os.path.join(sd, ses)
+                if not os.path.isdir(d):
+                    continue
+                files = [os.path.join(d, n) for n in os.listdir(d)]
+                size = sum(os.path.getsize(f) for f in files if os.path.isfile(f))
+                seen = max([os.path.getmtime(d)] + [os.path.getmtime(f) for f in files if os.path.isfile(f)])
+                sessions.append((seen, d, size, ses))
+                total += size
+    except OSError:
+        return 0
+    freed = 0
+    for seen, d, size, ses in sorted(sessions):
+        if total <= cap:
+            break
+        if ses == keep_session:
+            continue
+        shutil.rmtree(d, ignore_errors=True)
+        total -= size
+        freed += size
+    return freed
+
+
+def _reel_frame_bytes(slot, session, frame, _fetch=None, cdir=None):
+    """-> (bytes, None) | (None, why). This PC's copy if it holds one, else the site's (kept for next time)."""
+    if not (_REEL_SLOT_RE.match(str(slot or "")) and _REEL_SESSION_RE.match(str(session or ""))
+            and _REEL_FRAME_RE.match(str(frame or ""))):
+        return None, "not a reel slot, session and frame"
+    cdir = cdir or _reels_cache_dir()
+    d = os.path.join(cdir, slot, session)
+    p = os.path.join(d, frame)
+    if os.path.isfile(p):
+        try:
+            with open(p, "rb") as fh:
+                data = fh.read()
+            os.utime(d, None)                 # read now: the least-recently-read rule counts this session as fresh
+            return data, None
+        except OSError:
+            pass
+    from urllib.parse import quote as _q
+    data, why = (_fetch or _roster_get_bytes)(_ROSTER_URL + "?reel=%s&session=%s&frame=%s" % (_q(slot), session, frame))
+    if data is None:
+        return None, why
+    try:
+        os.makedirs(d, exist_ok=True)
+        tmp = p + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, p)
+        _reels_cache_prune(cdir, session)
+    except OSError:
+        pass                                   # a copy that would not keep still plays this time
+    return data, None
+
+
 def _frames_view(owner):
     """#218 phase 3a (REG-2773) - what the shadow's Shelf and TV·D draw: that owner's summarized sessions from the site's
     frames record, with its time. This PC's last copy stands in only when the site could not be READ; a site answering
@@ -52124,6 +52221,30 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, status_payload())
             return
         _rq = urllib.parse.parse_qs(urllib.parse.urlparse(self.path or "").query) if path.startswith("/api/roster-") else {}
+        if path.endswith("/roster-cache") and "reels" in _rq:
+            # #208 - that owner's sessions held whole or as summaries in the private reel bucket. GET only.
+            from urllib.parse import quote as _q
+            self._json(200, _roster_get(_ROSTER_URL + "?reels=" + _q((_rq.get("reels") or [""])[0])))
+            return
+        if path.endswith("/roster-cache") and "reel" in _rq and "frame" not in _rq:
+            _sl, _se = (_rq.get("reel") or [""])[0], (_rq.get("session") or [""])[0]
+            if not (_REEL_SLOT_RE.match(_sl) and _REEL_SESSION_RE.match(_se)):
+                self._json(200, {"ok": False, "why": "not a reel slot and session"}); return
+            from urllib.parse import quote as _q
+            self._json(200, _roster_get(_ROSTER_URL + "?reel=%s&session=%s" % (_q(_sl), _se)))
+            return
+        if path.endswith("/roster-cache") and "reel" in _rq and "frame" in _rq:
+            _data, _why = _reel_frame_bytes((_rq.get("reel") or [""])[0], (_rq.get("session") or [""])[0],
+                                            (_rq.get("frame") or [""])[0])
+            if _data is None:
+                self._json(200, {"ok": False, "why": _why}); return
+            self.send_response(200)
+            self.send_header("Content-Type", "image/jpeg")
+            self.send_header("Content-Length", str(len(_data)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.end_headers()
+            self.wfile.write(_data)
+            return
         if path.endswith("/roster-cache") and "frames" in _rq:
             # #218 phase 3a (REG-2773) - the owner's summarized sessions for a shadow's Shelf / TV·D. GET only.
             self._json(200, _frames_view((_rq.get("frames") or [""])[0]))
