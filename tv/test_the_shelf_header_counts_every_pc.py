@@ -99,7 +99,8 @@ console.log(JSON.stringify({ withFleet: with_, without: without }));
             shutil.rmtree(d, ignore_errors=True)
         self.assertEqual(r.returncode, 0, r.stderr.decode("utf-8", "replace")[-700:])
         out = json.loads(r.stdout.decode("utf-8").strip().splitlines()[-1])
-        self.assertIn("Konyo · ALT", out["withFleet"], "the best run on another PC is not named in the header")
+        # REG-3768 - on the card's VALUE line (">...</div>"): the tooltip carries the name too, and must not satisfy this
+        self.assertIn(">Konyo · ALT</div>", out["withFleet"], "the best run on another PC is not named in the header")
         self.assertIn("2 runs logged", out["withFleet"], "the header does not count the other PC's run")
         self.assertIn("1 run logged", out["without"], "BASELINE - with no fleet answer the header is this PC's own runs")
         self.assertIn("_shFleetLoad(); } catch (eFl) {}", ui, "the shelf no longer asks every PC's sessions")
@@ -115,7 +116,7 @@ RED_PROOF = [
      "matches": 1, "needs": "node"},
     {"why": "v3899 (#213) - a fleet run's card says 'Session 0' instead of its PC",
      "file": "tv/control_ui.html",
-     "find": "    function _shRunName(m){ return m.n ? 'Session ' + m.n : esc(String(m.owner || 'another PC')) + ' \\u00b7 ' + esc(m.when || ''); }\n",
+     "find": "    function _shRunName(m){ return m.n ? 'Session ' + m.n : esc(String(m.owner || 'another PC')); }\n",
      "replace": "    function _shRunName(m){ return 'Session ' + m.n; }\n",
      "matches": 1, "needs": "node"},
     {"why": "v3899 (#213) - the server stops reading the other PCs' copies",

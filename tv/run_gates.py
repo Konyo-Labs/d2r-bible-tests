@@ -13951,6 +13951,11 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_card_names_another_pcs_run_in_one_line",
+         [sys.executable, os.path.join(HERE, "test_a_card_names_another_pcs_run_in_one_line.py")], 60,
+         needs_app=False,
+         why="v3902 (#213, REG-3768) - GrokBot at his 1512: TOP READS/HR read 'Konyo · ALT · Nov …' - another PC's run is "
+             "named by its PC on the one value line, its day on the line below"),
     Gate("test_an_orphaned_publish_holds_nothing",
          [sys.executable, os.path.join(HERE, "test_an_orphaned_publish_holds_nothing.py")], 60,
          needs_app=False,

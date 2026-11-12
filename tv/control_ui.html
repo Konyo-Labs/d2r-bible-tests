@@ -17418,16 +17418,22 @@ window._lockMark = function(isOpen, px, label){
     var dset = {}; runs.forEach(function(s){ if (s.t0){ var d = new Date(s.t0); dset[d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()] = 1; } });
     var dkeys = Object.keys(dset).map(function(k){ var p = k.split('-'); return new Date(+p[0], +p[1], +p[2]).getTime(); }).sort(function(a, b){ return b - a; });
     var streak = 0; if (dkeys.length){ streak = 1; for (var i = 1; i < dkeys.length; i++){ if (Math.round((dkeys[i - 1] - dkeys[i]) / 86400000) === 1) streak++; else break; } }
-    function _shRunName(m){ return m.n ? 'Session ' + m.n : esc(String(m.owner || 'another PC')) + ' \u00b7 ' + esc(m.when || ''); }
-    function card(ic, lab, val, sub, n, sid){
+    /* REG-3768 (#213, GrokBot 11-12 at his 1512) - another PC's run was named "Konyo · ALT · Nov 12" on the value line, which is
+       one line and ellipsised: it read "Konyo · ALT · Nov …". The value carries the run's NAME only (the length of "Session
+       205"); another PC's day moves to the sub line, and the whole name rides the tooltip. (Best coverage is always his own
+       run: a fleet run carries no coverage.) */
+    function _shRunName(m){ return m.n ? 'Session ' + m.n : esc(String(m.owner || 'another PC')); }
+    function _shRunDay(m){ return (!m.n && m.when) ? ' \u00b7 ' + esc(m.when) : ''; }
+    function _shRunTip(m){ return m.n ? '' : String(m.owner || 'another PC') + (m.when ? ' \u00b7 ' + m.when : ''); }
+    function card(ic, lab, val, sub, n, sid, tip){
       var clk = n ? (' class="sh-hi-card shi-clk" data-n="' + n + '" data-sid="' + esc(sid || '') + '" title="open session ' + n + '"') : ' class="sh-hi-card"';
       return '<div' + clk + '><div class="shi-ic">' + ic + '</div><div class="shi-body"><div class="shi-lab">' + lab + '</div>'
-        + '<div class="shi-val">' + val + '</div>' + (sub ? '<div class="shi-sub">' + sub + '</div>' : '') + '</div></div>';
+        + '<div class="shi-val"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + val + '</div>' + (sub ? '<div class="shi-sub">' + sub + '</div>' : '') + '</div></div>';
     }
     var cards = [];
-    if (bGrail && bGrail.grails > 0) cards.push(card('🏆', 'Best run', _shRunName(bGrail), bGrail.grails + ' chronicle' + (bGrail.grails > 1 ? 's' : '') + ' · ' + _kpiFmt(bGrail.reads) + ' reads', bGrail.n, bGrail.sid));
-    if (bReads) cards.push(card('⚡', 'Most reads', _shRunName(bReads), _kpiFmt(bReads.reads) + ' reads', bReads.n, bReads.sid));
-    if (bRph) cards.push(card('📈', 'Top reads/hr', _shRunName(bRph), _kpiFmt(bRph.rph) + ' /hr', bRph.n, bRph.sid));
+    if (bGrail && bGrail.grails > 0) cards.push(card('🏆', 'Best run', _shRunName(bGrail), bGrail.grails + ' chronicle' + (bGrail.grails > 1 ? 's' : '') + ' · ' + _kpiFmt(bGrail.reads) + ' reads' + _shRunDay(bGrail), bGrail.n, bGrail.sid, _shRunTip(bGrail)));
+    if (bReads) cards.push(card('⚡', 'Most reads', _shRunName(bReads), _kpiFmt(bReads.reads) + ' reads' + _shRunDay(bReads), bReads.n, bReads.sid, _shRunTip(bReads)));
+    if (bRph) cards.push(card('📈', 'Top reads/hr', _shRunName(bRph), _kpiFmt(bRph.rph) + ' /hr' + _shRunDay(bRph), bRph.n, bRph.sid, _shRunTip(bRph)));
     if (bCov) cards.push(card('📊', 'Best coverage', 'Session ' + bCov.n, bCov.cov + '%', bCov.n, bCov.sid));
     /* REG-3763 (#213) - "N runs logged" counted the rows this PC holds (its own + each other PC's 16-run window); each other PC
        counts its own total when its copy says it, and a PC whose copy does not say makes the figure a floor ("at least") */
