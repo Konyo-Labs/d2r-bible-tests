@@ -71,6 +71,17 @@ class TheFinishPlan(unittest.TestCase):
         p = PS.finish_plan({"cut": CUT5, "fix": RED16, "lost": [], "missing": []}, 1)
         self.assertEqual((p["action"], p["shards"]), ("rerun-jobs", ["5"]), p)
 
+    def test_v3900_a_first_attempt_flake_is_re_run_with_the_cut_shard(self):
+        """REG-3772 (#200) - run 43156415620: shard 10 cut, shards 11 and 14 the war-stash law red ONCE untampered. The
+        finisher re-ran only shard 10 (it asked makeup_due with no attempt) and left the flake for a human."""
+        flake = [["test_vault_l1_war_stash_overflow", 8, "UNPROVABLE", "it is %s in the sandbox" % PS.CLEAN_RED, 11],
+                 ["test_vault_l1_war_stash_overflow", 20, "UNPROVABLE", "it is %s in the sandbox" % PS.CLEAN_RED, 14]]
+        cut10 = [["safety", i, T, "cut at its bound", 10] for i in range(3)]
+        p = PS.finish_plan({"cut": cut10, "fix": flake, "lost": [], "missing": []}, 1)
+        self.assertEqual((p["action"], p["shards"]), ("rerun-failed", ["10", "11", "14"]), p)
+        p = PS.finish_plan({"cut": cut10, "fix": flake, "lost": [], "missing": []}, 2)
+        self.assertEqual((p["action"], p["shards"]), ("rerun-jobs", ["10"]), "a second red was re-run again: %r" % p)
+
     def test_a_red_alone_is_never_re_run(self):
         for tot in ({"cut": [], "fix": RED16, "lost": [], "missing": []},
                     {"cut": [["war", 1, T, "cut", 16]], "fix": RED16, "lost": [], "missing": []}):
@@ -188,6 +199,11 @@ class TheShipWaitsOnTheFinisher(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3772 - the finisher asks makeup_due with no attempt again: a first-attempt flake is left for a human",
+     "file": "tv/proof_shard.py",
+     "find": "    due, why = makeup_due(tot, attempt=n)\n",
+     "replace": "    due, why = makeup_due(tot)\n",
+     "matches": 1},
     {"why": "REG-3387 - the finisher listens for a workflow name that does not exist (it never fires, silently)",
      "file": ".github/workflows/proof-keys-finish.yml", "find": '    workflows: ["proof-keys shards (ci/proof-keys-* only)"]\n',
      "replace": '    workflows: ["proof-keys shards"]\n', "matches": 1},
@@ -200,8 +216,8 @@ RED_PROOF = [
      "file": ".github/workflows/proof-keys-finish.yml", "find": "github.event.workflow_run.run_attempt <= 2 }}",
      "replace": "github.event.workflow_run.run_attempt <= 9 }}", "matches": 1},
     {"why": "REG-3387 - a round with a red law is re-run whole (a red re-run until it greens)",
-     "file": "tv/proof_shard.py", "find": "    due, why = makeup_due(tot)\n    if due:\n        sh = sorted(",
-     "replace": "    due, why = makeup_due(tot)\n    if due or tot.get('fix'):\n        sh = sorted(", "matches": 1},
+     "file": "tv/proof_shard.py", "find": "    due, why = makeup_due(tot, attempt=n)\n    if due:\n        sh = sorted(",
+     "replace": "    due, why = makeup_due(tot, attempt=n)\n    if due or tot.get('fix'):\n        sh = sorted(", "matches": 1},
     {"why": "REG-3387 - the ship stops on a round GitHub's finisher is already re-running",
      "file": "tv/ship_when_green.py", "find": "            if running_again(rid, run):      # v3881 (REG-3387) - GitHub's finisher re-ran it first: wait on that re-run",
      "replace": "            if False:", "matches": 1},

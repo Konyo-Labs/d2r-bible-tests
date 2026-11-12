@@ -10,7 +10,9 @@ name: proof-keys finish - a round cut only by its bound is finished, never faile
 #                  already banked (REG-3210/3280) and proves only what was cut.
 #   rerun-jobs   - cut-only shards beside a shard that owes a fix: just those jobs are re-run; the red one never is.
 #   none         - a red law, a shard that left no store (UNKNOWN), or a round already finished twice: a human's.
-# It never re-runs a red law (re-running reds until they pass is a lie, not a proof).
+# It never re-runs a red law (re-running reds until they pass is a lie, not a proof) - except a law red ONCE untampered on the
+# round's FIRST attempt, which is the ship's own #146 rule (a flake until it reds twice): it is re-run once with the cut
+# shards (REG-3772), and a second red is a human's.
 #
 # SAFETY: a workflow_run job runs THIS file from the default branch and checks out the default branch - no ci/ branch's code
 # ever runs with the actions: write token. The round's census is DATA (JSON), read by main's own proof_shard.py.

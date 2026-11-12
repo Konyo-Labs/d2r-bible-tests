@@ -1028,7 +1028,8 @@ def finish_plan(tot, attempt):
     """v3881 (REG-3387) - HIS ORDER 2026-11-07: "red is logical but timeout?" - a proof round whose debt includes proofs a
     bound CUT is finished on GitHub itself, never handed back as a failed round. -> {"action", "shards", "why"}. Pure.
 
-    action  "rerun-failed": the ONLY debt is cut proofs (makeup_due) - re-run the run's failed jobs
+    action  "rerun-failed": the ONLY debt is cut proofs, or a law red ONCE untampered on the first attempt (makeup_due, #146,
+                            REG-3772) - re-run the run's failed jobs
             "rerun-jobs":   cut-only shards beside a shard that owes a fix (timeout_only_shards) - re-run just those jobs;
                             the red shard is never re-run (a red law is a human's, and re-running reds until green is a lie)
             "none":         nothing a re-run can finish, or this round was already finished FINISH_MAX_ATTEMPT times
@@ -1042,10 +1043,13 @@ def finish_plan(tot, attempt):
                 "why": "attempt %d: this round was already finished %d time(s) - what is left is a human's" % (n, n - 1)}
     if not isinstance(tot, dict):
         return {"action": "none", "shards": [], "why": "no census to read - UNKNOWN, nothing re-run"}
-    due, why = makeup_due(tot)
+    # REG-3772 (#200, v3900's round 11-12) - the attempt goes to makeup_due, the ship's own rule (#146): asked with none, a law
+    # red ONCE untampered on the first attempt read as "red AGAIN - real", so only cut shard 10 was re-run, the run became
+    # attempt 2, and shards 11 and 14 (the war-stash flake) were left for a human. Now they are re-run with it, once.
+    due, why = makeup_due(tot, attempt=n)
     if due:
-        sh = sorted(set(str(f[4]) for f in (tot.get("cut") or []) if isinstance(f, (list, tuple)) and len(f) > 4),
-                    key=lambda k: (len(k), k))
+        sh = sorted(set(str(f[4]) for f in ((tot.get("cut") or []) + (tot.get("fix") or []))
+                        if isinstance(f, (list, tuple)) and len(f) > 4), key=lambda k: (len(k), k))
         return {"action": "rerun-failed", "shards": sh, "why": why}
     part = timeout_only_shards(tot)
     if part:
