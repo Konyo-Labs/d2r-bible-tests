@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_the_d2_logo_is_never_warm_up_blank",
+         [sys.executable, os.path.join(HERE, "test_the_d2_logo_is_never_warm_up_blank.py")], 60,
+         why="v3900 (#188, REG-3745) - the D2 logo (flatness 0.994 on his Mac's own frames) was dropped by the footage "
+             "warm-up gate as blank: the first door of every session; a frame the reader names logo/title/Connecting is kept"),
     Gate("test_a_title_bar_with_its_text_is_not_the_game",
          [sys.executable, os.path.join(HERE, "test_a_title_bar_with_its_text_is_not_the_game.py")], 60,
          needs_app=False,

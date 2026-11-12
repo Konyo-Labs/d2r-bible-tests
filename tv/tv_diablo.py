@@ -2361,6 +2361,21 @@ def _foot_fps_now():
 NOGAME_TAIL_FRAMES = int(os.environ.get("TV_NOGAME_TAIL", "6") or 6)
 
 
+def _door_screen(path):
+    """REG-3745 (#188) - is this flat-looking frame the game's own DOOR - the D2 logo, the title or Connecting? -> bool
+
+    MEASURED 11-12 on his Mac's own reels (10-13): the small-corner D2 logo frames score flatness 0.994 (black but for the
+    fire logo) and the warm-up gate (v1548) dropped them as 'blank' - the FIRST screen of his ruling's chain (the D2 logo
+    -> Connecting to Battle.net -> character select; the session starts at the first logo). On Dean's PC 11-07 the reel
+    opened 13 s after Battle.net launched the game and the footage still began at character select, 36 s in. A door frame
+    is the game painting, never startup noise. A frame that cannot be judged is not a door: the gate behaves as before."""
+    try:
+        import d2r_screens as _ds
+        return _ds.screen_of(path)[0] in ("logo", "title", "connecting")
+    except Exception:
+        return False
+
+
 def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
     """v947 — 1fps archive helper. Always advances the due clock; never blocks on sips.
 
@@ -2445,7 +2460,7 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
         if not globals().get("_FOOTAGE_WARM"):
             try:
                 import chronicle_retro as _cr
-                if _cr.is_dead_frame(src_path):
+                if _cr.is_dead_frame(src_path) and not _door_screen(src_path):
                     globals()["_FOOTAGE_WARMSKIP"] = int(globals().get("_FOOTAGE_WARMSKIP") or 0) + 1
                     globals()["_FOOTAGE_WHY"] = "warming-up (window not painted yet)"
                     return False
