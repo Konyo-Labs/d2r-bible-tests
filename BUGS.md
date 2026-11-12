@@ -142,6 +142,22 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3801 - SEVEN LAWS READ RED ON WINDOWS FOR A WINDOWS FACT THEY NEVER ASKED ABOUT (v3903, #107)
+GitHub's Windows proof run on v3901 (43212958628, windows-latest) filed 15 laws ALREADY RED untampered and named each red
+case's assertion. Seven were the law's own instrument, never the product: (1) test_the_rehearsal_render_bound_moves_with_the_load
+patched os.getloadavg, which Windows does not have (preship already answers None there) - the patch now creates it; (2)
+test_their_tooltip_rows_are_ours compared node.exe to which's node.EXE, one file in PATHEXT's case - compared by normcase;
+(3) test_d2jsp_desk pinned the Mac login profile as a slash string a Windows host joins with backslashes - it now reads
+login_profile_dir's own join, as its win32 half does (the Mac form stays pinned by the Mac sign-in law); (4)
+test_live_store_skip pointed ~ at a temp dir through HOME, which Windows' expanduser never reads - USERPROFILE too; (5)
+test_a_shell_law_without_a_real_bash_is_unmeasured popped ProgramFiles from a copy of os.environ whose keys are UPPER-CASE on
+Windows, so nothing was removed, the child found Git's bash and a shell case read ok - keys are matched without case (swept:
+no other law pops a mixed-case variable); (6) test_a_cut_off_gate_set_is_not_a_verdict asserted a shell exists before
+REG-3629's Windows skip could answer - it skips there as UNMEASURED; (7) test_a_gate_proven_on_these_bytes_is_carried looked
+for the warmed .pyc under the realpath, which expands the temp dir's 8.3 name (RUNNER~1 to runneradmin) while Windows' import
+keeps it - both spellings are asked. The other eight (browser widths, the fold's ink, tracing a spawn child, the prune's
+holder) are measured by the ci/winlaws run before they are fixed or declared off Windows.
+
 ### REG-3800 - THE MASK-ENCODER LAW TOOK A COMPLETE PAGE WITH NO LSR AS READY: ONE CASE RACED RED (v3902 round 2 on GitHub)
 agent-suite (5) of run 43241192004 (v3902, 9b38ec448): test_mask_encoders_agree::test_owning_EVERYTHING - "the js encoder
 refused: this page has no LSR, so a mask read here would be of the wrong world"; every sibling case passed. The shipped snippet

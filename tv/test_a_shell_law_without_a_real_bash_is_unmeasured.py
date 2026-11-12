@@ -66,9 +66,12 @@ RESOLVER_CASES = (
 
 
 def _no_bash_env(empty_dir):
-    env = dict(os.environ, PATH=empty_dir)
-    for k in ("ProgramFiles", "ProgramW6432", "ProgramFiles(x86)", "LOCALAPPDATA"):
-        env.pop(k, None)
+    # #107 (REG-3801) - os.environ's keys are UPPER-CASE on Windows (PROGRAMFILES), so popping "ProgramFiles" from its
+    # copy removed nothing: GitHub windows-latest on v3901 kept Program Files, found Git's bash, and the first shell
+    # case read ok. Every key is matched without case.
+    drop = ("PATH", "PROGRAMFILES", "PROGRAMW6432", "PROGRAMFILES(X86)", "LOCALAPPDATA")
+    env = {k: v for k, v in os.environ.items() if k.upper() not in drop}
+    env["PATH"] = empty_dir
     return env
 
 

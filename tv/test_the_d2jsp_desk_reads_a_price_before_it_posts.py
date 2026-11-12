@@ -1573,7 +1573,11 @@ process.stdout.write(JSON.stringify({
         self.assertTrue(desk._open_chrome_login(platform="darwin", run=run, popen=popen, env={"HOME": "/h/U"}))
         # #87 (his call 2026-11-06) - the Mac signs in through a profile this console owns, a separate Chrome beside his
         self.assertEqual(seen[-1][:4], ["open", "-na", "Google Chrome", "--args"])
-        self.assertIn("--user-data-dir=/h/U/Library/Application Support/TVD/d2jsp-login", seen[-1])
+        # #107 (REG-3801) - the profile is login_profile_dir's own join (a Windows host joins it with backslashes), as the
+        # win32 half below reads it; its Mac form is pinned by test_the_mac_signs_in_through_its_own_d2jsp_window
+        own_mac = desk.login_profile_dir(platform="darwin", env={"HOME": "/h/U"})
+        self.assertTrue(own_mac.endswith(os.path.join("Library", "Application Support", "TVD", "d2jsp-login")), own_mac)
+        self.assertIn("--user-data-dir=" + own_mac, seen[-1])
         self.assertIn(desk.LOGIN_URL, seen[-1])
         self.assertTrue(all("9222" not in part for part in seen[-1]))
         win_chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"

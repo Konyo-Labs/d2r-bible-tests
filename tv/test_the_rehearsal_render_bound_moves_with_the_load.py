@@ -33,7 +33,8 @@ def _drive(load):
                      "gate": (env or {}).get("GATE_SCALE")})
         return subprocess.CompletedProcess(cmd, 0, "ok", "")
 
-    with mock.patch.object(preship, "_run", fake_run), mock.patch.object(preship.os, "getloadavg", lambda: (load, 0, 0)):
+    with mock.patch.object(preship, "_run", fake_run), mock.patch.object(preship.os, "getloadavg", lambda: (load, 0, 0),
+                                                                                   create=True):   # #107 - no getloadavg on Windows
         code, say = preship.check_render("/nonexistent-root")
     return code, say, seen
 

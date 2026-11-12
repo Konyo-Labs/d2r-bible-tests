@@ -119,8 +119,10 @@ class TestALiveStoreSkipIsCounted(unittest.TestCase):
         self.addCleanup(shutil.rmtree, d, True)
         with io.open(os.path.join(d, "there.json"), "w", encoding="utf-8") as f:
             f.write("{}")
-        old = os.environ.get("HOME")
-        os.environ["HOME"] = d
+        # #107 (REG-3801) - Windows' expanduser reads USERPROFILE and never HOME (GitHub windows-latest on v3901: this case
+        # was red there with the file present), so a ~ path is pointed at d through both
+        old = {k: os.environ.get(k) for k in ("HOME", "USERPROFILE")}
+        os.environ["HOME"] = os.environ["USERPROFILE"] = d
         try:
             self.assertEqual(
                 [], LS.missing("~/there.json"),
@@ -131,10 +133,11 @@ class TestALiveStoreSkipIsCounted(unittest.TestCase):
                 "a ~ path that is genuinely absent stopped being reported, which is the other "
                 "direction and the worse one")
         finally:
-            if old is None:
-                os.environ.pop("HOME", None)
-            else:
-                os.environ["HOME"] = old
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
     def test_the_skip_says_why_and_names_the_file(self):
         class _Case(unittest.TestCase):

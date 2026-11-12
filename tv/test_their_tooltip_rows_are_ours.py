@@ -352,7 +352,8 @@ class TheReceiptStaysHonest(unittest.TestCase):
             fh.write("#!/bin/sh\nexit 0\n")
         os.chmod(fake, 0o755)
         self.assertEqual(H.node_path(env={"TV_NODE": fake, "PATH": ""}), fake, "the env override is first")
-        self.assertEqual(H.node_path(env={"PATH": d}), fake, "PATH is second")
+        # #107 (REG-3801) - Windows' which answers with PATHEXT's case (node.EXE) for this same file: compare the file
+        self.assertEqual(os.path.normcase(H.node_path(env={"PATH": d}) or ""), os.path.normcase(fake), "PATH is second")
 
 
 class TheLaneIsWired(unittest.TestCase):

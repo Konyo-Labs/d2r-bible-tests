@@ -499,6 +499,10 @@ class TestTheReaderItselfIsHonest(unittest.TestCase):
 
     def test_the_block_scalar_it_extracts_actually_runs(self):
         argv, _name = a_shell()
+        if argv is None and os.name == "nt":
+            # #107 (REG-3801) - REG-3629 drives no shell on Windows (run_script skips there); this case asked first and
+            # read red on GitHub windows-latest instead of UNMEASURED
+            raise unittest.SkipTest("the verdict job's bash never runs on Windows - UNMEASURED, not passing")
         self.assertIsNotNone(argv, "no shell on this venue - the drive cases below are UNMEASURED")
         js, lines = jobs(FIXTURE)
         rc, out = run_script(steps(lines, js["first-job"])[1]["run"], {"LEFT": "7"})

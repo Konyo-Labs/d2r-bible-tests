@@ -852,11 +852,17 @@ class TheProofRemembersWhatTheGateRead(unittest.TestCase):
         warm = subprocess.run(list(gate.argv), cwd=root, capture_output=True,
                               env=dict(os.environ, PYTHONDONTWRITEBYTECODE=""))
         self.assertEqual(warm.returncode, 0, "PREMISE: the gate is not green")
-        # realpath: python puts a script's own folder on sys.path resolved (/var is /private/var on his Mac)
-        pyc = subprocess.run([sys.executable, "-c", "import importlib.util, sys; "
-                              "print(importlib.util.cache_from_source(sys.argv[1]))",
-                              os.path.realpath(os.path.join(root, "tv", "pkg_gl", "sub_gl.py"))],
-                             capture_output=True, encoding="utf-8", errors="replace", env=dict(os.environ)).stdout.strip()
+        # realpath: python puts a script's own folder on sys.path resolved (/var is /private/var on his Mac).
+        # #107 (REG-3801) - and on Windows it does NOT: the folder keeps the temp dir's 8.3 short name (RUNNER~1) that
+        # realpath expands (runneradmin), so the cache sits under the path as given. Both spellings are asked.
+        src = os.path.join(root, "tv", "pkg_gl", "sub_gl.py")
+        pycs = subprocess.run([sys.executable, "-c", "import importlib.util, sys; "
+                               "print('\\n'.join(importlib.util.cache_from_source(a) for a in sys.argv[1:]))",
+                               os.path.realpath(src), os.path.abspath(src)],
+                              capture_output=True, encoding="utf-8", errors="replace",
+                              env=dict(os.environ)).stdout.split("\n")
+        pycs = [p.strip() for p in pycs if p.strip()]
+        pyc = next((p for p in pycs if p.startswith(prefix) and os.path.isfile(p)), " | ".join(pycs))
         self.assertTrue(pyc.startswith(prefix) and os.path.isfile(pyc), "PREMISE: no .pyc cache (%s)" % pyc)
         self.assertTrue(_prove(_open(led), gate), "PREMISE: the PASS was not stored")
         _write(root, "tv/pkg_gl/sub_gl.py", "OK = False\n")
