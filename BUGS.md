@@ -160,7 +160,11 @@ name (split/join), so the set name's first word was a monster link - invisible w
 by 's (straight or curly) names a thing of theirs and stays plain. Law: test_game_names_wear_the_game_face (GAME_NAMES +
 .su-link; AMonsterNameInsideAThingOfTheirsIsNotLinked, node, +1 red-proof; the mod-chips red-proof re-aimed) - 15 PROVEN.
 The probe's own reach was thin (its name list held 26 boss names - ITEMS and RUNEWORDS were empty at read time), so
-the rest of the board's game text is UNMEASURED by it, said here.
+the rest of the board's game text is UNMEASURED by it, said here. WIDENED the same evening (ITEM_REGISTRY keys, RUNEWORDS
+n, every data-arttip; the board's real tab ids): 1,927 game names on 18 tabs, 1,886 in the game face. Fixed: the endgame
+road's key names (.rn-name: Key of Terror / Hate / Destruction). Left by rule: a wall chip's base type (.gq, phase 2 keeps
+the console face), section titles and headings (his ruling: titles keep their face). His call, unchanged: 14 boss subtitles
+(zone names and epithets mixed) and 8 bold item names inside F-Uniques note prose.
 
 ### REG-3813 - THE SHOW-TOGGLE LAW READ A WINDOWS RUNNER'S REDUCED MOTION AS A DRAWER THAT SNAPS SHUT (v3904, #107)
 GitHub windows-latest on v3903 (ci/winlaws): test_a_show_toggle_reads_hide_while_open - "the drawer snapped shut with no

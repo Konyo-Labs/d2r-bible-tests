@@ -45,7 +45,9 @@ GAME_NAMES = (".qw-name", ".f-rwbig", ".boss-name", ".fh-boss", ".gic-name", ".i
               ".iv-name", ".cn-name", ".cn-pv-opt-nm", ".arw-name", ".vm-item-name", ".zd-hg-name strong",
               ".cw-g-mod", ".cw-reroll-mod", ".hpbar-mods",
               # REG-3814 (#23) - a super-unique monster's name, measured in the console serif on a terror-zone card's line
-              ".su-link")
+              ".su-link",
+              # REG-3814 (#23, the widened probe: 1,927 game names on 18 tabs) - the endgame road's key names
+              ".rn-name")
 #: v3898 - the console's own pieces INSIDE a name (a wall chip's tick, base, badge, qlvl and ETA, the TZ tag, the tier,
 #: LADDER and stash badges, the runeword base's slot label, a button) - they keep the console's face
 BADGES_IN_A_NAME = ("[data-arttip] .si-tier", "[data-arttip] .rwc-ladder", ".rwc-name .rwc-ladder", "[data-arttip] .gf-tick",
@@ -231,12 +233,12 @@ class TheConsolesGameNamesToo(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3898 (#23 phase 2) - the names phase 1's class list missed (an inline [data-arttip]) keep the console face again",
      "file": "bible.html",
-     "find": ".gf-cname,.qw-zone,span[data-arttip],b[data-arttip],.item-tile-name,",
+     "find": ".gf-cname,.qw-zone,.rn-name,span[data-arttip],b[data-arttip],.item-tile-name,",
      "replace": ".gf-cname,.qw-zone,.item-tile-name,",
      "matches": 1},
     {"why": "v3898 (#23 phase 2) - a bare [data-arttip] dresses whole rows and cards (a crafts header's '0 / 9 make now')",
      "file": "bible.html",
-     "find": ".gf-cname,.qw-zone,span[data-arttip],b[data-arttip],.item-tile-name,",
+     "find": ".gf-cname,.qw-zone,.rn-name,span[data-arttip],b[data-arttip],.item-tile-name,",
      "replace": ".gf-cname,.qw-zone,[data-arttip],.item-tile-name,",
      "matches": 1},
     {"why": "v3898 (#23 phase 2) - a wall chip's base type and badge ('Cap', 'unidentified') take the game face",
