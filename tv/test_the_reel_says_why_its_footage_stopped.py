@@ -6,7 +6,8 @@ reads ran the whole time (Catacombs Level 2 at 17:22, the warm-up gate never ski
 game gate was open - the reads ran), and its first footage frame landed at 17:43, 34 minutes in - a painted in-game frame,
 seconds after "[reap] ... read-eviction took 112 picture(s)". A second reel that evening started 31 minutes late. The reason
 the footage writer refused lived only in _FOOTAGE_WHY, in memory, overwritten every second: nothing in his logs or his reels
-could say which gate held the film.
+could say which gate held the film (the warm-up and game-window gates are ruled out by his logs; the disk floor is
+unlikely - the shedding ran on its above-the-floor cadence; a stale capture file is the open lead).
 
 Now each refused frame is counted by reason (source missing / stale, no game, warming up, disk floor, write failed), the
 start of a pause and its end are said once each, and the reel's index carries footageRefused when it seals.
