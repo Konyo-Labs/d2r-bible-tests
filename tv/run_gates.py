@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_string_is_not_a_browser_call",
+         [sys.executable, os.path.join(HERE, "test_a_string_is_not_a_browser_call.py")], 60,
+         needs_app=False,
+         why="v3901 (#200, REG-3764) - v3900's first GitHub round was two node-only laws the pre-flight filed as browser "
+             "laws (an asserted flag, JS handed to node, tamper text) and never ran; a call counts only as code"),
     Gate("test_the_shelf_says_each_pcs_real_run_count",
          [sys.executable, os.path.join(HERE, "test_the_shelf_says_each_pcs_real_run_count.py")], 120,
          why="v3901 (#213, REG-3763) - GrokBot: every PC read 16 (the window it publishes) against the work ALT's own 134; "

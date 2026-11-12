@@ -50,6 +50,12 @@ COSTS = os.path.join(HERE, "gate_costs.json")
 BROWSER_CALLS = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
                            r"|playwright|launch_chrome|--remote-debugging|headless=new"
                            r"|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
+#: REG-3764 - the CALLS among them are code, never text: `Board()` matched `d2jspBoard()` inside the JavaScript a law hands
+#: to node (test_d2jsp_desk), and the pre-flight filed it as a browser law and never ran it - GitHub spent v3900's first
+#: round on it. These are matched with every string literal blanked; the launch FLAGS (a string in a real argv) are not.
+BROWSER_CALL_ONLY = re.compile(r"board\(\)|Board\(\)|H\.Board|\.Board\(|render_check\.(?:run|render|main|measure)|RC\.(?:run|render)"
+                               r"|launch_chrome|\b_Tab\(|\b_chrome_up\(|\b(?:RC|rc|R|render_check)\.check\(")
+BROWSER_FLAGS = re.compile(r"playwright|--remote-debugging|headless=new")
 #: v3887 (REG-3472) - THE VERSION-WIDE LAWS read the WHOLE version (its commits, its history list), so any commit changes
 #: their input however small its diff - and `--no-preflight` used to skip them with everything else. v3886 (11-08) fixed
 #: the pre-flight's reds in a commit that also rewrote the history list, shipped with --no-preflight, and GitHub's agent
@@ -80,7 +86,7 @@ def read_costs(path=COSTS):
     return out
 
 
-def code_text(src):
+def code_text(src, strings=True):
     """REG-3309 - the source without its comments and docstrings, the prose that NAMES a browser call without making one.
     -> str (the whole source when it will not parse: a law that cannot be read stays GitHub's)
 
@@ -94,22 +100,62 @@ def code_text(src):
     except (SyntaxError, ValueError):
         return src
     lines = src.split("\n")
+    orig = list(lines)      # offsets are measured on the source as written, never on a row an earlier blank changed
+
+    def _chars(row, nbytes):
+        # REG-3764 - ast's col offsets are UTF-8 BYTES; a "·" earlier on the line shifted every blank into the brackets
+        return len(row.encode("utf-8")[:nbytes].decode("utf-8", "ignore"))
+
+    def _blank(d):
+        for ln in range(d.lineno, d.end_lineno + 1):
+            row, src_row = lines[ln - 1], orig[ln - 1]
+            a0 = _chars(src_row, d.col_offset) if ln == d.lineno else 0
+            a1 = _chars(src_row, d.end_col_offset) if ln == d.end_lineno else len(src_row)
+            lines[ln - 1] = row[:a0] + " " * (a1 - a0) + row[a1:]
+
+    def _strings_in(node):
+        """the plain string literals under `node` - never the pieces of an f-string (their positions are not the
+        source's on this Mac's Python), and only a span that really starts with a quote is blanked"""
+        out, todo = [], [node]
+        while todo:
+            x = todo.pop()
+            if isinstance(x, ast.JoinedStr):
+                continue
+            if isinstance(x, ast.Constant) and isinstance(x.value, str) and getattr(x, "end_lineno", None):
+                row = orig[x.lineno - 1] if 0 < x.lineno <= len(orig) else ""
+                c0 = _chars(row, x.col_offset)
+                head = row[c0:c0 + 4].lstrip("rbuRBU")
+                if head[:1] in ("'", '"'):
+                    out.append(x)
+                continue
+            todo.extend(ast.iter_child_nodes(x))
+        return out
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.body:
             d = node.body[0]
             if isinstance(d, ast.Expr) and isinstance(getattr(d, "value", None), ast.Constant) \
                     and isinstance(d.value.value, str):
-                for ln in range(d.lineno, d.end_lineno + 1):
-                    row = lines[ln - 1]
-                    a0 = d.col_offset if ln == d.lineno else 0
-                    a1 = d.end_col_offset if ln == d.end_lineno else len(row)
-                    lines[ln - 1] = row[:a0] + " " * (a1 - a0) + row[a1:]
+                _blank(d)
+        # REG-3764 (v3900's first GitHub round lost to two laws this filed as browser-driving, so the pre-flight never ran
+        # them): a string an ASSERTION checks is a statement about text - test_d2jsp_desk's assertNotIn("--remote-debugging-
+        # port", ...) proves the desk does NOT open a debug port, over a stubbed subprocess - and a RED_PROOF's tamper text is
+        # never run by the law (test_a_price_read_on_another_board_is_not_the_post_price matched only the JS d2jspBoard() in
+        # one). A launch flag in an argv the law actually runs is neither, and still counts.
+        elif isinstance(node, ast.Call):
+            fname = getattr(node.func, "attr", None) or getattr(node.func, "id", None) or ""
+            if str(fname).startswith("assert"):
+                for arg in list(node.args) + [k.value for k in node.keywords]:
+                    for c in _strings_in(arg):
+                        _blank(c)
+        elif isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "RED_PROOF" for t in node.targets):
+            for c in _strings_in(node.value):
+                _blank(c)
     out = []
     try:
         for tok in tokenize.generate_tokens(io.StringIO("\n".join(lines)).readline):
             if tok.type == tokenize.COMMENT:
                 continue
-            out.append(" %s " % tok.string if tok.type == tokenize.STRING else tok.string)
+            out.append((" %s " % tok.string if strings else " '' ") if tok.type == tokenize.STRING else tok.string)
     except (tokenize.TokenError, IndentationError, SyntaxError):
         return src
     return "".join(out)
@@ -126,8 +172,8 @@ def drives_browser(name, here=HERE, depth=2, _seen=None):
         src = io.open(p, encoding="utf-8", errors="replace").read()
     except OSError:
         return True                                   # a law that will not read is not run here: GitHub's
-    if BROWSER_CALLS.search(code_text(src)):
-        return True
+    if BROWSER_FLAGS.search(code_text(src)) or BROWSER_CALL_ONLY.search(code_text(src, strings=False)):
+        return True     # REG-3764 - a flag may be a string in an argv; a call is code, never text the law hands on
     if depth <= 0:
         return False
     for m in sorted(set(re.findall(r"^\s*(?:import|from) (test_[a-z0-9_]+)", src, re.M))):
