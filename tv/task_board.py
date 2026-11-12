@@ -199,3 +199,112 @@ def due(state, b, now_ms):
     if h != state.get("hash"):
         return (gap >= POST_MIN_GAP_MS), ("changed" if gap >= POST_MIN_GAP_MS else "changed - waits out the 2 min gap")
     return (gap >= POST_REFRESH_MS), ("unchanged - refreshed every 30 min" if gap >= POST_REFRESH_MS else "unchanged")
+
+
+# ══ REG-3781 (his 11-12 ~09:20: "the task list board still needs updating?" ... "this should be the flow per version you should
+# update it" ... "and the console also for future should be updating to that section") - THE BOARD'S TITLE CARRIES THE VERSIONS,
+# DERIVED, NEVER TYPED. MEASURED that morning: the board read "v3894 shipping (main push 11-10 ~23:50)" while v3900 was live,
+# v3901 in its pre-flight and v3902 building - the title was a hand-typed name, so it said whatever was true the day it was
+# typed. Now the title is HIS/CLAUDE's words, then " ▸ ", then a line the console derives each tick from this repo's own
+# facts: the version main ships (WINDOWS_SHIP.json via the console) and each newer claude/vNNNN branch with its stage read off
+# .git/ship_logs (the ship and pre-flight logs). Only the part after " ▸ " is ever rewritten; the other boards are untouched.
+VERSION_MARK = " ▸ "
+#: at most this many versions newer than main are named (the oldest first)
+VERSIONS_SHOWN = 3
+
+
+def _vnum(s):
+    m = re.match(r"^v(\d{3,5})", str(s or "").strip())
+    return int(m.group(1)) if m else None
+
+
+def _read(p):
+    try:
+        with io.open(p, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except Exception:
+        return None
+
+
+def version_stage(n, logs_dir, main_n=None):
+    """-> the plain words for where version n stands, read off its own logs. Pure apart from reading them."""
+    ship = _read(os.path.join(logs_dir, "ship_v%d.log" % n)) if logs_dir else None
+    if main_n is not None and n == main_n:
+        if ship is not None and ("SUCCEEDED" in ship or "ship: LIVE" in ship):
+            return "LIVE"
+        if ship is not None and "is on main" in ship:
+            return "on main, publishing"
+        return "on main"
+    if ship:
+        if "is on main" in ship:
+            return "on main"
+        if "main is NOT pushed" in ship or "GitHub graded" in ship and "RED" in ship:
+            return "ship stopped"
+        if "GitHub vouches" in ship:
+            return "pushing main"
+        if "reading GitHub" in ship or "-> ci/claude-" in ship:
+            return "on GitHub"
+        return "shipping"
+    pf = []
+    try:
+        pf = sorted((f for f in os.listdir(logs_dir) if re.match(r"^preflight_v%d(_[a-z])?\.log$" % n, f)),
+                    key=lambda f: os.path.getmtime(os.path.join(logs_dir, f)))
+    except Exception:
+        pf = []
+    if pf:
+        t = _read(os.path.join(logs_dir, pf[-1])) or ""
+        if "GREEN recorded" in t:
+            return "pre-flight green"
+        if re.search(r"preflight: RED - \d+ finding", t):
+            return "pre-flight red"
+        return "pre-flight"
+    return "building"
+
+
+def version_line(repo, main_ver, branches=None):
+    """-> "v3900 LIVE · v3901 pre-flight · v3902 building", or None when main's version is UNKNOWN (never a guess).
+    `branches`: the local branch names (the console passes git's own list); claude/vNNNN newer than main are in flight."""
+    main_n = _vnum(main_ver)
+    if main_n is None:
+        return None
+    logs = os.path.join(repo, ".git", "ship_logs") if repo else None
+    if logs and not os.path.isdir(logs):
+        logs = None
+    newer = sorted(set(n for n in (_vnum(str(b).replace("claude/", "", 1)) for b in (branches or ())
+                                   if str(b).startswith("claude/v")) if n is not None and n > main_n))
+    parts = ["v%d %s" % (main_n, version_stage(main_n, logs, main_n))]
+    parts += ["v%d %s" % (n, version_stage(n, logs, main_n)) for n in newer[:VERSIONS_SHOWN]]
+    return " · ".join(parts)
+
+
+def retitle(session, line, tasks_dir=None):
+    """REG-3781 - put `line` after the board title's " ▸ " (the words before it are kept as they are). -> (changed, title) |
+    (False, None) when the names file will not read or `line` is None - nothing is written then. Atomic; other boards kept."""
+    if not line:
+        return False, None
+    p = os.path.join(tasks_dir or TASKS_DIR, NAMES_FILE)
+    try:
+        with io.open(p, encoding="utf-8") as fh:
+            names = json.load(fh)
+    except Exception:
+        return False, None
+    if not isinstance(names, dict):
+        return False, None
+    old = names.get(session) if isinstance(names.get(session), str) else ""
+    hand = (old.split(VERSION_MARK, 1)[0]).strip() or "the task board"
+    new = hand + VERSION_MARK + line
+    if new == old:
+        return False, new
+    names[session] = new
+    tmp = "%s.%d.tmp" % (p, os.getpid())
+    try:
+        with io.open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(names, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, p)
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False, None
+    return True, new

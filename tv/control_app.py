@@ -5948,10 +5948,46 @@ def task_board_publish_once(now_ms=None, _post=None, _tasks_dir=None, _label=Non
             "truth": truth}
 
 
+def _local_claude_branches(run=None):
+    """REG-3781 - this repo's local claude/* branch names (the versions being built here). -> [str] | None (git would not say)"""
+    try:
+        r = (run or subprocess.run)(["git", "-C", REPO, "for-each-ref", "--format=%(refname:short)", "refs/heads/claude/"],
+                                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+        if getattr(r, "returncode", 1) != 0:
+            return None
+        return [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
+    except Exception:
+        return None
+
+
+def board_retitle(_tasks_dir=None, _branches=None, _main=None, _platform=None, _label=None):
+    """REG-3781 (his 11-12: "this should be the flow per version you should update it" / "the console also for future should
+    be updating to that section") - THE BOARD'S TITLE SAYS WHERE EACH VERSION IS, DERIVED EVERY TICK. The words before " ▸ "
+    stay as written; after it, task_board.version_line: what main ships (_published_ver) and each newer claude/vNNNN with its
+    stage off .git/ship_logs. His Mac only (the board lives there), the same guard as the publish. UNKNOWN main writes nothing.
+    -> (changed, title) | None (not this PC / no board)"""
+    import task_board as _tb
+    if (_platform or sys.platform) != "darwin":
+        return None
+    label = _label if _label is not None else _roster_my_label()
+    if label not in ROSTER_APPROVERS:
+        return None
+    sessions = _tb.session_dirs(_tasks_dir)
+    if not sessions:
+        return None
+    main_ver = _main if _main is not None else (_published_ver() or (None, None))[0]
+    branches = _branches if _branches is not None else (_local_claude_branches() or [])
+    return _tb.retitle(sessions[0][1], _tb.version_line(REPO, main_ver, branches), _tasks_dir)
+
+
 def _task_board_loop():
     time.sleep(45)
     while True:
         _lane_tick("_task_board_loop", TASK_BOARD_EVERY_S * 3)
+        try:
+            board_retitle()            # REG-3781 - the title's version line first, so the publish below carries it
+        except Exception as _rte:
+            _TASK_BOARD["retitleWhy"] = "the retitle raised %s" % type(_rte).__name__
         try:
             r = task_board_publish_once(_derive=task_truth_derive)
             _TASK_BOARD.update(at=time.time(), why=r.get("why"))
