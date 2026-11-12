@@ -76,6 +76,16 @@ CASES = {
                            "locksShut": ["frame.release", "vault.sweep_start", "vault.apply"],
                            "lockWhy": "the heart2 PROOF census is STALE: it is still being proven (55 gate(s) owed)"},
                  "drain": {"state": "STOPPED", "owedAtMouth": 15, "eligible": 15, "eligibleMb": 2639.6}},
+    # REG-3805 (GrokBot's v3902 look) - the first minutes after a restart: the river lane has not read its doors (null)
+    "mac_doors_unread": {"heart": dict(DEAN, key="stale-at-boot", owed=None, locksShut=None, lockWhy=None,
+                                       importing={"done": 0, "of": 10069, "etaS": None, "ver": "v3902"}), "drain": DRAIN},
+    "old_alt_doors_unread": {"heart": {"census": "stale", "key": "stale-at-boot", "owed": None, "blind": 1, "importing": None,
+                                       "locksShut": None, "lockWhy": None}, "drain": None},
+    "work_alt_doors_unread": {"heart": dict(DEAN, key="stale-at-boot", owed=None, locksShut=None, lockWhy=None),
+                              "drain": None},
+    # BASELINE - unread doors on a PC that is NOT booting or importing (a proof running, its doors unknown) are no pass
+    "proving_doors_unread": {"heart": dict(DEAN, key="running", importing=None, locksShut=None, lockWhy=None),
+                             "drain": DRAIN},
     # an import with no drain trouble: UPDATING with the count, never "proving 543 checks · import first"
     "import_only": {"heart": DEAN, "drain": {"state": "CLEAR", "owed": 0, "owedAtMouth": 0, "eligible": 0, "eligibleMb": 0.0}},
 }
@@ -124,6 +134,22 @@ class ADrainWaitingOnItsProofsIsUpdating(unittest.TestCase):
         self.assertIn("drain waits for the proofs", s["drainAlert"] or "", s)
         self.assertIn("proving itself after its update", s["next"], s)
 
+    def test_a_pc_whose_doors_are_not_read_yet_reads_updating(self):
+        """REG-3805 - GrokBot's v3902 look: three PCs BLOCKED in the minutes after a restart, before the river lane read
+        their doors (locksShut null), each UPDATING once counts flowed"""
+        for k in ("mac_doors_unread", "work_alt_doors_unread"):
+            s = self.o[k]
+            self.assertEqual((s["key"], s["word"]), ("healing", "updating"), "%s read %r" % (k, s))
+        self.assertIn("import 0 of 10,069", self.o["mac_doors_unread"]["next"])
+        self.assertIn("drain waits for the proofs", self.o["mac_doors_unread"]["drainAlert"] or "")
+        # the OLD PC ALT's shape carried a blind count: REG-3580 - a blind we cannot place on unread doors stays a wound
+        s = self.o["old_alt_doors_unread"]
+        self.assertEqual(s["word"], "blocked", "a blind count on unread doors was painted healing: %r" % s)
+
+    def test_baseline_unread_doors_outside_the_boot_window_are_still_blocked(self):
+        s = self.o["proving_doors_unread"]
+        self.assertEqual(s["word"], "blocked", "doors nobody read were painted open on a PC that is not booting: %r" % s)
+
     def test_deans_row_reads_updating_with_the_import_count(self):
         """* THE POINT - Dean 11-12 01:45: BLOCKED "drain stopped" while importing 157 of 10,028"""
         s = self.o["dean"]
@@ -153,8 +179,13 @@ class ADrainWaitingOnItsProofsIsUpdating(unittest.TestCase):
 RED_PROOF = [
     {"why": "REG-3783 - a PC stale at boot, before its import counts, reads BLOCKED drain stopped again",
      "file": "tv/control_ui.html",
-     "find": "    var _healsItself = !!((proving || _imp || _bootHeal) && _routeOpen && !_blindsLock && !pullStuck);",
-     "replace": "    var _healsItself = !!((proving || _imp) && _routeOpen && !_blindsLock && !pullStuck);",
+     "find": "    var _healsItself = !!((proving || _imp || _bootHeal) && (_routeOpen || (_doorsUnread && (_imp || _bootHeal)))\n",
+     "replace": "    var _healsItself = !!((proving || _imp) && (_routeOpen || (_doorsUnread && (_imp || _bootHeal)))\n",
+     "matches": 1},
+    {"why": "REG-3805 - a PC whose doors are not read yet reads BLOCKED in the minutes after its restart again",
+     "file": "tv/control_ui.html",
+     "find": "    var _healsItself = !!((proving || _imp || _bootHeal) && (_routeOpen || (_doorsUnread && (_imp || _bootHeal)))\n",
+     "replace": "    var _healsItself = !!((proving || _imp || _bootHeal) && (_routeOpen)\n",
      "matches": 1},
     {"why": "REG-3741 - a drain waiting on the proof the PC is importing reads BLOCKED again (Dean, 11-12)",
      "file": "tv/control_ui.html",

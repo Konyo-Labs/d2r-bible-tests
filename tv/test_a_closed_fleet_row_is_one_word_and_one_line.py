@@ -98,12 +98,16 @@ CASES = {
     # his work ALT: stuck, stale, no blind gate, importing ~82 min
     "importing": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
                                  _p("proved", ["proof out of date", "0 blind"], warn=True)),
-                  "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3879", "done": 890, "of": 9294, "etaS": 4920}}},
+                  # REG-3805 - its doors READ, routing shut (written before the beacon sent locksShut; no list now reads as
+                  # doors not read yet, which a PC importing reads UPDATING)
+                  "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3879", "done": 890, "of": 9294, "etaS": 4920},
+                            "locksShut": ["reel.route", "frame.release"]}},
     # v3882 - an import gone quiet (its last reading 3+ min old) says so, never its stale ETA (Dean 11-08: "~5 min" for an hour)
     "importquiet": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
                                   _p("proved", ["proof out of date", "0 blind"], warn=True)),
                     "heart": {"census": "stale", "blind": 0, "importing": {"ver": "v3880", "done": 3029, "of": 4396, "etaS": None,
-                                                                         "quietS": 200}}},
+                                                                         "quietS": 200},
+                              "locksShut": ["reel.route", "frame.release"]}},   # REG-3805 - doors read, routing shut
     # an import that has LANDED is not "importing" any more
     "landed": {"parts": _with(_p("stuck", ["CAPTURE 1 older for 1d"], warn=True),
                               _p("proved", ["proof out of date", "0 blind"], warn=True)),

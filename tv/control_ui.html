@@ -17473,8 +17473,11 @@ window._lockMark = function(isOpen, px, label){
           else if (typeof r.n === 'number') { _logged += r.n; _floor = true; } });
       }
     } catch (eLg) { _logged = runs.length; }
+    /* REG-3806 (GrokBot's v3902 look: "at least 467 runs logg…" cut at 1512) - the floor is written N+ so the line fits its
+       one-line card; the hover says it in words */
     cards.push(card('🔥', 'Streak', streak ? (streak + ' day' + (streak > 1 ? 's' : '')) : '—',
-      (_floor ? 'at least ' : '') + _logged + ' run' + (_logged > 1 ? 's' : '') + ' logged'));
+      _logged + (_floor ? '+' : '') + ' run' + (_logged > 1 ? 's' : '') + ' logged', null, null,
+      _floor ? 'at least ' + _logged + ' runs logged - a PC\u2019s copy did not say its own total' : ''));
     return '<div class="sh-hi">' + cards.join('') + '</div>';
   }
   function thDossierLine(b){
@@ -29740,8 +29743,18 @@ function escC(s) {
        key says it is stale at boot or stood aside for the import is proving itself; a blind lock, a shut routing door or a
        refused pull still decide BLOCKED below. */
     var _bootHeal = !!(hs && hs.census !== 'current' && (hs.key === 'stale-at-boot' || hs.key === 'stood-aside'));
-    var _healsItself = !!((proving || _imp || _bootHeal) && _routeOpen && !_blindsLock && !pullStuck);
-    var drainWaits = !!(drainAlert && _healsItself && hs.census !== 'current' && _shutList.indexOf('frame.release') >= 0);
+    /* REG-3805 (GrokBot's v3902 look, 11-12 18:01-18:15: the Mac "BLOCKED · proof out of date · import 0 of 10,069", the OLD
+       PC ALT "BLOCKED · 1 check blind", the work ALT after its restart "BLOCKED · river stuck · import"; each flipped to
+       UPDATING once its counts flowed) - THE DOORS ARE NOT READ YET. The beacon's locksShut is null until the river lane first
+       asks its doors, and REG-3783's law fed a filled list, so a PC in its first minutes read "routing shut" and BLOCKED.
+       Unread doors are UNKNOWN, never shut: for a PC whose own heart says it is stale at boot, stood aside or importing they
+       do not decide BLOCKED. A blind lock, a routing door READ shut, or a refused pull still does - and so does a blind
+       count while the doors are unread (REG-3580: a blind we cannot place on the doors may be what shuts them). */
+    var _doorsUnread = !!(hs && !_shutList && !(typeof hs.blind === 'number' && hs.blind > 0));
+    var _healsItself = !!((proving || _imp || _bootHeal) && (_routeOpen || (_doorsUnread && (_imp || _bootHeal)))
+                          && !_blindsLock && !pullStuck);
+    var drainWaits = !!(drainAlert && _healsItself && hs.census !== 'current'
+                        && (!_shutList || _shutList.indexOf('frame.release') >= 0));
     if (drainWaits) drainAlert = drainAlert.replace(/^drain stopped/, 'drain waits for the proofs');
     var hurt = [];
     var st = by.stuck, pv = by.proved;

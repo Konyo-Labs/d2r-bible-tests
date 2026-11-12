@@ -98,7 +98,9 @@ console.log(JSON.stringify({ say: say, hi: hi }));
         out = json.loads(r.stdout.decode("utf-8").strip().splitlines()[-1])
         self.assertIn("ALT 134 runs (16 shown, as of 25 min ago)", out["say"])
         self.assertIn("OLD 16 newest shown, total UNKNOWN", out["say"], "a copy with no total passed its window off as its count")
-        self.assertIn("at least 151 runs logged", out["hi"], "runs logged is not this PC's runs + each PC's own total")
+        # REG-3806 - the floor is written 151+ so it fits its one-line card at 1512; the hover says "at least" in words
+        self.assertIn("151+ runs logged", out["hi"], "runs logged is not this PC's runs + each PC's own total")
+        self.assertIn('title="at least 151 runs logged', out["hi"], "the floor's words left the hover")
 
 
 RED_PROOF = [
