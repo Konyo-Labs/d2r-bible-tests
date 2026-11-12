@@ -142,6 +142,14 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3816 - THE SHADOW FRAME CAPTION CLAIMED "160 px" OVER A 1920x1020 FRAME, AND THE THEATRE'S CLOSE COULD BE CUT (v3904)
+GrokBot's v3903 look (#230 6836226405): a shadow session's served key frames are 1920x1020 full-screen JPEGs and the caption
+said "the served key frame (160 px)" - a size nobody measured, hardcoded twice; it now claims no size. And "at 1512 the
+Theatre title wraps to two lines and its CLOSE button is cut to CLOS": the head row wraps (measured here: 3 rows, 100 px, in a
+1,097 px Theatre, CLOSE whole), so its buttons no longer shrink inside it (flex none, nowrap) - a button moves to the next line
+whole. Law: test_the_theatre_wears_one_caption_bar (+1 red-proof). His ask in the same look - shadow mode full screen, every
+frame of a session, the game from play start - is #208 (+ #188's play-start), its own version.
+
 ### REG-3815 - THE d2jsp PRICE TABLE NEVER SHOWED A POST'S SELLER (v3904, #151, GrokBot's look 11-12 21:05 IST)
 GrokBot on his Mac after the backfill import (#230 6833..., headless 1512): "Sellers named on the row - NO. The row has no seller
 column. The data has sellers, but the page doesn't show them." d2jsp_price_db.explain() has carried each row's author since

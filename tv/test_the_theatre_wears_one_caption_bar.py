@@ -115,6 +115,9 @@ class TheTheatreWearsOneCaptionBar(unittest.TestCase):
         self.assertIn(".th-caption .th-bar .th-bar-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }",
                       code, "the caption bar may wrap onto more lines again")
         self.assertIn(".th-caption .th-bar .th-bar-more { flex: none; }", code, "the read-card control can be cut by the ellipsis again")
+        # REG-3816 (GrokBot's v3903 look: the CLOSE button cut to "CLOS" at 1512) - the head's buttons never shrink
+        self.assertIn(".th-topline > button, .th-topline > .th-x { flex: none; white-space: nowrap; }", code,
+                      "a Theatre head button can be clipped inside its wrapping row again")
 
 
 RED_PROOF = [
@@ -137,6 +140,11 @@ RED_PROOF = [
      "file": "tv/control_ui.html",
      "find": "  .th-caption .th-bar .th-bar-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n",
      "replace": "  .th-caption .th-bar .th-bar-t { min-width: 0; }\n",
+     "matches": 1},
+    {"why": "REG-3816 - a Theatre head button (CLOSE) can be cut inside its wrapping row again",
+     "file": "tv/control_ui.html",
+     "find": "  .th-topline > button, .th-topline > .th-x { flex: none; white-space: nowrap; }\n",
+     "replace": "",
      "matches": 1},
 ]
 

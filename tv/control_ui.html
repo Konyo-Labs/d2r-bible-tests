@@ -1715,6 +1715,9 @@
     color: var(--muted); width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
     font-size: var(--fs-base); transition: .15s; }
   .th-x:hover { color: var(--gold); border-color: var(--edge-hi); background: rgba(40,10,10,.55); }
+  /* REG-3816 (GrokBot's v3903 look: "at 1512 the Theatre title wraps to two lines and its CLOSE button is cut to CLOS") -
+     the head's controls never shrink inside the wrapping row: a button moves to the next line whole, never clipped */
+  .th-topline > button, .th-topline > .th-x { flex: none; white-space: nowrap; }
   .th-x:active { transform: scale(.94); }
   .th-x:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(6,5,4,.9), 0 0 0 3px rgba(240,192,96,.55); }
   .th-caption { position: absolute; left: 0; right: 0; bottom: clamp(56px,8vh,74px); z-index: 2;
@@ -24423,8 +24426,10 @@ window._lockMark = function(isOpen, px, label){
     film.__url = '';
     film.src = low;          /* this frame's served picture at once - never the last frame under this frame's label */
     film.__ssvWant = hd || '';
+    /* REG-3816 (GrokBot's v3903 look: the caption said "160 px" over a 1920x1020 frame) - no size is claimed for a
+       picture nobody measured here: the served frame is whatever its owner kept */
     if (!hd) {
-      say('the served key frame (160 px): ' + (TH.shadowReel.origin
+      say('the served key frame: ' + (TH.shadowReel.origin
         ? 'this frame carries no id to ask ' + who + '’s console for'
         : who + '’s console address is not on this snapshot, so its HD frame cannot be asked for'));
       return;
@@ -24433,7 +24438,7 @@ window._lockMark = function(isOpen, px, label){
     var probe = new Image();
     probe.onload = function(){ if (film.__ssvWant === hd) { film.src = hd; say('HD, from ' + who + '’s console'); } };
     probe.onerror = function(){
-      if (film.__ssvWant === hd) say('the served key frame (160 px): ' + who + '’s console did not answer for the HD frame');
+      if (film.__ssvWant === hd) say('the served key frame: ' + who + '’s console did not answer for the HD frame');
     };
     probe.src = hd;
   }
