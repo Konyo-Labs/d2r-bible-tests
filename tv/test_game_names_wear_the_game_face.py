@@ -47,7 +47,9 @@ GAME_NAMES = (".qw-name", ".f-rwbig", ".boss-name", ".fh-boss", ".gic-name", ".i
               # REG-3814 (#23) - a super-unique monster's name, measured in the console serif on a terror-zone card's line
               ".su-link",
               # REG-3814 (#23, the widened probe: 1,927 game names on 18 tabs) - the endgame road's key names
-              ".rn-name")
+              ".rn-name",
+              # REG-3814 - his 11-12 ~23:05 call on the two his-call groups: both take the game face
+              ".boss-subtitle", ".f-run-opt b")
 #: v3898 - the console's own pieces INSIDE a name (a wall chip's tick, base, badge, qlvl and ETA, the TZ tag, the tier,
 #: LADDER and stash badges, the runeword base's slot label, a button) - they keep the console's face
 BADGES_IN_A_NAME = ("[data-arttip] .si-tier", "[data-arttip] .rwc-ladder", ".rwc-name .rwc-ladder", "[data-arttip] .gf-tick",
