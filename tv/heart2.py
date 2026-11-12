@@ -5784,11 +5784,20 @@ def _gates_for_changed(changed):
     return sorted(set(gates_for_tests(live)) | set(laws_that_read(non_test)))
 
 
+#: REG-3788 - THE BASE A RUN DIFFS AGAINST, NAMED BY THE RUN. MEASURED on v3901's proof shards (11-12): every one printed
+#: "#42 FAIL FAST: ... 0 entr(ies) new or changed since @{push}, 0 whose tampered file changed" for a version whose proofs
+#: tamper 4,749 changed-file anchors - on a runner, actions/checkout makes @{push} the checked-out commit itself, so the
+#: fail-fast order and REG-2599's changed-law set read nothing changed, a constant. The shard workflow fetches main and names
+#: it here; a named base that will not resolve leaves the change UNKNOWN, never falls back to @{push}.
+PUSH_BASE_ENV = "HEART2_PUSH_BASE"
+
+
 def _push_changed():
     """#42 / REG-2599 - what this push changes: (base ref | None, {repo-relative path} | None UNKNOWN), the hook's own
-    order of bases (@{push}, else origin/main), diffed against the tree being proved (the sandbox copies it)."""
+    order of bases (@{push}, else origin/main) unless HEART2_PUSH_BASE names one, diffed against the tree being proved."""
     base = None
-    for ref in ("@{push}", "origin/main"):
+    named = str(os.environ.get(PUSH_BASE_ENV) or "").strip()
+    for ref in ([named] if named else ["@{push}", "origin/main"]):
         ok, out = _git("rev-parse", "--verify", "--quiet", ref)
         if ok and out.strip():
             base = ref
@@ -6910,8 +6919,10 @@ def _prove_push(have, say, stopped=None, cache=None, blank=None):
     _keep = bool(_SHARD.get("spec"))                                   # REG-2591 - a CI shard keeps going
     say("  #42 FAIL FAST: likeliest to fail first - %d anchor(s) off, %d entr(ies) new or changed since %s, %d whose "
         "tampered file changed; %s."
-        % (counts["anchor"], counts["entry"], base or "an UNKNOWN base (neither @{push} nor origin/main resolves - "
-           "nothing ranks as changed)", counts["target"],
+        % (counts["anchor"], counts["entry"], base or ("an UNKNOWN base (%s - nothing ranks as changed)" % (
+            ("%s=%s does not resolve" % (PUSH_BASE_ENV, os.environ.get(PUSH_BASE_ENV)))
+            if str(os.environ.get(PUSH_BASE_ENV) or "").strip() else "neither @{push} nor origin/main resolves")),
+           counts["target"],
            "REG-2591 SHARD MODE: a BLIND / INVALID / clean-run red is OWED and the shard keeps going" if _keep else
            "the run stops at the first BLIND / INVALID / clean-run red"))
     # the import CLOSURE, not the gate's own imports: a gate that starts Chrome through a helper holds the lock too

@@ -145,6 +145,72 @@ class TheChangedSetIsRead(unittest.TestCase):
         self.assertEqual(changed, {rel}, "the changed law path was not read as git wrote it")
 
 
+class ARunnerNamesItsBase(unittest.TestCase):
+    """REG-3788 - on a runner actions/checkout makes @{push} the checked-out commit itself: v3901's proof shards all read
+    "0 entr(ies) new or changed since @{push}, 0 whose tampered file changed". The run names its base in HEART2_PUSH_BASE."""
+
+    def _repo(self):
+        import subprocess
+        import tempfile
+        import shutil
+        root = tempfile.mkdtemp(prefix="h2base.")
+        self.addCleanup(shutil.rmtree, root, True)
+        env = H._git_free_env(GIT_AUTHOR_NAME="f", GIT_AUTHOR_EMAIL="f@x", GIT_COMMITTER_NAME="f",
+                              GIT_COMMITTER_EMAIL="f@x")
+
+        def git(*a):
+            subprocess.run(["git", "-C", root] + list(a), check=True, capture_output=True, env=env)
+        git("init", "-q")
+        git("config", "core.autocrlf", "false")
+        os.makedirs(os.path.join(root, "tv"))
+        law = os.path.join(root, "tv", "test_x.py")
+        with open(law, "w") as fh:
+            fh.write("A = 1\n")
+        git("add", "-A")
+        git("commit", "-q", "-m", "main")
+        git("update-ref", "refs/remotes/origin/main", "HEAD")
+        git("checkout", "-q", "-b", "ci/proof-keys-vX")
+        with open(law, "w") as fh:
+            fh.write("A = 2\n")
+        git("commit", "-q", "-am", "the version")
+        # the runner's checkout: the branch tracks its own remote ref, which IS this commit
+        git("update-ref", "refs/remotes/origin/ci/proof-keys-vX", "HEAD")
+        git("config", "remote.origin.url", root)
+        git("config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")   # actions/checkout writes this too
+        git("config", "branch.ci/proof-keys-vX.remote", "origin")
+        git("config", "branch.ci/proof-keys-vX.merge", "refs/heads/ci/proof-keys-vX")
+        return root
+
+    def _changed(self, root, named):
+        real, old = H.REPO, os.environ.get(H.PUSH_BASE_ENV)
+        H.REPO = root
+        if named is None:
+            os.environ.pop(H.PUSH_BASE_ENV, None)
+        else:
+            os.environ[H.PUSH_BASE_ENV] = named
+        try:
+            return H._push_changed()
+        finally:
+            H.REPO = real
+            if old is None:
+                os.environ.pop(H.PUSH_BASE_ENV, None)
+            else:
+                os.environ[H.PUSH_BASE_ENV] = old
+
+    def test_baseline_on_a_runner_at_push_is_the_commit_itself(self):
+        root = self._repo()
+        self.assertEqual(self._changed(root, None), ("@{push}", set()),
+                         "PREMISE: @{push} no longer reads as the checked-out commit - the case would not distinguish")
+
+    def test_the_named_base_sees_the_versions_change(self):
+        """* THE POINT"""
+        self.assertEqual(self._changed(self._repo(), "origin/main"), ("origin/main", {"tv/test_x.py"}))
+
+    def test_a_named_base_that_will_not_resolve_is_unknown(self):
+        self.assertEqual(self._changed(self._repo(), "origin/no-such"), (None, None),
+                         "a named base that does not resolve fell back to another base")
+
+
 def _prove_push(changed):
     said, stopped = [], []
     with P._Env(H42_LOG=os.devnull, HEART2_PROVE_WORKERS="1", TV_LAW_WIDTHS=None), \
@@ -171,6 +237,11 @@ class ThePush(unittest.TestCase):
 
 # the inherited REG-2587 cases run here too: with no changed set they must behave exactly as before
 RED_PROOF = [
+    {"why": "REG-3788 - a runner's shards read @{push} (the commit itself) again: 0 changed for every version",
+     "file": "tv/heart2.py",
+     "find": "    for ref in ([named] if named else [\"@{push}\", \"origin/main\"]):\n",
+     "replace": "    for ref in [\"@{push}\", \"origin/main\"]:\n",
+     "matches": 1},
     {"why": "REG-2599 - a gate whose law the push did not change still owes a clean run in the main pass",
      "file": "heart2.py",
      "find": "    if not _owes_here(run, name):\n",

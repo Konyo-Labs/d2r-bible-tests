@@ -149,6 +149,9 @@ jobs:
       HEART2_PROVE_WORKERS: ${{ vars.PROOF_PROVERS || '2' }}
       # REG-3212 - one gate's wall-clock cap: past it, its proofs still to RUN are cut as TIMEOUT (owed, named), never PROVEN
       HEART2_GATE_CAP_S: "1500"
+      # REG-3788 - the base the fail-fast order and REG-2599's changed-law set diff against: on a runner @{push} IS this
+      # commit, so every version read "0 changed". Main is fetched below; if it will not fetch, the change reads UNKNOWN.
+      HEART2_PUSH_BASE: origin/main
     steps:
       - name: Mark start
         run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
@@ -173,6 +176,12 @@ jobs:
           debc96a5420bd6e03c983cc7bbbe90526c213739
           f591953451f7a0aff8db3f22938c6f1ded12ce88
           a8246cdf6340575ba3a50f163d93ce3a0be186a4
+      - name: Fetch main, the base this shard's push facts diff against (REG-3788)
+        # the SAME shallow-since as the history step above, never --depth: main's tip is an ancestor of this commit, and a
+        # --depth fetch can mark it shallow and cut the graded history off behind it
+        timeout-minutes: 2
+        continue-on-error: true
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin +refs/heads/main:refs/remotes/origin/main
       - name: Install Pillow + numpy + websocket-client (as tv-tests)
         run: python3 -m pip install --quiet pillow numpy websocket-client
       - name: Cache Playwright browsers

@@ -142,6 +142,17 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3788 - ON GITHUB THE PROOF SHARDS DIFFED THE COMMIT AGAINST ITSELF: EVERY VERSION READ "0 CHANGED" (v3903, #200)
+MEASURED on v3901's proof shards (11-12): every one printed "#42 FAIL FAST: ... 0 entr(ies) new or changed since @{push}, 0 whose
+tampered file changed" for a version whose proofs tamper 4,749 changed-file anchors. heart2._push_changed takes @{push}, else
+origin/main; actions/checkout makes the ci branch track its own remote ref, so on a runner @{push} IS the checked-out commit and
+the diff is empty - a constant wearing a measurement. The fail-fast order and REG-2599's changed-law set (_direct_laws) were
+blind on every round. Now HEART2_PUSH_BASE names the base (a named base that will not resolve is UNKNOWN, never a fallback);
+proof-keys-shards.yml and proof-keys-windows.yml set it to origin/main and fetch main with the history step's own
+--shallow-since (never --depth, which can mark main's tip shallow and cut the graded history behind it). Law:
+test_a_foreign_proof_owes_a_clean_run_only_where_the_push_changed_its_law::ARunnerNamesItsBase (a real git fixture whose
+@{push} is its own HEAD reproduces the empty diff; +1 red-proof).
+
 ### REG-3786 - THE RIVER'S SIGHTING NOTE CALLED A SEAL THAT NEVER SAID WHAT IT FOUND A REEL THAT FOUND A CHRONICLE PAGE (v3903, the Grok CLI's look on v3901)
 REG-3756 counts a sealed reel as owing a sighting unless its row says pages == 0 - a row with no `pages` (an older seal) or a
 non-number still owes one, never assumed empty. Right for the count; but j_sighting's note read "N of M sealed reel(s) found a

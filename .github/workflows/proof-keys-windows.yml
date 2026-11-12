@@ -111,6 +111,7 @@ jobs:
       D2R_NO_CLAUDE: "1"
       HEART2_PROVE_WORKERS: "2"   # v3890 (REG-3504) - more room is more shards, never more lanes (3 measured flaky, 11-06)
       HEART2_GATE_CAP_S: "1500"
+      HEART2_PUSH_BASE: origin/main   # REG-3788 - the base the push facts diff against, fetched below (UNKNOWN if not)
       PYTHONUTF8: "1"
       PYTHONIOENCODING: utf-8
     defaults:
@@ -127,6 +128,10 @@ jobs:
         timeout-minutes: 3
         continue-on-error: true
         run: git fetch --no-tags --shallow-since=2026-10-29 origin "$HEAD_SHA"
+      - name: Fetch main, the base the push facts diff against (REG-3788 - the same shallow-since, never --depth)
+        timeout-minutes: 2
+        continue-on-error: true
+        run: git fetch --no-tags --shallow-since=2026-10-29 origin +refs/heads/main:refs/remotes/origin/main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
