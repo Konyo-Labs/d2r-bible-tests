@@ -290,28 +290,63 @@ def panel_stats(path, image=None):
             w, h = im.size
             rs, rv = _sv(im, (max(0, w - PANEL_W_H * h), 0.07 * h, w, 0.93 * h))
             ls, lv = _sv(im, (0.02 * h, 0.40 * h, 0.30 * h, 0.95 * h))
-            return rs, rv, ls, lv
+            return rs, rv, ls, lv, _left_fire(im)
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
             im = _in_game(im.convert("RGB"))
             w, h = im.size
             rs, rv = _sv(im, (max(0, w - PANEL_W_H * h), 0.07 * h, w, 0.93 * h))
             ls, lv = _sv(im, (0.02 * h, 0.40 * h, 0.30 * h, 0.95 * h))
-            return rs, rv, ls, lv
+            return rs, rv, ls, lv, _left_fire(im)
+    except Exception:
+        return None
+
+
+# REG-3758 (#185 / #104, Dean 11-12) - HIS CHARACTER SELECT IS DARKER, AND ITS FIRE LOGO SAYS WHICH SCREEN IT IS. MEASURED on
+# his frozen footage (off the repo): the 4 frames OCR read as character select (10-xx, 800x400 titled, after the title-bar trim)
+# read right sat 0.065 / val 0.222 and left sat 0.135 / val 0.160 - both values under the bands fitted on his Mac's 8 visits
+# (right val 0.30-0.45, left val 0.17-0.27), the same darker look his Join Game lobby has (REG-3747). Widening the bands alone
+# is the move REG-3508 measured wrong (dark game scenes walk in). What only this screen has is the fire DIABLO logo atop the
+# LEFT menu column: share 0.238-0.249 on the 4, 0.22-0.23 on two more he filmed on 10-28 (looked at: character select), 0.000
+# on 60 of his lobbies (their logo is centre-top). So a frame in the darker band passes only with that logo.
+DARK_CS_RIGHT_SAT_MAX = 0.10
+DARK_CS_RIGHT_VAL = (0.18, 0.30)
+DARK_CS_LEFT_SAT = (0.10, 0.17)
+DARK_CS_LEFT_VAL = (0.13, 0.20)
+CS_FIRE_MIN = 0.15
+CS_FIRE_BOX_H = (0.05, 0.08, 0.36, 0.32)   # x0, y0 (as shares of the HEIGHT for x - the UI scales with height), x1, y1
+
+
+def _left_fire(im):
+    """REG-3758 - the share of the left column's top that is the fire logo's red-orange. -> float | None (no numpy)"""
+    try:
+        import numpy as np
+        w, h = im.size
+        x0, y0, x1, y1 = CS_FIRE_BOX_H
+        c = np.asarray(im.convert("HSV").crop((int(x0 * h), int(y0 * h), max(int(x0 * h) + 1, min(w, int(x1 * h))),
+                                                max(int(y0 * h) + 1, int(y1 * h)))), dtype=np.float32)
+        hue, sat, val = c[..., 0] / 255.0 * 360.0, c[..., 1] / 255.0, c[..., 2] / 255.0
+        return float((((hue < 45) | (hue > 345)) & (sat > 0.55) & (val > 0.45)).mean())
     except Exception:
         return None
 
 
 def looks_like_char_select(stats):
-    """(bool, why) from panel_stats(): the grey stone list on the right AND the stone menu column on the left."""
+    """(bool, why) from panel_stats(): the grey stone list on the right AND the stone menu column on the left - or (REG-3758)
+    the same two panels in his darker look WITH the fire logo atop the left column."""
     if not stats:
         return False, "frame unreadable"
-    rs, rv, ls, lv = stats
+    rs, rv, ls, lv = stats[:4]
     right = rs < RIGHT_SAT_MAX and RIGHT_VAL[0] < rv < RIGHT_VAL[1]
     left = LEFT_SAT[0] < ls < LEFT_SAT[1] and LEFT_VAL[0] < lv < LEFT_VAL[1]
     say = "right sat %.3f val %.3f · left sat %.3f val %.3f" % (rs, rv, ls, lv)
     if right and left:
         return True, "both stone panels (%s)" % say
+    fire = stats[4] if len(stats) >= 5 else None
+    if (fire is not None and fire >= CS_FIRE_MIN and rs < DARK_CS_RIGHT_SAT_MAX
+            and DARK_CS_RIGHT_VAL[0] < rv < DARK_CS_RIGHT_VAL[1]
+            and DARK_CS_LEFT_SAT[0] < ls < DARK_CS_LEFT_SAT[1] and DARK_CS_LEFT_VAL[0] < lv < DARK_CS_LEFT_VAL[1]):
+        return True, "both stone panels in the darker look, under the fire logo (%s; fire logo %.3f)" % (say, fire)
     return False, ("no list panel" if not right else "no menu column") + " (%s)" % say
 
 

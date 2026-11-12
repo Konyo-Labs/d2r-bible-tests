@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_his_darker_char_select_is_read",
+         [sys.executable, os.path.join(HERE, "test_his_darker_char_select_is_read.py")], 60,
+         needs_app=False,
+         why="v3901 (#185/#104, REG-3758) - Dean's character select read 'no list panel' (his darker look, the Mac's bands); "
+             "the same panels in his band pass only WITH the fire logo atop the left column - 36 of 35,035 frames, all real"),
     Gate("test_a_dark_paid_lane_names_a_signed_out_reader",
          [sys.executable, os.path.join(HERE, "test_a_dark_paid_lane_names_a_signed_out_reader.py")], 60,
          needs_app=False,
