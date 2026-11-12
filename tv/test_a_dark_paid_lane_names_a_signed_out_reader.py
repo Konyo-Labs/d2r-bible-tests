@@ -71,9 +71,10 @@ class ADarkPaidLaneNamesASignedOutReader(unittest.TestCase):
             self.assertEqual(cd._paid_reads_blocked_note(), "")
 
     def test_the_lamp_decides_and_unknown_is_not_signed_out(self):
-        def fake(lamp):
+        def fake(lamp, rows=()):
             m = types.ModuleType("control_app")
             m._reader_health = lambda *a, **k: {"claude": lamp}
+            m._journal_tail_rows = lambda *a, **k: (None if rows is None else list(rows))
             return m
         for lamp, want in (({"state": "off", "needsLogin": True, "why": "Claude is signed out on this PC"}, True),
                            ({"state": "off", "needsLogin": False, "why": "the last read failed"}, False),
@@ -81,6 +82,9 @@ class ADarkPaidLaneNamesASignedOutReader(unittest.TestCase):
                            ({"state": "on", "needsLogin": False}, False)):
             with mock.patch.dict(sys.modules, {"control_app": fake(lamp)}):
                 self.assertEqual(bool(cd._claude_signed_out()), want, lamp)
+        # the journal would not read: UNKNOWN, never "signed out" (v3901 run c moved this off the serving console)
+        with mock.patch.dict(sys.modules, {"control_app": fake({"state": "off", "needsLogin": True}, rows=None)}):
+            self.assertIsNone(cd._claude_signed_out(), "an unreadable journal read as signed out")
 
 
 RED_PROOF = [

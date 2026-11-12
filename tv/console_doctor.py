@@ -6218,9 +6218,15 @@ PAID_READ_LANES = ("chronicle", "vault")
 def _claude_signed_out():
     """REG-3757 - is the Claude reader signed out on THIS PC, by the readers' own lamp (control_app._reader_health)? -> its why
     | None (signed in, unknown, or the lamp could not be asked - UNKNOWN never reads as signed out)"""
+    # read off the journal on disk, never through _serving_console: the rows that call this run in the eagle's child
+    # (REG-2987), and a row there must not read the console's own process (v3901 run c: test_the_eagles_pass_runs_in_a_child).
+    # g5 is handed in, so no Grok CLI is ever asked from here - only Claude's lamp is wanted.
     try:
         import control_app as _ca
-        lamp = (_serving_console(_ca)._reader_health() or {}).get("claude") or {}
+        _rows = _ca._journal_tail_rows()
+        if _rows is None:
+            return None
+        lamp = (_ca._reader_health(rows=_rows, g5={}, use_cache=False) or {}).get("claude") or {}
     except Exception:
         return None
     if lamp.get("state") == "off" and lamp.get("needsLogin") is True:
