@@ -13969,6 +13969,11 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_queued_run_is_said_once_then_every_ten_minutes",
+         [sys.executable, os.path.join(HERE, "test_a_queued_run_is_said_once_then_every_ten_minutes.py")], 60,
+         needs_app=False,
+         why="v3902 (#200, REG-3773) - v3900's ship log said the same queued Publish every 80 s pass, 30+ times in 40 min; "
+             "the ship says a queued run once, then every 10 minutes"),
     Gate("test_a_shard_never_rerun_is_not_red_twice",
          [sys.executable, os.path.join(HERE, "test_a_shard_never_rerun_is_not_red_twice.py")], 60,
          needs_app=False,

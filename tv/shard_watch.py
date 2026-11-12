@@ -608,7 +608,7 @@ def watch_jobs_live(sha, runs, run, say, seen, made, clock, root=None):
         last = getattr(watch_jobs_live, "_yield_at", None)
         if last is None or now - last >= 60:
             watch_jobs_live._yield_at = now
-            SY.protect_priority(run=run, say=say, now=clock())
+            SY.protect_priority(run=run, say=say, now=clock(), quiet=getattr(SW, "QUEUED_SAID", None))   # REG-3773
     except Exception as _e:
         say("ship: REG-3654 yield could not run (%s)" % type(_e).__name__)
     last = None

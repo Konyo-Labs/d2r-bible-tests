@@ -427,11 +427,26 @@ def sweep_stale(runs, run, say=print, tips=None):
     return done
 
 
-def _log_queued(queued, cancelled, now, say, runs=None, unread=()):
+#: REG-3773 - a run still queued is said again only this often (a cancellation is always said)
+QUEUED_SAY_EVERY_S = 600
+
+
+def _log_queued(queued, cancelled, now, say, runs=None, unread=(), quiet=None):
     """REG-3732 (v3898's Publish, 11-11 22:40) - the line said "while our own non-ship runs held runners" every time; that
     night GitHub had started NONE of the repo's 11 queued runs (0 in progress) and the cause it named was never measured.
-    It now counts what is really running: 0 is a queue on GitHub's side, nothing here to cancel."""
+    It now counts what is really running: 0 is a queue on GitHub's side, nothing here to cancel.
+
+    REG-3773 (#200, 11-12) - `quiet`, the ship's {run id: when it was said}: v3900's ship log carried the same queued line
+    every 80 s pass (30+ times in 40 min), and a watch on the log drowned in it. A run is said when it is first seen queued,
+    then once every QUEUED_SAY_EVERY_S while it stays queued; a pass that cancelled something is always said. None (every
+    other caller) says every pass, as before."""
     now = time.time() if now is None else now
+    if quiet is not None and not cancelled:
+        queued = [r for r in queued if now - quiet.get(_rid(r), -1e18) >= QUEUED_SAY_EVERY_S]
+        if not queued:
+            return
+        for r in queued:
+            quiet[_rid(r)] = now
     # REG-3750 (the second eye on REG-3732, #231) - a poll for in-progress runs that was NOT read leaves the count UNKNOWN:
     # the partial list held no in_progress rows because nobody read them, and 0 took the certain "GitHub has not started it"
     running = (None if runs is None or "in_progress" in (unread or ())
@@ -559,7 +574,7 @@ def fetch_state(run=None, repo=None):
     return {"runs": _merge_runs(live, pubs), "main": main, "unread": list(getattr(live, "unread", ()) or ())}
 
 
-def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=True, tips=None):
+def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=True, tips=None, quiet=None):
     """If a real ship or Publish is live, cancel competing dry/ and grok/ runs. -> [ids] | None. Never raises.
 
     When sweep=True (protect_priority, --sweep, or --yield), also cancels stale
@@ -591,16 +606,16 @@ def yield_to_ship(run=None, say=print, runs=None, main=None, now=None, sweep=Tru
             for rid in more:
                 if rid not in done:
                     done.append(rid)
-            _log_queued(queued, done, now, say, runs=state_runs, unread=unread)
+            _log_queued(queued, done, now, say, runs=state_runs, unread=unread, quiet=quiet)
         return done
     except Exception as e:
         say("ship: REG-3654 yield could not run (%s)" % type(e).__name__)
         return None
 
 
-def protect_priority(run=None, say=print, runs=None, main=None, now=None, tips=None):
+def protect_priority(run=None, say=print, runs=None, main=None, now=None, tips=None, quiet=None):
     """REG-3654 - sweep stale dry / ci/*dry*, and yield runners to a live ship or Publish."""
-    return yield_to_ship(run=run, say=say, runs=runs, main=main, now=now, sweep=True, tips=tips)
+    return yield_to_ship(run=run, say=say, runs=runs, main=main, now=now, sweep=True, tips=tips, quiet=quiet)
 
 
 def main(argv=None):

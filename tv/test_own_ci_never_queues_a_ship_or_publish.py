@@ -206,7 +206,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_the_ship_protects_runners_while_it_watches_publish(self):
         src = _read("tv/ship_when_green.py")
-        needle = "            SY.protect_priority(run=run, say=say, main=sha, now=clock())\n"
+        needle = "            SY.protect_priority(run=run, say=say, main=sha, now=clock(), quiet=QUEUED_SAID)"
         self.assertIn(needle, src)
         call_at = src.index(needle)
         # Inside watch_publish, before the first watch(sha) of the loop.
@@ -220,7 +220,7 @@ class TheLawHolds(unittest.TestCase):
 
     def test_the_live_shard_watch_protects_runners(self):
         src = _read("tv/shard_watch.py")
-        needle = "            SY.protect_priority(run=run, say=say, now=clock())\n"
+        needle = "            SY.protect_priority(run=run, say=say, now=clock(), quiet=getattr(SW, \"QUEUED_SAID\", None))"
         self.assertIn(needle, src)
         self.assertLess(src.index("def watch_jobs_live("), src.index(needle))
 
@@ -255,8 +255,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3654 - the Publish watch no longer frees runners for a live Publish",
      "file": "tv/ship_when_green.py",
-     "find": "            SY.protect_priority(run=run, say=say, main=sha, now=clock())\n",
-     "replace": "            None\n",
+     "find": "            SY.protect_priority(run=run, say=say, main=sha, now=clock(), quiet=QUEUED_SAID)",
+     "replace": "            None",
      "matches": 1},
     {"why": "REG-3654 - the ship no longer hands its gh runner to the Publish watch",
      "file": "tv/ship_when_green.py",
@@ -265,8 +265,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "REG-3654 - the live shard watch no longer yields runners when a ship is queued",
      "file": "tv/shard_watch.py",
-     "find": "            SY.protect_priority(run=run, say=say, now=clock())\n",
-     "replace": "            None\n",
+     "find": "            SY.protect_priority(run=run, say=say, now=clock(), quiet=getattr(SW, \"QUEUED_SAID\", None))",
+     "replace": "            None",
      "matches": 1},
     {"why": "REG-3654 - a ci/*dry* name can be pushed again",
      "file": "tv/ship_yield.py",

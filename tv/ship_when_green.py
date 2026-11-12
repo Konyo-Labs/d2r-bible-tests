@@ -288,6 +288,10 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
             shutil.rmtree(d, ignore_errors=True)
 
 
+#: REG-3773 - {run id: when the ship last said it was queued}, one per ship process (ship_yield.QUEUED_SAY_EVERY_S)
+QUEUED_SAID = {}
+
+
 def red_shard_tries(rid, tot, run):
     """REG-3770 (#200, v3900's round 11-12) - HOW MANY TIMES WERE THE SHARDS A LAW WENT RED IN REALLY GRADED? -> int | None.
 
@@ -449,7 +453,7 @@ def _watch_publish(sha, watch, sleep, clock, say, wait_s, limit, run, live=None)
         if run is not None:
             try:
                 import ship_yield as SY
-                SY.protect_priority(run=run, say=say, main=sha, now=clock())
+                SY.protect_priority(run=run, say=say, main=sha, now=clock(), quiet=QUEUED_SAID)   # REG-3773
             except Exception as _e:
                 say("ship: REG-3654 yield could not run (%s)" % type(_e).__name__)
         got = watch(sha)
