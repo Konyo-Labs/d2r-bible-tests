@@ -29564,12 +29564,13 @@ function escC(s) {
       u = imp.done >= imp.of ? 'import saving · all ' + n(imp.of) + ' checked' : 'import ' + n(imp.done) + ' of ' + n(imp.of);
     }
     if (imp && whole(imp.quietS) && imp.quietS > 0) {
-      return u + ' · no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + ' min'
-                                                                  : (imp.quietS / 3600).toFixed(1) + ' h');
+      return u + ' · no progress for ' + (imp.quietS < 5400 ? Math.max(1, Math.round(imp.quietS / 60)) + '\u00a0min'
+                                                                  : (imp.quietS / 3600).toFixed(1) + '\u00a0h');
     }
     if (imp && whole(imp.etaS)) {
       var e = imp.etaS;
-      return u + ' ~' + (e < 60 ? '1 min' : e < 5400 ? Math.round(e / 60) + ' min' : (e / 3600).toFixed(1) + ' h');
+      /* a number and its unit are one unit (a no-break space, v3884) - at 901 the Grok CLI read '~3.8' and 'h' on two lines */
+      return u + ' ~' + (e < 60 ? '1\u00a0min' : e < 5400 ? Math.round(e / 60) + '\u00a0min' : (e / 3600).toFixed(1) + '\u00a0h');
     }
     return u;
   };

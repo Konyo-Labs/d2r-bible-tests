@@ -2546,6 +2546,48 @@ TARGETS = {
         "warmup": 10.0,
     },
 
+    # v3900 (REG-3741) - A PC IMPORTING ITS PROOFS READS UPDATING WITH THE COUNT, AND ITS WAITING DRAIN IS NOT A WOUND. His
+    # 11-12 Fleet: Dean BLOCKED "drain stopped ... river stuck import ~3.8 h" while importing GitHub's proofs. Dean's measured
+    # report of that night (the Mac's /api/fleet). STUBBED like fleet-pull-refused: the render, never the wire; the word is
+    # pinned by test_a_drain_waiting_on_its_proofs_is_updating. Refuses until the row says updating AND the import count.
+    "fleet-import-drain": {
+        "serve": True,
+        "why": "v3900 (REG-3741) - a PC importing its proofs reads updating with the import count, its drain waits",
+        "seed": """(function(){
+            try { localStorage.setItem('d2r_advOpen','1'); } catch(e){}
+            var now = new Date().toISOString();
+            var rows = [
+              {machine:'dean', nickname:'Dean', ver:'v3898', t: now, pull:{can:true, behind:0},
+               system:{drain:{state:'STOPPED', owed:144, owedAtMouth:131, eligible:131, eligibleMb:4642.6, passesOwed:13,
+                              why:'the drain has STOPPED - the last refusal: frame.release is LOCKED'},
+                       river:{stuck: [], heart:{census:'stale', key:'stood-aside', blind:0, owed:543,
+                              importing:{done:157, of:10028, etaS:13764, ver:'v3898'},
+                              locksShut:['frame.release','vault.sweep_start','vault.apply'],
+                              lockWhy:'the heart2 PROOF census is STALE', locksAgeS:4}}}},
+              {machine:'mac', nickname:'Konyo', ver:'v3899', t: now,
+               system:{river:{stuck: [], heart:{census:'current', key:'current', blind:0, locksShut:[], locksAgeS:4}}}}];
+            var _f = window.fetch;
+            window.fetch = function(u, o){
+              if (String(u).indexOf('/api/fleet') === 0) {
+                return Promise.resolve(new Response(JSON.stringify({ ok: true, online: rows, offline: [] }),
+                                                    { status: 200, headers: { 'Content-Type': 'application/json' } }));
+              }
+              return _f.apply(this, arguments);
+            };
+            var _b = document.getElementById('fleet-list');
+            if (_b) _b.innerHTML = '';
+            if (window._fleetRefresh) { try { window._fleetRefresh(); } catch(e){} }
+            return 1;
+          })()""",
+        "activate": ("(function(){ var _b = (%s); if (!_b) return false; "
+                     "var t = (document.getElementById('fleet-list') || {}).textContent || ''; "
+                     "return /updating/.test(t) && /import 157 of 10,028/.test(t) && /drain waits for the proofs/.test(t); })()"
+                     % _adv_activate("fleet-list")),
+        "sel": "#fleet-list .fleet-row, #fleet-list .fleet-brief",
+        "settles": False,
+        "warmup": 10.0,
+    },
+
     # ── v3033 (#82) — THE CROSS-REFERENCE DIALOG, WHICH NOTHING HAS EVER PHOTOGRAPHED ─────────
     # He reported this panel's layout THREE times in one session — "symetric", "+ typography",
     # "its like not aligned" — and every instrument called the console clean, because there was a

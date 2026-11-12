@@ -193,9 +193,9 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
         b = self.b
         self.assertEqual(b["ready"]["line"], "all proved")              # v3883 (#116) fits 1512 whole
         self.assertEqual(b["healing"]["line"], "proving 8 checks ~12 min")   # v3884 what is proved
-        self.assertEqual(b["blind"]["line"], u"1 check blind · import 2,800 of 9,294 ~26 min")   # REG-3741 the count                  # v3883 (#116) short words
-        self.assertEqual(b["importing"]["line"], u"river stuck · import 890 of 9,294 ~82 min")
-        self.assertEqual(b["importquiet"]["line"], u"river stuck · import 3,029 of 4,396 · no progress for 3 min")   # v3882
+        self.assertEqual(b["blind"]["line"], u"1 check blind · import 2,800 of 9,294 ~26\u00a0min")   # REG-3741 the count                  # v3883 (#116) short words
+        self.assertEqual(b["importing"]["line"], u"river stuck · import 890 of 9,294 ~82\u00a0min")
+        self.assertEqual(b["importquiet"]["line"], u"river stuck · import 3,029 of 4,396 · no progress for 3\u00a0min")   # v3882
         self.assertEqual(b["town"]["line"], "since 18:10")           # v3883: the word itself says OFFLINE (his 11-08 ruling)
         self.assertEqual(b["townold"]["line"], "since Oct 28")
         self.assertEqual(b["lost"]["line"], "no readable report")
@@ -207,10 +207,10 @@ class AClosedRowIsOneWordAndOneLine(unittest.TestCase):
 
     def test_each_unit_is_its_own_element(self):
         """v3883 (#116) - the word, the wound and what heals it are separate elements, so a wrap falls BETWEEN them"""
-        self.assertEqual(self.b["blind"]["units"], ["1 check blind", "import 2,800 of 9,294 ~26 min"])
+        self.assertEqual(self.b["blind"]["units"], ["1 check blind", "import 2,800 of 9,294 ~26\u00a0min"])
         self.assertEqual(self.b["stuckproving"]["units"][-1], "proving 1,290 checks ~14.4 h")
         self.assertEqual(self.b["ready"]["units"], ["all proved"])
-        self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"import 3,029 of 4,396 · no progress for 3 min"])
+        self.assertEqual(self.b["importquiet"]["units"], ["river stuck", u"import 3,029 of 4,396 · no progress for 3\u00a0min"])
 
     def test_the_line_names_one_wound_and_no_count_of_the_rest(self):
         """v3883 (#116) - ONE wound: "+N" spent 3 of a 25-37 character line on what the open row lists"""

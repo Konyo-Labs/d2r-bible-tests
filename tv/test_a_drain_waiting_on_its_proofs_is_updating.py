@@ -9,7 +9,7 @@ until the census is current, and the PC is making it current by itself - so the 
 words: "still showing blocked and not showing the import ... and the amount of proofs and progress", "some updating some are
 blocked.. some drain stopped..".
 
-Now: that PC reads UPDATING, its line says "drain waits for the proofs - ..." and "import 157 of 10,028 ~3.8 h". A drain
+Now: that PC reads UPDATING, its line says "drain waits for the proofs - ..." and "import 157 of 10,028 ~3.8\u00a0h". A drain
 stopped while frame.release is OPEN, a BLIND lock, a shut routing door or a refused pull stays BLOCKED.
 
 DRIVEN: the page's own _pcStatus / _fleetBriefHtml in node, cut from tv/control_ui.html. RED_PROOF below.
@@ -117,14 +117,14 @@ class ADrainWaitingOnItsProofsIsUpdating(unittest.TestCase):
         s = self.o["dean"]
         self.assertEqual((s["key"], s["word"]), ("healing", "updating"), s)
         self.assertEqual(_units(s["html"]), [u"drain waits for the proofs — 131 reels · 4.5 GB at stake",
-                                            u"import 157 of 10,028 ~3.8 h"], s["html"])
-        self.assertIn("import 157 of 10,028 ~3.8 h - nothing for you to do", s["next"])
+                                            u"import 157 of 10,028 ~3.8\u00a0h"], s["html"])
+        self.assertIn("import 157 of 10,028 ~3.8\u00a0h - nothing for you to do", s["next"])
         self.assertIn("the drain releases its reels once the proofs land", s["next"])
 
     def test_an_import_says_its_count_not_proving_and_import_first(self):
         s = self.o["import_only"]
         self.assertEqual(s["word"], "updating", s)
-        self.assertEqual(_units(s["html"]), [u"import 157 of 10,028 ~3.8 h"], s["html"])
+        self.assertEqual(_units(s["html"]), [u"import 157 of 10,028 ~3.8\u00a0h"], s["html"])
 
     def test_baseline_a_drain_stopped_with_release_open_is_still_blocked(self):
         s = self.o["released_open"]
