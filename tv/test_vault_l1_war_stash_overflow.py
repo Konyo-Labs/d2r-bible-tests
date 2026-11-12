@@ -76,10 +76,28 @@ def roster_with(names, declined=None):
             m.pop("warDeclined", None)
             if declined:
                 m["warDeclined"] = list(declined)
-    T.board().seed({"d2r_muleRoster": r, "d2r_owned": [], "d2r_vaultProv": {}, "d2r_muleAssign": {},
-                    "d2r_vaultRecords": None, "d2r_copies": {}, "d2r_multiKeep": {}})
+    _seed_frozen({"d2r_muleRoster": r, "d2r_owned": [], "d2r_vaultProv": {}, "d2r_muleAssign": {},
+                  "d2r_vaultRecords": None, "d2r_copies": {}, "d2r_multiKeep": {}})
     owner = T.board().run("OUT.o = window._D2R_OWNER === true;")["o"]
     assert owner, "PREMISE: the board is a guest world, where no mule is ever made - not his board"
+    # REG-3767 - the seeded war mules are the board's war mules, or the case measures the page before it
+    wars = T.board().run("OUT.w = window._vaultWarMules().map(function(w){ return w.id; });")["w"]
+    assert wars == ["war-law-%d" % i for i in range(len(names))], (
+        "PREMISE: the seeded roster did not land - the board's war mules are %r, not the %d seeded (the page before the "
+        "seed wrote its own roster over it)" % (wars, len(names)))
+
+
+def _seed_frozen(stores):
+    """REG-3767 (v3900's round, 11-12) - seed, then FREEZE the old page's storage before it is left. Board.seed writes on the
+    page the case before left behind, then navigates: that page's own timers could still write its in-memory roster over
+    the seed in between. Measured on GitHub (proof shard 11, run 43156415620, and three rounds before it): the 601-copy
+    fill sent its overflow to WAR-B - the war mule the take-back case before it makes - and never to the seeded war1. The
+    old page's Storage.prototype writes are made no-ops after the seed (its realm only; the reloaded page has its own)."""
+    T.board().run("var S = %s; Object.keys(S).forEach(function(k){ if (S[k] === null) window.LSR.removeItem(k);"
+                  " else window.LSR.setItem(k, typeof S[k] === 'string' ? S[k] : JSON.stringify(S[k])); });"
+                  "var P = Storage.prototype; P.setItem = function(){}; P.removeItem = function(){}; P.clear = function(){};"
+                  % json.dumps(stores))
+    T.board().navigate()
 
 
 def add_many(names, step=20):
@@ -317,6 +335,22 @@ class WarStashOverflow(unittest.TestCase):
         self.assertEqual(o["wcard"], 5, "the board's WAR1 card draws %r belts, not 5" % o["wcard"])
         self.assertTrue(war_makes(o, w1) and o["makeFirst"], o["make"])
 
+    def test_the_page_before_a_seed_cannot_write_over_it(self):
+        """REG-3767 - a write the old page makes on its way out (pagehide) lands over a plain seed, and never over a frozen one"""
+        roster_with([])
+        plant = ("window.addEventListener('pagehide', function(){ window.LSR.setItem('d2r_muleRoster', "
+                 "JSON.stringify([{id: 'stale-war', name: 'WAR-B', role: 'war', warN: 2}])); });")
+        base = T.board().run("OUT.r = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]');")["r"]
+        T.board().run(plant)
+        T.board().navigate()
+        got = T.board().run("OUT.ids = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').map(function(m){ return m.id; });")["ids"]
+        self.assertIn("stale-war", got, "PREMISE: the planted exit write did not land on a plain navigate - the case would not distinguish")
+        T.board().run(plant)
+        _seed_frozen({"d2r_muleRoster": base + [{"id": "war-law-0", "name": "WAR-A", "role": "war", "warN": 1}]})
+        got = T.board().run("OUT.ids = JSON.parse(window.LSR.getItem('d2r_muleRoster') || '[]').map(function(m){ return m.id; });")["ids"]
+        self.assertNotIn("stale-war", got, "the page before the seed wrote its roster over it")
+        self.assertIn("war-law-0", got, "the seeded roster is not the store")
+
     def test_a_war_mule_he_took_back_is_not_made_again_and_the_next_one_is(self):
         """REG-2803: a WAR mule he deleted is kept on the shared stash's entry - the board does not make it again.
         REG-2997 (his ruling 2026-10-29, Q2): the board makes the next one instead, the extras land on it, and MOVE TASKS
@@ -352,6 +386,11 @@ class WarStashOverflow(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3767 - the page before a seed writes its own roster over it again (v3900's round: the fill went to WAR-B)",
+     "file": "tv/test_vault_l1_war_stash_overflow.py",
+     "find": "                  \"var P = Storage.prototype; P.setItem = function(){}; P.removeItem = function(){}; P.clear = function(){};\"\n",
+     "replace": "                  \"\"\n",
+     "matches": 1},
     {"why": "A hand add of a name he owns is 'already yours - nothing changed' again: the 2nd copy vanishes.",
      "file": "bible.html", "find": "      if (!(opts && opts.by) && typeof copies !== 'undefined' && copies) {",
      "replace": "      if (false) {", "matches": 1},
