@@ -1033,6 +1033,11 @@ tr.owned-row{background:rgba(102,255,136,.03)}
 .d2art-wrap.d2art-failed .d2art-img{display:none}
 .d2art-wrap.d2art-failed .d2art-fallback{display:inline-flex}
 .d2art-wrap.lg{width:54px;height:54px;flex:0 0 auto}
+/* REG-3782 (#91, his 11-12 "show their own sprites") - a GROUP row draws its members' own sprites, overlapped a little so a
+   three-priest row stays compact beside its name */
+.d2art-group{display:inline-flex;align-items:center;vertical-align:middle;flex:0 0 auto}
+.d2art-group > .d2art-wrap + .d2art-wrap{margin-left:-10px}
+.d2art-group > .d2art-wrap.sm + .d2art-wrap.sm{margin-left:-5px}
 .boss-detail-header .d2art-wrap.lg{width:66px;height:66px}
 .boss-detail-header .d2art-wrap.lg .d2art-img{max-width:66px;max-height:66px}
 .boss-chip .d2art-wrap.sm{width:48px;height:48px}
@@ -24170,7 +24175,18 @@ window._qHex = _qHex; window._qStyle = _qStyle; window._qGlow = _qGlow;
 // "(slot)" suffix on purpose, but D2IO_ART is keyed by the clean name, so artUrl missed → wrong/blank art.
 function _artSlotClean(n){ return String(n == null ? '' : n).replace(/\s*\([^)]*\)\s*$/, '').trim(); }
 try { window._artSlotClean = _artSlotClean; } catch(e){}
+/* REG-3782 (#91, his 11-12 ruling "show their own sprites") - A ROW THAT NAMES A GROUP DRAWS EACH MEMBER'S OWN SPRITE. The
+   Bosses Super-Uniques chip and the Runes row "Travincal Council · Toorc + Geleb + Ismail" both wore the one shared
+   councilmember_graphic.png (GrokBot's v3899 look, #230), while each priest has had his own hash-pinned sprite since REG-3963.
+   The members are named in the order the row names them. Only artOr draws a group - a caller that wants one URL (artUrl) and
+   the Travincal zone card, which names no priest, keep the council picture. */
+var ART_GROUP = {"Travincal Council": ["Toorc Icefist", "Geleb Flamefinger", "Ismail Vilehand"]};
+try { window.ART_GROUP = ART_GROUP; } catch (eAg) {}
 function artOr(name, fallbackHtml, size){
+  /* typeof: artOr is a hoisted declaration, and a render that runs before the map's line has executed must draw as before */
+  var _grp = (typeof ART_GROUP === 'object' && ART_GROUP) ? ART_GROUP[String(name == null ? '' : name).trim()] : null;
+  if (_grp) return '<span class="d2art-group" role="img" aria-label="' + _d2artEsc(name) + '">'
+    + _grp.map(function(m){ return artOr(m, fallbackHtml, size); }).join('') + '</span>';
   // Resolve art robustly for vault item names that carry a socket/Larzuk SUFFIX ("Grim Scythe (6os)",
   // "Crystal Sword (Larzuk base)") or a quality PREFIX ("Superior …", "Ethereal …"). A failed v381 batch
   // fetch left ~487 base_*.png as an identical placeholder gem; a suffixed name can land on one of those
