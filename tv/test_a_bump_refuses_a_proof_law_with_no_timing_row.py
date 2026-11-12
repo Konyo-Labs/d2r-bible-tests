@@ -63,6 +63,30 @@ class ABumpRefusesAProofLawWithNoTimingRow(unittest.TestCase):
         self.assertIn("shard_timings.py --write", said)
         self.assertIn("Nothing has been written", said)
 
+    def test_a_check_that_cannot_run_is_said_never_silent(self):
+        """REG-3804 (the v3902 second eye) - a timings file that is there and a check that raises read exactly like no file"""
+        import contextlib
+
+        def boom(root=None, doc=None):
+            raise ValueError("a broken timings file")
+        out = io.StringIO()
+        with io.open(os.path.join(self.repo, "tv", ST.NAME), "w", encoding="utf-8") as fh:
+            fh.write('{"proofs": {}}\n')
+        with mock.patch.object(ST, "coverage", boom), contextlib.redirect_stdout(out):
+            try:
+                BV.bump("v9999", "a test", "a test note", repo=self.repo, items=["one fix"])
+            except SystemExit as e:
+                self.assertNotIn(MSG, str(e), "a check that could not run refused the bump on a guess")
+            except Exception:
+                pass                        # anything later in the bump (the scratch dir has no bible.html)
+        said = out.getvalue()
+        self.assertIn("REG-3804: the shard-timing check raised ValueError - UNKNOWN", said,
+                      "a check that could not run was silent: %r" % said[-300:])
+        out2 = io.StringIO()
+        with contextlib.redirect_stdout(out2):
+            self._bump((True, [], []))
+        self.assertNotIn("REG-3804", out2.getvalue(), "BASELINE: a check that ran said it was UNKNOWN")
+
     def test_no_timings_file_refuses_nothing(self):
         self.assertNotIn(MSG, self._bump((False, ["x"], []), with_file=False), "a repo with no timings file was refused")
 
@@ -77,6 +101,11 @@ RED_PROOF = [
      "file": "tv/bump_version.py",
      "find": "        if os.path.isfile(_st.path(repo or REPO)) and _st.load(repo or REPO) is not None:\n",
      "replace": "        if True:\n",
+     "matches": 1},
+    {"why": "REG-3804 - a timing check that could not run is as silent as no file",
+     "file": "tv/bump_version.py",
+     "find": "    if _st_why:\n        print(\"⚠ REG-3804: %s",
+     "replace": "    if False:\n        print(\"⚠ REG-3804: %s",
      "matches": 1},
 ]
 

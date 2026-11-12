@@ -314,14 +314,22 @@ def bump(ver, name, note, repo=None, items=None):
     # test_the_shard_balance_file_covers_every_proof_test after the bump, and each paid a fix commit and a pre-flight
     # restart. The new laws are registered before the bump, so this is the moment to say it. UNKNOWN (the module or its
     # file will not read) refuses nothing - the law still holds the line.
+    # REG-3804 (the v3902 second eye) - a timings file that IS there and will not read, or a check that raised, was as silent
+    # as no file at all. It still refuses nothing (the law holds the line) - and now it says the check was UNKNOWN.
+    _st_why = None
     try:
         import shard_timings as _st
         if os.path.isfile(_st.path(repo or REPO)) and _st.load(repo or REPO) is not None:
             _ok, _miss, _ = _st.coverage(root=repo or REPO)
         else:
             _ok, _miss = True, []          # no timings file here (a fixture repo) or it will not read: UNKNOWN
-    except Exception:
-        _ok, _miss = True, []
+            if os.path.isfile(_st.path(repo or REPO)):
+                _st_why = "tv/shard_timings.json is there and will not read"
+    except Exception as _ste:
+        _ok, _miss, _st_why = True, [], "the shard-timing check raised %s" % type(_ste).__name__
+    if _st_why:
+        print("⚠ REG-3804: %s - UNKNOWN, so this bump does not refuse on it; the pre-flight's shard-balance law still holds "
+              "the line" % _st_why)
     if not _ok:
         raise SystemExit("REFUSED to bump %s: tv/shard_timings.json has no row for %d registered proof law(s) (%s%s) - run "
                          "`python3 tv/shard_timings.py --write`, commit it, then bump. Nothing has been written."

@@ -142,6 +142,15 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3804 - THE BUMP'S SHARD-TIMING CHECK WENT SILENT WHEN IT COULD NOT RUN (v3903, the v3902 second eye)
+The v3902 look (Grok CLI, 20,279 chars): any exception in bump_version's REG-3778 check, or a timings file that is there and
+will not read, set _ok True with nothing said - exactly like a repo with no file. The fail-open is the ruling (the bump refuses
+nothing on UNKNOWN; the pre-flight's shard-balance law holds the line), so it stays; what was wrong is the silence. It now
+prints REG-3804 with why it was UNKNOWN. Law: test_a_bump_refuses_a_proof_law_with_no_timing_row::
+test_a_check_that_cannot_run_is_said_never_silent (+1 red-proof). The same look's other findings, each measured: control_app's
+docstring is closed (it compiles, his console serves v3902 from it - the payload was cut mid-file); finish_plan re-runs a red
+shard only when makeup_due finds every red a law red ONCE untampered on the first attempt, which is his #146 rule.
+
 ### REG-3803 - THE SITE'S TASK BOARD KEPT THE OLDEST 200 CARDS: #201 ON NEVER LEFT THE MAC (v3903, his 11-12 ask)
 His words: "also this is not updated https://bull-4-u.com/d2r/tasks and synced to the local http://127.0.0.1:17955 should be
 updated the same". MEASURED: the lane posts (pacing record 18:01, the site's copy the same minute), and the site held 200 of
