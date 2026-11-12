@@ -258,7 +258,9 @@ makes the old page's Storage.prototype writes no-ops after seeding (its realm on
 new premise in roster_with asserts the board's war mules ARE the seeded ones, so a recurrence names itself instead of
 reading as "WAR1 did not fill next". Which exit write did it on the runner is not measured (green 3/3 locally before); the
 mechanism is. Guard: the law's new case test_the_page_before_a_seed_cannot_write_over_it (red-proof [0], red by hand with
-the freeze out). Only this law's seed changed; the shared Board harness is untouched.
+the freeze out). Only this law's seed changed; the shared Board harness is untouched: 22 laws import it, changing it would
+re-prove every one of those browser laws on GitHub, and all four recorded flakes of this shape were this law - named here so
+a recurrence elsewhere is read as the same class.
 
 ### REG-3766 - A PUBLISH GITHUB PASSED OVER SAT QUEUED 8.5 H AND HELD THE YIELD RULE ARMED (v3902 #200)
 
@@ -268,8 +270,10 @@ live Publish, so may_push refused every grok/ and dry/ push ("a real ship is liv
 log printed "REG-3654 QUEUED ... queued 30893s" every 80 s. The group runs one Publish at a time: a later Publish that
 started or finished means GitHub passed the waiting one over, and main only moves forward, so the later one carried its
 content. orphaned_by() now names that case; live_publish_runs and queued_priority_runs skip it, and the ship says
-"REG-3766 ORPHANED - ... GitHub passed it over" ONCE per process with the run that went past it. Nothing is cancelled (the
-yield rule never cancels on main). Guard: test_an_orphaned_publish_holds_nothing (3 RED proofs PROVEN, baseline: a waiting
+"REG-3766 ORPHANED - ... GitHub passed it over" ONCE per process with the run that went past it. Only a later Publish that
+really ran counts (in progress, or finished with a conclusion other than cancelled/skipped) - a docs-only push's skipped
+Publish must not orphan a real one still waiting for a runner (caught on the self-review, its own case and red proof). Nothing
+is cancelled (the yield rule never cancels on main). Guard: test_an_orphaned_publish_holds_nothing (3 RED proofs PROVEN, baseline: a waiting
 Publish with only earlier siblings stays live).
 
 ### REG-3765 - AT HIS MACBOOK'S 1512 px THE CONSOLE'S TV·D TAB WRAPPED ALONE ONTO A SECOND ROW (v3901, GrokBot's v3899 look)
