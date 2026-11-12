@@ -100,6 +100,17 @@ class AJoinThatIsDoneOrSpentMovesOn(unittest.TestCase):
         self.assertEqual(_routed(past, spent={REEL}, pinned=None), [], "a fixture list still scanning routed a reel")
         self.assertEqual(_routed(past, spent={REEL}, pinned=[], shield=None), [], "no shield handed in routed a reel")
 
+    def test_a_queued_join_whose_survey_found_no_panel_is_spent(self):
+        """REG-3817 (his 11-13 ruling) - the work ALT's river stuck on joins whose re-read never ran under 1 GB free RAM"""
+        import shelf_driver as SD
+        with mock.patch.dict(CA._VAULT_AUTOREAD, {"joinTried": {REEL: 1, "reel_e": 2, "reel_b": 3},
+                                                  "joinQueued": {"reel_e": 2, "reel_b": 3}}), \
+                mock.patch.object(SD, "_proven_empty", lambda r: r == "reel_e"):
+            spent = CA._join_reread_spent()
+        self.assertIn("reel_e", spent, "a join whose survey found no panel still waits for a re-read that would read nothing")
+        self.assertNotIn("reel_b", spent, "a join the survey could not prove empty was released without its re-read")
+        self.assertIn(REEL, spent, "BASELINE: tried-and-not-queued is still spent")
+
     def test_the_console_builds_both_sets_and_the_join_note_is_the_lanes(self):
         with mock.patch.dict(CA._VAULT_AUTOREAD, {"joinTried": {REEL: 1, "reel_b": 2}, "joinQueued": {"reel_b": 2}}):
             self.assertEqual(CA._join_reread_spent(), {REEL}, "spent is not tried-minus-queued")
@@ -150,6 +161,11 @@ RED_PROOF = [
      "file": "tv/control_app.py",
      "find": "        if _jq is not None and _js is not None:\n",
      "replace": "        if False:\n",
+     "matches": 1},
+    {"why": "REG-3817 - a queued join whose survey found no panel waits forever for a re-read that would read nothing",
+     "file": "tv/control_app.py",
+     "find": "        spent |= set(str(r) for r in queued if _sd_spent._proven_empty(r))\n",
+     "replace": "        pass\n",
      "matches": 1},
 ]
 

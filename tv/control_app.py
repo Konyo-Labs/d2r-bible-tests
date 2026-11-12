@@ -36979,7 +36979,17 @@ def _join_reread_spent():
             queued = dict(_VAULT_AUTOREAD.get("joinQueued") or {})
     except Exception:
         return None
-    return set(str(r) for r in tried if r not in queued)
+    spent = set(str(r) for r in tried if r not in queued)
+    # REG-3817 (his 11-13 ruling "Release if no panel") - a queued join whose FULL survey found no panel of any kind has its
+    # one re-read spent: a vault re-read of it would read nothing. MEASURED 11-12 on the work ALT: 3 joins queued since 11-11,
+    # every attempt "the OCR worker was not started (free RAM 722 MB is under the 1024 MB floor)", REG-1817 put each back,
+    # and the river read "stuck" with every lock open. Anything the survey cannot prove empty stays owed (fails closed).
+    try:
+        import shelf_driver as _sd_spent
+        spent |= set(str(r) for r in queued if _sd_spent._proven_empty(r))
+    except Exception:
+        pass
+    return spent
 
 
 def _route_shield_fn():

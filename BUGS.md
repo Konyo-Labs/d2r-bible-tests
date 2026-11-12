@@ -189,6 +189,15 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3817 - THE WORK ALT'S RIVER STUCK ON JOINS WHOSE ONE RE-READ COULD NEVER START: 1 GB FREE RAM (v3905, his ruling)
+His Fleet 11-12 ~23:50 IST: Konyo · ALT "river stuck · river locks open". MEASURED on that PC (read-only): JOIN 1 reel 19 h,
+ROUTED 3 + JOIN 2 held zero-page seals, "3 queued for their one re-read, 1 have had it"; its control_app.log, every attempt:
+"the OCR worker was not started (free RAM 722 MB is under the 1024 MB floor) - the vault lane cannot prove itself until
+memory allows", and REG-1817 put each re-read back, so none was ever spent and nothing routed on. Claude, the default reader,
+was signed in the whole time. His call (Release if no panel): _join_reread_spent counts a queued join whose FULL survey
+found no panel of any kind (retention's _proven_empty, via shelf_driver) as spent - a vault re-read of it would read nothing -
+so it routes on like any spent re-read; release still needs its own lock; anything the survey cannot prove empty stays owed.
+Law: test_a_join_that_is_done_or_spent_moves_on::test_a_queued_join_whose_survey_found_no_panel_is_spent (+1 red-proof).
 
 ### REG-3816 - THE SHADOW FRAME CAPTION CLAIMED "160 px" OVER A 1920x1020 FRAME, AND THE THEATRE'S CLOSE COULD BE CUT (v3904)
 GrokBot's v3903 look (#230 6836226405): a shadow session's served key frames are 1920x1020 full-screen JPEGs and the caption
