@@ -345,6 +345,7 @@ class AProvenVerdictIsReusedOnlyOnIdenticalBytes(_Case):
             self.assertLessEqual(got[_GATE], int(time.time() * 1000), "a stamp landed in the future")
             self.assertNotIn("unjudged", got, "a gate this run never judged took a stamp from the map")
 
+    @unittest.skipIf(os.name == "nt", "heart2 traces a law only on POSIX (a Windows run reads as incomplete and drops nothing, by design) - UNMEASURED here")   # #107 (REG-3810)
     def test_a_law_that_lists_a_directory_itself_is_keyed_by_what_its_traced_run_listed(self):
         """★ (second eye) a law calling os.listdir / os.walk / glob.glob / Path.rglob / iterdir reads whatever is THERE
         at run time - a law file added between two pushes over otherwise identical bytes could turn it red. It used to
@@ -901,7 +902,7 @@ RED_PROOF = [
         "file": "heart2.py",
         "find": "        lists = self.lists(sandbox, filename)\n        if not lists:\n",
         "replace": "        lists = False\n        if not lists:\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "the cache's own exception before the run is recorded BLIND and refuses the push",

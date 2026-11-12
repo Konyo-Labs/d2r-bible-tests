@@ -115,6 +115,7 @@ def _without_node_hook(opts):
 
 
 @unittest.skipUnless(_NODE and os.path.isfile(_HOOK), "no node here - the node half of the trace is not measured (UNMEASURED)")
+@unittest.skipIf(os.name == "nt", "heart2 traces a law only on POSIX (a Windows run reads as incomplete and drops nothing, by design) - UNMEASURED here")   # #107 (REG-3810)
 class ANodeChildIsTracedToo(_Case):
     """REG-3319 (board #92 - his 11-06 'these shards and these tests need to be smooth and work fast'). A node child used
     to be untraced (U), so every law that runs node kept the byte-for-byte key over its whole closure: 1,555 of the 4,067
@@ -205,6 +206,7 @@ class ANodeChildIsTracedToo(_Case):
         self.assertRan(runs, said, "an edit to node_trace.cjs")
 
 
+@unittest.skipIf(os.name == "nt", "heart2 traces a law only on POSIX (a Windows run reads as incomplete and drops nothing, by design) - UNMEASURED here")   # #107 (REG-3810)
 class ANamedFileTheLawNeverOpenedIsKeyedByName(_Case):
 
     def test_an_edit_to_a_named_file_the_law_never_opened_reuses_the_proven(self):
@@ -466,14 +468,14 @@ RED_PROOF = [
         "file": "heart2.py",
         "find": "                    if why is not None:\n                        why.add(rest[:60])\n",
         "replace": "                    pass\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-3319 - node's reads never reach heart2's trace: a CSS edit a node child read reuses a PROVEN",
         "file": "gate_trace/node_trace.cjs",
         "find": "  const R = (p) => { note('R', p); base2('R', p); };\n",
         "replace": "  const R = (p) => { note('R', p); };\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         # REG-3350 - the ask itself is broken, not the Popen line that calls it: on Linux under Python 3.13+ a child
@@ -483,126 +485,126 @@ RED_PROOF = [
         "file": "heart2.py",
         "find": "        return b in (\"node\", \"nodejs\") and a in ([\"--version\"], [\"-v\"])\n",
         "replace": "        return b in (\"node\", \"nodejs\")\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-3319 - after a node ran, an unread JSON is dropped: a loader that reads past fs leaves a stale key",
         "file": "heart2.py",
         "find": "                  and not (node_ran and r.lower().endswith(_NODE_KEEP_EXT)))\n",
         "replace": "                  )\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-3319 - the node hook is not a key input: an edit to what decides a drop serves every narrowed PROVEN",
         "file": "heart2.py",
         "find": "    for prover in (\"heart2.py\", \"law_widths.py\", os.path.join(\"gate_trace\", \"node_trace.cjs\")):\n",
         "replace": "    for prover in (\"heart2.py\", \"law_widths.py\"):\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-3319 - a traced law run never arms NODE_OPTIONS: every node child stays untraced (narrowing lost)",
         "file": "heart2.py",
         "find": "                if os.path.isfile(_ntr) and \"node_trace.cjs\" not in str(env.get(\"NODE_OPTIONS\") or \"\"):\n",
         "replace": "                if False:\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "v3796 node law red - the trace chains into a second gate_trace copy while one already runs",
         "file": "heart2.py",
         "find": "                                        and not (_ran and _gt(p))])",
         "replace": "                                        ])",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "v3796 review r4 - the trace skips every gate_trace copy, so the kill watch behind it never arms",
         "file": "heart2.py",
         "find": "        _ran = any(_gt(d) for d in _skip)",
         "replace": "        _ran = True",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "v3796 pre-prove red - a law run under an outer trace hooks its children twice: every child counted twice",
         "file": "heart2.py",
         "find": "    if getattr(_s, \"_h2_trace_on\", False):",
         "replace": "    if False:",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "v3796 review - a chainer BETWEEN the gate and the trace is not sys.modules' entry, so the trace re-ran it",
         "file": "heart2.py",
         "find": "                _skip.add(_o.path.dirname(_o.path.abspath(_f.f_code.co_filename)))\n",
         "replace": "                pass\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "v3796 bank red - the trace re-imports `sitecustomize`, so a site that chained into it boots twice",
         "file": "heart2.py",
         "find": "    if _nxt is not None and _nxt.loader is not None:   # a successor that raises propagates, as `import` did\n        _nxt.loader.exec_module(_iu.module_from_spec(_nxt))\n",
         "replace": "    _s.modules.pop(\"sitecustomize\", None)\n    import sitecustomize  # noqa: F401\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - a direct os.posix_spawn python child is never counted, so its missing hello goes unseen",
         "file": "heart2.py",
         "find": "                emit(\"P\" if py else \"U\", ev + \" \" + what)\n",
         "replace": "                emit(\"p\", ev + \" \" + what)\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - the static import closure is dropped like a merely named file",
         "file": "heart2.py",
         "find": "    keep |= {rel(p) for p in closure}\n",
         "replace": "    keep |= set()\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - every named data file is keyed by name, read or not: a CSS edit the law reads reuses a PROVEN",
         "file": "heart2.py",
         "find": "                  and r.rsplit(\"/\", 1)[-1] not in names\n",
         "replace": "",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - a stat is not a read: a law that asks a file's size is reused over a new size",
         "file": "heart2.py",
         "find": "    for n in (\"stat\", \"lstat\", \"access\", \"readlink\"):\n",
         "replace": "    for n in ():\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - a child no hook is in (cat, git, node) still lets files go",
         "file": "heart2.py",
         "find": "                elif tag:\n                    untraced = True\n",
         "replace": "                elif tag:\n                    pass\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - a counted python child that never said hello is taken as traced",
         "file": "heart2.py",
         "find": "    return seen, bool(root and not untraced and len(hellos) >= py)\n",
         "replace": "    return seen, bool(root and not untraced)\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - an incomplete trace still drops what it did not see",
         "file": "heart2.py",
         "find": "        if not t or not t[\"ok\"] or t[\"runs\"] < 1:\n",
         "replace": "        if not t or t[\"runs\"] < 1:\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - a python child does not inherit the hook's reads (its opens are lost)",
         "file": "heart2.py",
         "find": "        elif ev == \"open\":\n            names(\"R\", args[0] if args else None)\n",
         "replace": "        elif ev == \"open\" and _o.getppid() != int(_o.environ.get(\"H2_NOPE\", \"0\")) and _s.argv[0] != \"-c\":\n            names(\"R\", args[0] if args else None)\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
     {
         "why": "REG-2640 - the unread file is hashed by bytes again: the CSS edit re-proves (the fix undone)",
         "file": "heart2.py",
         "find": "            if rel in unread:                         # REG-2640 - no traced run opened it: its name, never its bytes\n",
         "replace": "            if False:\n",
-        "matches": 1,
+        "matches": 1, "needs": "posix",
     },
 ]
 

@@ -142,6 +142,17 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3810 - TWO OF heart2'S TRACE LAWS RAN ON WINDOWS, WHERE THE TRACE IS OFF BY DESIGN (v3904, #107 kind A)
+GitHub windows-latest, v3903 and v3904 (ci/winlaws): test_a_named_file_the_law_never_opened_is_keyed_by_name read 9 failures and
+1 error ("[['ALL', 'clean'], ...] != []" - nothing dropped) and test_a_proven_verdict_is_reused_only_on_identical_bytes's
+listing case "a listing law with a complete trace was not banked". heart2 traces a law only on POSIX - a Windows run reads
+as incomplete and drops nothing, its own header says so - so these cases can never pass there and each cost every Windows PC
+a clean run per version. His 11-07 rule for #107: a POSIX-only law is declared off Windows (never run, owed or counted). The
+named-file law's two classes skip on Windows as UNMEASURED and its 20 proofs declare posix; the proven-verdict law's one
+listing case skips there and its REG-2944 proof declares posix. Also verified by those runs: REG-3808 (gate_trace's ntpath
+wraps) turned test_a_gate_proven_on_these_bytes_is_carried green on Windows; REG-3809 turned the Playwright-finder and prune
+laws green; REG-3807 - the v3904 push started only its own run.
+
 ### REG-3809 - THE REHEARSAL'S BROWSER FINDER RAN A BARE "bash", AND TWO PRUNE CASES COMPARED os.sep (v3904, #107)
 GitHub windows-latest on v3903 (the ci/winlaws run): preship.hook_browser ran ["bash", "-c", ...] - on Windows that name is
 the WSL launcher, which runs nothing (REG-1642's shape), so "the hook's own finder found none (exit 1)". It asks
