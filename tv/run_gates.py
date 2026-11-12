@@ -13969,6 +13969,19 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_a_council_group_row_draws_each_priests_sprite",
+         [sys.executable, os.path.join(HERE, "test_a_council_group_row_draws_each_priests_sprite.py")], 360,
+         why="v3902 (#91, REG-3782) - his 11-12 ruling 'show their own sprites': the Bosses chip and the Runes row that name "
+             "the Council drew one shared picture; a group row draws Toorc, Geleb and Ismail's own sprites"),
+    Gate("test_the_board_title_says_where_each_version_is",
+         [sys.executable, os.path.join(HERE, "test_the_board_title_says_where_each_version_is.py")], 120,
+         why="v3902 (REG-3781) - his board read 'v3894 shipping' while v3900 was live: the console derives the title's version "
+             "line every tick from main and the claude/vNNNN branches' own ship logs"),
+    Gate("test_an_eagle_childs_unread_answer_is_swept",
+         [sys.executable, os.path.join(HERE, "test_an_eagle_childs_unread_answer_is_swept.py")], 60,
+         needs_app=False,
+         why="v3902 (REG-3780) - his live tree showed 3 eagle-child answers from 3 relaunches, the progress file and the agent "
+             "lease as untracked: each ask sweeps answers no live ask can read, and .gitignore names all three"),
     Gate("test_a_ship_says_its_box_rehearsal_has_started",
          [sys.executable, os.path.join(HERE, "test_a_ship_says_its_box_rehearsal_has_started.py")], 60,
          needs_app=False,

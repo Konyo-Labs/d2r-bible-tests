@@ -214,6 +214,36 @@ def _doctor_fail(why):
     return None, why
 
 
+def sweep_doctor_orphans(root=None, now=None, older_s=None):
+    """REG-3780 (11-12) - an answer nobody will read is removed. -> how many went (None when the dir will not list).
+
+    doctor_rows removes its child's answer in a `finally`, and a console KILLED mid-ask (every update relaunch) never runs
+    it: the child finishes and writes rows no process will read. MEASURED on his Mac: three .eagle_child_<nonce>.json
+    (~50 KB each) from 11-06, 11-08 and 11-10 - one per relaunch - and nothing ever took them. An answer older than twice
+    the child's own timeout belongs to no live ask, so it goes; the progress file and anything younger stay."""
+    import re as _re
+    root = root or _cache_root()
+    now = time.time() if now is None else now
+    older_s = 2 * DOCTOR_TIMEOUT_S if older_s is None else older_s
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return None
+    gone = 0
+    for nm in names:
+        if not _re.match(r"^\.eagle_child_[0-9a-f]{32}\.json(\.tmp)?$", nm):
+            continue
+        p = os.path.join(root, nm)
+        try:
+            if now - os.path.getmtime(p) <= older_s:
+                continue
+            os.remove(p)
+            gone += 1
+        except OSError:
+            continue
+    return gone
+
+
 def doctor_rows(include_slow, include_periodic, tick, console=None, only=None, timeout=DOCTOR_TIMEOUT_S, _spawn=None):
     """REG-2987 (#172) - the eagle's doctor pass, asked of a short-lived child. -> (rows | None, why)
 
@@ -226,6 +256,10 @@ def doctor_rows(include_slow, include_periodic, tick, console=None, only=None, t
         return None, "another pass is already running in a child%s" % (
             " (for %d s)" % int(time.time() - since) if since else "")
     root = _cache_root()
+    try:
+        sweep_doctor_orphans(root)        # REG-3780 - what a killed console's asks left behind
+    except Exception:
+        pass
     import uuid
     nonce = uuid.uuid4().hex
     out = os.path.join(root, DOCTOR_OUT % nonce)
