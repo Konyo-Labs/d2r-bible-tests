@@ -3566,5 +3566,15 @@
     "gotcha": "Every attempt runs on a scratch ledger, swept file and reel store under the system temp dir; it refuses to run if any resolves inside the repo, and counts a refusal only when the ledger bytes did not move. A control that must CLEAR runs first - a door that refuses everything scores nothing. Banking is opt-in (--bank).",
     "purpose": "REG-3819 - sabotage harness for the vault.forget lock: ledgers the drop must KEEP (rows whose witness frames are gone, unreadable ledgers, path tricks), Wilson-scored.",
     "territory": "vault"
+  },
+  "vault_forget_crossfamily.py": {
+    "entryPoints": [
+      "score",
+      "bank_into_proof_queue",
+      "main"
+    ],
+    "gotcha": "The attacks are the Grok CLI's (xai), designed cold on 11-13; the docstring keeps the command, the empty first seat and the six ids. windows-nul-device is INERT off Windows (isfile was already False there). Runs on vault_forget_wilson's scratch box; banking is opt-in (--bank), kind cross-family.",
+    "purpose": "REG-3819 - the second evidence kind for the vault.forget lock: six cross-family attacks on the ledger drop, all landed on the code they were designed against, all closed and re-attacked here.",
+    "territory": "vault"
   }
 }

@@ -1531,6 +1531,11 @@ GATES = [
              "happens before the board is asked. Proven RED: removing the re-gate takes that claim "
              "to 8/0 LEAKS while the empty-proposal claim stays PROVEN. vault.forget is attacked by its own "
              "harness (REG-3819), never by this one."),
+    Gate("vault-forget-crossfamily", [sys.executable, os.path.join(HERE, "vault_forget_crossfamily.py")], 120,
+         why="REG-3819 - the second kind of evidence for vault.forget: six attacks the Grok CLI designed cold against the "
+             "ledger drop (an empty reel folder, a nested dead row, a citation outside witnesses, a Windows device name, a "
+             "symlinked frame, a repeated key). All six landed on the code it was shown and are closed; each is attacked "
+             "here on a scratch ledger. Exit 1 on a LEAK or a control that did not clear. Banks only with --bank."),
     Gate("vault-forget-wilson", [sys.executable, os.path.join(HERE, "vault_forget_wilson.py")], 120,
          why="REG-3819 (his 11-13 'okay then do it') - vault.forget drops the ledger, and the drop was called safe "
              "because the ledger is rebuildable from the reels; on his Mac 24 of 184 rows already cited only reels "

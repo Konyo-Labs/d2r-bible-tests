@@ -251,6 +251,15 @@ button's line reads forgot. vault.forget is provable now: vault_forget_wilson.py
 keep on a scratch ledger, counted only when the bytes did not move, after a control it must clear. Laws re-pinned off
 "vault.forget is unprovable": test_self_arming (unprovable claim CHECKED, UNTESTED vs UNPROVABLE on a fixture lock,
 UNPROVEN-with-no-rows), test_every_lock_declares_its_attacks (carve-out asked of every lock with rows=[]), test_control.
+THE SECOND KIND (11-13 ~01:50): the code handed COLD to the Grok CLI (first call: 420 s, 0 bytes - an EMPTY SEAT;
+second, the runner's --json-schema/--effort low shape: 59,728 bytes) - six attacks, ALL SIX landed on the code shown: a
+witness with no frame counted on an empty reel folder; a dead row nested inside a live row was never walked; a citation
+outside "witnesses" was ignored; "NUL.jpg" is a device that "exists" on Windows; a symlinked frame counted; a repeated key
+was judged on the copy the parser kept. Closed: session/frame must match the recorder's shapes (s_<ms>_<n>, f_<ms>.jpg),
+a frame must be a regular file that is not a symlink, every dict citing a session is walked, a ledger repeating a key is
+UNKNOWN. tv/vault_forget_crossfamily.py attacks all six (+4 red-proofs) and banks them cross-family: vault.forget OPEN in
+the tree, 21 of 21 distinct attacks, wilson 0.845 >= 0.722, kinds 1.80 >= 1.30. His Mac's ledger still reads 24 rows past
+their reels under the stricter rules (no new refusal of evidence that is really there).
 
 ### REG-3818 - THE VAULT PADLOCK READ LOCKED OVER TWO OPEN, PROVEN DOORS (v3905, his 11-13 question)
 His words: "also for the lock on VAULT is it unlocked already? or not yet?" MEASURED on his Mac (v3903, /api/status):

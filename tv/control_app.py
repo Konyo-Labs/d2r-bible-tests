@@ -43170,48 +43170,86 @@ def _vault_lane_note_outcome(reel_dir, swept=None):
 _VAULT_LAST_PROPOSAL = None
 
 
+_LEDGER_SESSION_RE = re.compile(r"^s_\d{10,16}_\d{1,6}$")
+_LEDGER_FRAME_RE = re.compile(r"^f_\d{10,16}\.jpg$")
+
+
 def _ledger_rows_past_their_reels(led, hist=None):
     """REG-3819 - the ledger rows whose evidence can no longer be rebuilt from the reel store. -> list | None
 
-    A row is any dict carrying a "witnesses" key. It can be rebuilt while at least one witness still points at a frame on
-    disk: its "session" (s_...) names HIST/reel_<session>, and its "frame" names a file in that folder - the river can
-    release single frames from a reel it keeps, so the folder alone is not the evidence. A witness that names no frame
-    counts on its folder. Session and frame must be plain names: a separator or a .. could join outside the reel store
-    (Windows folds .. by text), and on Windows a drive colon makes the join start over ("C:x" is C's own folder). A "witnesses" that is not a list cannot be read, so its row cannot be rebuilt either.
-    None: the ledger or the reel store would not read (UNKNOWN)."""
+    A row is any dict carrying a "witnesses" key; it can be rebuilt while at least one of its witnesses points at a frame
+    on disk: its "session" is a real reel id (s_<ms>_<n>) naming HIST/reel_<session>, and its "frame" is a real frame name
+    (f_<ms>.jpg) that is a regular file in that folder - the river releases single frames from reels it keeps, so the
+    folder alone is not the evidence. Any OTHER dict that cites a "session" is a citation of its own and must be on disk.
+
+    The cross-family attacks (the Grok CLI, cold, 11-13 - vault_forget_crossfamily.py) closed six holes: a witness with no
+    frame counted on an EMPTY folder; a row nested inside a row with a live witness was never walked; a citation outside
+    "witnesses" was ignored; "NUL.jpg" is a device that "exists" on Windows; a frame that is a symlink to a file outside the
+    store counted; and a duplicated key is dropped by the parser before this sees it (vault_forget refuses that file as
+    UNKNOWN). Names are matched to the recorder's own shapes, never merely checked for separators. A "witnesses" that is
+    not a list cannot be read, so its row cannot be rebuilt. None: the ledger or the reel store would not read (UNKNOWN)."""
     hist = hist or HIST_DIR
-    if not isinstance(led, dict) or not os.path.isdir(hist):
+    if not isinstance(led, dict) or not os.path.isdir(hist) or os.path.islink(hist):
         return None
     gone = []
-
-    def plain(v):
-        return isinstance(v, str) and v and not any(c in v for c in ("/", "\\", "..", "\0", ":"))
 
     def on_disk(x):
         if not isinstance(x, dict):
             return False
         ses, frame = x.get("session"), x.get("frame")
-        if not (plain(ses) and ses.startswith("s_")):
+        if not (isinstance(ses, str) and _LEDGER_SESSION_RE.match(ses)
+                and isinstance(frame, str) and _LEDGER_FRAME_RE.match(frame)):
             return False
         reel = os.path.join(hist, "reel_" + ses)
-        if frame is None:
-            return os.path.isdir(reel)
-        return plain(frame) and os.path.isfile(os.path.join(reel, frame))
+        p = os.path.join(reel, frame)
+        import stat as _stat
+        try:
+            return (not os.path.islink(reel) and os.path.isdir(reel) and not os.path.islink(p)
+                    and _stat.S_ISREG(os.lstat(p).st_mode))
+        except OSError:
+            return False
+
+    def name_of(o):
+        return o.get("name") or o.get("key") or "a row"
 
     def walk(o):
         if isinstance(o, dict):
             if "witnesses" in o:
                 w = o.get("witnesses")
                 if not (isinstance(w, list) and any(on_disk(x) for x in w)):
-                    gone.append(o.get("name") or o.get("key") or "a row")
-                return
-            for v in o.values():
-                walk(v)
+                    gone.append(name_of(o))
+            elif "session" in o and not on_disk(o):
+                gone.append(name_of(o))           # a citation of its own, outside any witness list
+            for k, v in o.items():
+                if k != "witnesses":
+                    walk(v)                       # rows nested inside a row are rows too
         elif isinstance(o, list):
             for v in o:
                 walk(v)
     walk(led)
     return gone
+
+
+def _ledger_has_duplicate_keys(path):
+    """-> True when the ledger file repeats a key inside one object (the parser keeps the last and drops the rest, so the
+    rows this would judge are not the rows the file holds), False when it does not, None when it will not read."""
+    dup = []
+
+    def hook(pairs):
+        seen = set()
+        for k, _v in pairs:
+            if k in seen:
+                dup.append(k)
+            seen.add(k)
+        return dict(pairs)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            json.load(fh, object_pairs_hook=hook)
+    except FileNotFoundError:
+        return False
+    except Exception:
+        return None
+    return bool(dup)
 
 
 def vault_forget(ledger=False):
@@ -43231,6 +43269,8 @@ def vault_forget(ledger=False):
         return out
     led = vault_ledger_load()
     gone = None if VAULT_LEDGER_PATH in _UNREADABLE else _ledger_rows_past_their_reels(led)
+    if gone is not None and _ledger_has_duplicate_keys(VAULT_LEDGER_PATH) is not False:
+        gone = None                               # a repeated key: the rows judged are not the rows the file holds
     if gone is None:
         out.update(refused=True, why="the ledger or the reel store would not read - UNKNOWN, so the ledger is kept")
     elif gone:

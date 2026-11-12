@@ -646,6 +646,9 @@ PROVES = {
     # scratch ledger under the system temp dir, each counted only when the ledger bytes did not move. A control that
     # must CLEAR runs first, so a door that refuses everything scores nothing.
     "vault_forget_wilson": ("vault.forget",),
+    # REG-3819 - the second KIND for vault.forget: six attacks the Grok CLI (xai) designed cold against the ledger drop
+    # (11-13). All six landed on the code it was shown; all six are closed and attacked here. Banked as cross-family.
+    "vault_forget_crossfamily": ("vault.forget",),
     # printer_wilson removes each owner's ability to answer and requires the printer to say
     # UNKNOWN **with a reason** rather than guess, skip the station, or drop the reel. It calls
     # exactly one function, printer.stream(), whose own docstring is "IT PRINTS NOTHING AND
@@ -1599,7 +1602,7 @@ LOCK_DOORS = {
     "vault.sweep_start": ("control_app", "sweep_wilson"),
     "vault.apply": ("read_names_feeder",),
     "prune.reports": ("disk_report_wilson", "control_app"),
-    "vault.forget": ("control_app", "vault_forget_wilson"),
+    "vault.forget": ("control_app", "vault_forget_wilson", "vault_forget_crossfamily"),
     "miniauto.run": ("hover_wilson",),
     "console.pixel_rescue": ("control_app",),
 }

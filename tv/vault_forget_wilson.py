@@ -322,17 +322,17 @@ RED_PROOF = [
                "frame-released and by-key must LEAK and the run must exit 1.",
         "file": "control_app.py",
         "find": '                if not (isinstance(w, list) and any(on_disk(x) for x in w)):\n'
-                '                    gone.append(o.get("name") or o.get("key") or "a row")',
+                '                    gone.append(name_of(o))',
         "replace": '                if False:\n'
-                   '                    gone.append(o.get("name") or o.get("key") or "a row")',
+                   '                    gone.append(name_of(o))',
         "matches": 1,
     },
     {
-        "why": "REG-3819 - the tamper lets a witness count on its reel FOLDER even when it names a frame, so a frame the "
-               "river released from a reel it keeps reads as evidence still on disk: frame-released must LEAK.",
+        "why": "REG-3819 - the tamper drops the frame-name shape, so a frame spelled to climb out of its reel (or name a "
+               "drive) reads as evidence still on disk: frame-climbs must LEAK.",
         "file": "control_app.py",
-        "find": "        if frame is None:\n            return os.path.isdir(reel)",
-        "replace": "        if True:\n            return os.path.isdir(reel)",
+        "find": "                and isinstance(frame, str) and _LEDGER_FRAME_RE.match(frame)):",
+        "replace": "                and isinstance(frame, str)):",
         "matches": 1,
     },
     {
