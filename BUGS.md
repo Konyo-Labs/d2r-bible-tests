@@ -142,6 +142,15 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3811 - THE MASK-ENCODER LAW RACED AGAIN AFTER REG-3800: THE BOARD FRAME RE-BOUND ITS LSR BETWEEN WAIT AND ENCODE (v3904)
+v3903's GitHub round, agent-suite (5), run 43283651937: test_TWO_stores_are_UNIONED_not_last_one_wins - "the js encoder
+refused: this page has no LSR" - the same words as REG-3800, on another case, after REG-3800's wait had seen the LSR bound.
+The served console's LSR lives in its board frame (#tvd-eng), which can re-bind between the readiness wait and the encode.
+That refusal is about the PAGE, never about the two encoders: on exactly it the harness now waits for readiness once more,
+within the same patience, and re-runs the write and the encode; any other refusal or a disagreement is answered at once as
+before, and a page that never binds again is a skip. The ship re-ran the one shard on the same commit (his rule). A race
+has no deterministic red-proof; REG-3800's red-proof still holds the readiness rule itself.
+
 ### REG-3810 - TWO OF heart2'S TRACE LAWS RAN ON WINDOWS, WHERE THE TRACE IS OFF BY DESIGN (v3904, #107 kind A)
 GitHub windows-latest, v3903 and v3904 (ci/winlaws): test_a_named_file_the_law_never_opened_is_keyed_by_name read 9 failures and
 1 error ("[['ALL', 'clean'], ...] != []" - nothing dropped) and test_a_proven_verdict_is_reused_only_on_identical_bytes's

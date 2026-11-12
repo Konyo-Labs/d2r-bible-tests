@@ -305,13 +305,32 @@ class TheTwoEncodersAgreeByteForByte(unittest.TestCase):
                 time.sleep(0.2)
             else:
                 return None      # -> the caller skips, and a skip is explicitly NOT a pass
-            for _wk, _wv in writes:
-                tab.ev("localStorage.setItem(%s, %s); if (window.LSR && window.LSR.setItem) "
-                       "window.LSR.setItem(%s, %s);"
-                       % (json.dumps(_wk), json.dumps(_wv),
-                          json.dumps(_wk), json.dumps(_wv)))
-            raw = tab.ev(body)
-            return json.loads(raw) if raw else None
+            def _write_and_encode():
+                for _wk, _wv in writes:
+                    tab.ev("localStorage.setItem(%s, %s); if (window.LSR && window.LSR.setItem) "
+                           "window.LSR.setItem(%s, %s);"
+                           % (json.dumps(_wk), json.dumps(_wv),
+                              json.dumps(_wk), json.dumps(_wv)))
+                _raw = tab.ev(body)
+                return json.loads(_raw) if _raw else None
+            out = _write_and_encode()
+            # REG-3811 (v3903's round on GitHub, agent-suite (5): test_TWO_stores_are_UNIONED_not_last_one_wins - "the js
+            # encoder refused: this page has no LSR", AFTER REG-3800's wait saw it bound) - the board frame can re-bind its
+            # LSR between the wait and the encode. That refusal is about the PAGE, never about the two encoders, so it is
+            # waited out ONCE more within the same patience and the encode re-run; any other refusal or a disagreement is
+            # answered at once, exactly as before. A page that never binds again is a skip, never a pass.
+            if isinstance(out, dict) and out.get("ok") is False and "no LSR" in str(out.get("why") or ""):
+                while time.time() < _deadline:
+                    _st = tab.ev("[location.href, document.readyState, "
+                                 "!!(window.LSR && window.LSR.getItem) || (function(){ try { var f = document.getElementById('tvd-eng'),"
+                                 " w = f && f.contentWindow; return !!(w && w.LSR && w.LSR.getItem); } catch (e) { return false; } })()]") or []
+                    if _page_ready(str(_st[0]) if len(_st) > 0 else "", str(_st[1]) if len(_st) > 1 else "",
+                                   bool(_st[2]) if len(_st) > 2 else False):
+                        time.sleep(0.5)          # the frame that just re-bound settles before the second encode
+                        return _write_and_encode()
+                    time.sleep(0.2)
+                return None      # -> the caller skips: the page never bound its LSR again
+            return out
         except Exception as exc:
             # ⚠⚠ A HARNESS BUG IS NOT "COULD NOT ASK". My first cut returned None here, and a
             # TypeError in MY OWN format string became five silent skips — a broken guard wearing
