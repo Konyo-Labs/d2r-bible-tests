@@ -2520,15 +2520,15 @@ def _check_the_reel_extract_is_moving():
     try:
         last = os.path.getmtime(path)
     except FileNotFoundError:
-        return MISSING, ("%d reel(s) owe a read and no read has ever been banked on this console%s"
-                         % (len(owed), tail + _ret))
+        return MISSING, ("%d reel(s) owe a read and no read has ever been banked on this console%s%s"
+                         % (len(owed), _paid_reads_blocked_note(), tail + _ret))   # REG-3757 - the sweep's reads are paid
     except Exception:
         return UNKNOWN, ("%d reel(s) owe a read and the sweep memory cannot be read, so its age "
                          "is unknown%s" % (len(owed), tail + _ret))
     hours = (time.time() - last) / 3600.0
     if hours > 2.0:
-        return MISSING, ("%d of %d reel(s) owe a read and nothing has been banked for %.1f hours%s"
-                         % (len(owed), len(dirs), hours, tail + _ret))
+        return MISSING, ("%d of %d reel(s) owe a read and nothing has been banked for %.1f hours%s%s"
+                         % (len(owed), len(dirs), hours, _paid_reads_blocked_note(), tail + _ret))   # REG-3757
     return OK, ("%d reel(s) owe a read, last banked %.1fh ago — the loop is working through them%s"
                 % (len(owed), hours, tail + _ret))
 
@@ -6228,6 +6228,12 @@ def _claude_signed_out():
     return None
 
 
+def _paid_reads_blocked_note():
+    """REG-3757 - the one sentence every stalled paid-read row adds when the Claude reader is signed out on this PC. -> str"""
+    return (" - Claude is signed out on this PC, so its paid reads cannot run: sign in (CLAUDE / SIGN IN, top right)"
+            if _claude_signed_out() else "")
+
+
 def _check_the_shelf_lanes_are_still_reading():
     """★ A LANE THAT STOPS READING MUST GO RED ON ITS OWN — Konyo, 2026-09-10, which is what
     `shelf_driver.py` was written for at v2909 (REG-908). It shipped 773 lines, a registered gate
@@ -6321,9 +6327,9 @@ def _check_the_shelf_lanes_are_still_reading():
                     # the PC sees the one step that unblocks it instead of a bare "dark"
                     if str(_r["lane"]) in PAID_READ_LANES:
                         if _signed_out is None:
-                            _signed_out = _claude_signed_out() or ""
+                            _signed_out = _paid_reads_blocked_note()
                         if _signed_out:
-                            _say += " - Claude is signed out on this PC, so its paid reads cannot run: sign in (CLAUDE / SIGN IN, top right)"
+                            _say += _signed_out
                     _named.append(_say)
             return MISSING, ("the shelf driver beat %.1fh ago, but %s%s — a lane in that state has "
                              "stopped reading and the plan being readable does not cover it%s"

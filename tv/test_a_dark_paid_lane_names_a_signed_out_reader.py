@@ -60,6 +60,16 @@ class ADarkPaidLaneNamesASignedOutReader(unittest.TestCase):
         self.assertIn("chronicle dark (51 owed)", why)
         self.assertNotIn("signed out", why)
 
+    def test_the_stalled_reel_extract_says_it_too(self):
+        """the reel sweep's reads are paid too: both of its stalled rows carry the same note (swept with this fix)"""
+        import inspect
+        src = "\n".join(l.split("#", 1)[0] for l in inspect.getsource(cd._check_the_reel_extract_is_moving).split("\n"))
+        self.assertEqual(src.count("_paid_reads_blocked_note()"), 2, "a stalled reel-extract row no longer names the sign-in")
+        with mock.patch.object(cd, "_claude_signed_out", lambda: "signed out"):
+            self.assertIn("sign in (CLAUDE / SIGN IN", cd._paid_reads_blocked_note())
+        with mock.patch.object(cd, "_claude_signed_out", lambda: None):
+            self.assertEqual(cd._paid_reads_blocked_note(), "")
+
     def test_the_lamp_decides_and_unknown_is_not_signed_out(self):
         def fake(lamp):
             m = types.ModuleType("control_app")
@@ -74,6 +84,11 @@ class ADarkPaidLaneNamesASignedOutReader(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3757 - the one note every stalled paid-read row adds goes silent",
+     "file": "tv/console_doctor.py",
+     "find": "            if _claude_signed_out() else \"\")\n",
+     "replace": "            if False else \"\")\n",
+     "matches": 1},
     {"why": "REG-3757 - a dark paid-read lane says only 'dark' again while the reader is signed out (Dean 11-11)",
      "file": "tv/console_doctor.py",
      "find": "                        if _signed_out:\n",
