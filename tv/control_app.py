@@ -42998,7 +42998,7 @@ def _ledger_rows_past_their_reels(led, hist=None):
     disk: its "session" (s_...) names HIST/reel_<session>, and its "frame" names a file in that folder - the river can
     release single frames from a reel it keeps, so the folder alone is not the evidence. A witness that names no frame
     counts on its folder. Session and frame must be plain names: a separator or a .. could join outside the reel store
-    (Windows folds .. by text). A "witnesses" that is not a list cannot be read, so its row cannot be rebuilt either.
+    (Windows folds .. by text), and on Windows a drive colon makes the join start over ("C:x" is C's own folder). A "witnesses" that is not a list cannot be read, so its row cannot be rebuilt either.
     None: the ledger or the reel store would not read (UNKNOWN)."""
     hist = hist or HIST_DIR
     if not isinstance(led, dict) or not os.path.isdir(hist):
@@ -43006,7 +43006,7 @@ def _ledger_rows_past_their_reels(led, hist=None):
     gone = []
 
     def plain(v):
-        return isinstance(v, str) and v and not any(c in v for c in ("/", "\\", "..", "\0"))
+        return isinstance(v, str) and v and not any(c in v for c in ("/", "\\", "..", "\0", ":"))
 
     def on_disk(x):
         if not isinstance(x, dict):

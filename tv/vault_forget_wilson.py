@@ -146,6 +146,12 @@ def _attempt_frame_climbs(box):
     return _refused(box, _ledger({"name": "climbing frame", "witnesses": [{"session": SESSION, "frame": "../outside.jpg"}]}))
 
 
+def _attempt_frame_names_a_drive(box):
+    """a frame name carrying a drive colon: on Windows os.path.join(reel, "C:x") starts over at drive C, so a file there
+    would read as this reel's frame. Inert on POSIX (the join stays inside the reel) - its value is on a Windows PC."""
+    return _refused(box, _ledger({"name": "drive frame", "witnesses": [{"session": SESSION, "frame": "C:" + FRAME}]}))
+
+
 def _attempt_witnesses_not_a_list(box):
     """a row whose witnesses field is a dict naming a frame that IS on disk - it cannot be read as a witness list"""
     return _refused(box, _ledger({"name": "dict witnesses", "witnesses": {"session": SESSION, "frame": FRAME}}))
@@ -186,6 +192,8 @@ CLAIMS = (
     ("string-witness", "a witness that is a bare string is no witness", _attempt_witness_not_a_dict),
     ("frame-released", "a witness frame released from a reel that is still on disk keeps the ledger", _attempt_frame_released),
     ("frame-climbs", "a frame name spelled to reach outside its reel is no witness", _attempt_frame_climbs),
+    ("frame-drive", "a frame name with a drive colon is no witness (Windows joins start over at the drive)",
+     _attempt_frame_names_a_drive),
     ("witnesses-dict", "a witnesses field that is not a list keeps the ledger", _attempt_witnesses_not_a_list),
     ("by-key", "a gone row nested under byKey keeps the ledger", _attempt_hidden_in_by_key),
     ("mixed", "one gone row beside a fine one keeps the whole ledger", _attempt_mixed_one_gone),

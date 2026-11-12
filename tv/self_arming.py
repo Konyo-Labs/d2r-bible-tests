@@ -642,7 +642,7 @@ PROVES = {
     # ⚠ It is declared for vault.apply ONLY. vault.forget gained its refusal path in REG-3819 and is attacked by its
     # own harness below, never by this one.
     "vault_wilson": ("vault.apply",),
-    # REG-3819 - fourteen distinct ways a ledger the drop must KEEP can be handed to vault_forget(ledger=True), each on a
+    # REG-3819 - fifteen distinct ways a ledger the drop must KEEP can be handed to vault_forget(ledger=True), each on a
     # scratch ledger under the system temp dir, each counted only when the ledger bytes did not move. A control that
     # must CLEAR runs first, so a door that refuses everything scores nothing.
     "vault_forget_wilson": ("vault.forget",),
