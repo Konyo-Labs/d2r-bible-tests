@@ -189,6 +189,14 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3818 - THE VAULT PADLOCK READ LOCKED OVER TWO OPEN, PROVEN DOORS (v3905, his 11-13 question)
+His words: "also for the lock on VAULT is it unlocked already? or not yet?" MEASURED on his Mac (v3903, /api/status):
+vault.apply OPEN "may act, proven 0.90 >= 0.72", vault.sweep_start OPEN "may act, proven 0.90 >= 0.51", vault.forget shut
+"by design, nothing to sabotage" (provable: false). The Vault tab's chip and the dash chip pick their group's worst member
+(_lockFor), so vault.forget - a button that clears a rebuildable cache, never gated - painted the padlock LOCKED. A member
+with provable === false is left out of its group's vote unless it is the only member; a door never sabotaged YET still shuts
+it. Law: test_a_door_unprovable_by_design_never_shuts_its_group (new, node over the shipped _lockFor, +1 red-proof).
+
 ### REG-3817 - THE WORK ALT'S RIVER STUCK ON JOINS WHOSE ONE RE-READ COULD NEVER START: 1 GB FREE RAM (v3905, his ruling)
 His Fleet 11-12 ~23:50 IST: Konyo · ALT "river stuck · river locks open". MEASURED on that PC (read-only): JOIN 1 reel 19 h,
 ROUTED 3 + JOIN 2 held zero-page seals, "3 queued for their one re-read, 1 have had it"; its control_app.log, every attempt:

@@ -12022,6 +12022,13 @@ window._lockMark = function(isOpen, px, label){
       var _lockFor = function(prefix){
         var mine = _saRows.filter(function(l){ return String(l.lock || '').indexOf(prefix) === 0; });
         if (!_sa || !mine.length) return null;      // null -> caller renders LOCKED, not blank
+        /* REG-3818 (his 11-13 "the lock on VAULT is it unlocked already?") - A DOOR UNPROVABLE BY DESIGN DOES NOT VOTE.
+           MEASURED on his Mac (v3903): vault.apply OPEN 0.90, vault.sweep_start OPEN 0.90 - and vault.forget shut "by design,
+           nothing to sabotage" (provable: false: clearing a rebuildable optimisation has no refusal path, and gating it would
+           be a cage). Worst-wins ranked it first, so the Vault padlock read LOCKED over two open, proven doors. A member that
+           can never be proven is left out of the group's vote - unless it is the group's only member. */
+        var _gated = mine.filter(function(l){ return l.provable !== false; });
+        if (_gated.length) mine = _gated;
         // the WORST state wins: one unproven surface locks the group, because a group badge that
         // averaged its members would let a proven lane vouch for an untested one
         /* ⚠⚠ v2569 — HARDENED WAS ABSENT HERE AND `?? -1` SORTED IT BELOW `locked: 0`.
