@@ -194,7 +194,10 @@ def orphaned_by(run, runs):
     for r in (runs or []):
         if r is run or not isinstance(r, dict) or not is_publish_run(r) or _rid(r) == _rid(run):
             continue
-        if _status(r) not in ("in_progress", "completed"):
+        # a later Publish that only finished as cancelled or skipped never RAN - it passed nothing over (the second look
+        # at REG-3766: a docs-only push's skipped Publish must not orphan a real one still waiting for a runner)
+        if not (_status(r) == "in_progress"
+                or (_status(r) == "completed" and str(r.get("conclusion") or "").lower() not in ("cancelled", "skipped", ""))):
             continue
         theirs = _epoch(r.get("createdAt") or r.get("created_at"))
         if theirs is not None and theirs > mine:

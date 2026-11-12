@@ -63,6 +63,12 @@ class AnOrphanedPublishHoldsNothing(unittest.TestCase):
     def test_a_later_publish_that_only_started_also_orphans_it(self):
         self.assertIsNotNone(SY.orphaned_by(GHOST, [GHOST, LATER_RUNNING]))
 
+    def test_a_later_publish_that_never_ran_does_not(self):
+        """a later Publish that finished cancelled or skipped never ran, so it passed nothing over"""
+        for c in ("cancelled", "skipped"):
+            never = _run("completed", 43137497177, "590429cab" + "0" * 31, "2026-11-12T01:52:42Z", c)
+            self.assertIsNone(SY.orphaned_by(GHOST, [GHOST, never]), "a %s Publish orphaned a waiting one" % c)
+
     def test_a_later_publish_that_is_still_waiting_does_not(self):
         waiting = _run("queued", 43137497176, "590429cab" + "0" * 31, "2026-11-12T01:52:42Z")
         self.assertIsNone(SY.orphaned_by(GHOST, [GHOST, waiting]))
@@ -86,6 +92,11 @@ class AnOrphanedPublishHoldsNothing(unittest.TestCase):
 
 
 RED_PROOF = [
+    {"why": "REG-3766 - a later Publish that finished cancelled or skipped (it never ran) orphans a real waiting one",
+     "file": "tv/ship_yield.py",
+     "find": "                or (_status(r) == \"completed\" and str(r.get(\"conclusion\") or \"\").lower() not in (\"cancelled\", \"skipped\", \"\"))):\n",
+     "replace": "                or _status(r) == \"completed\"):\n",
+     "matches": 1},
     {"why": "REG-3766 - a Publish GitHub passed over reads as live again and refuses every grok/ push for hours",
      "file": "tv/ship_yield.py",
      "find": "        if orphaned_by(r, runs) is not None:\n            continue\n        out.append(r)\n",
