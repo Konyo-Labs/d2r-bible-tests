@@ -206,7 +206,9 @@ class AUniqueWearsItsOwnPictureEverywhere(unittest.TestCase):
         s = _src()
         art_url = s[s.find("function artUrl(name){"):s.find("window._artTier = _artTier;")]
         self.assertLess(art_url.find("_keeperArt(name)"), art_url.find("var direct ="), "artUrl reads its table before the resolver")
-        art_or = s[s.find("function artOr(name, fallbackHtml, size){"):s.find("function artOr(name, fallbackHtml, size){") + 1200]
+        # the FUNCTION, never a byte count: v3902's one-fallback-per-group note pushed this line past a 1,200-char window
+        _ao = s.find("function artOr(name, fallbackHtml, size){")
+        art_or = s[_ao:s.find("\n}\n", _ao)]
         self.assertIn("var _raw = artUrl(name);", art_or, "the row path (artOr) no longer asks artUrl")
         self.assertEqual(s.count("var url = (typeof artUrl==='function') ? ((_ctx && artUrl(_ctx)) || (r.builtBase && artUrl(r.artName)) || artUrl(nm) || artUrl(r.artName)) : '';"), 1,
                          "the hover's picture line no longer asks artUrl")
