@@ -179,7 +179,7 @@ class TheDoctorRow(unittest.TestCase):
         self.assertEqual(self._row(None)[0], CD.UNKNOWN, "no receipt read as a verdict")
         self.assertEqual(self._row({"why": "waits: a reel is being written (he is playing)", "worked": 2, "owed": 1})[0], CD.OK)
         self.assertEqual(self._row({"why": "every done session is in the bucket", "worked": 5, "owed": 0})[0], CD.OK)
-        bad = self._row({"why": "s_1_1: begin refused: the reel store would not take this: storage unavailable (the REELS "
+        bad = self._row({"why": "s_1_1: begin refused: the reel store would not take this: storage unavailable (the reel bucket D2R_ROSTER_FRAMES "
                                 "bucket is not bound to the site)", "worked": 0, "owed": 4})
         self.assertEqual(bad[0], CD.MISSING, "a refused upload read as fine")
         self.assertIn("not bound", bad[1], "the row did not carry the lane's own words")

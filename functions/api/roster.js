@@ -509,7 +509,7 @@ export async function onRequestPost(context) {
   if (body.kind === "profile") return profilePost(env, bytes, sig, body);
   // #218 phase 2 - the owner's sessions, summarized (shadow_sessions.digest), under the same registered key
   if (body.kind === "frames") return framesPost(env, bytes, sig, body);
-  // #208 (his 11-13 calls) - a session's frames into the private REELS bucket, under the same registered key
+  // #208 (his 11-13 calls) - a session's frames into the private reel bucket (binding D2R_ROSTER_FRAMES), under the same registered key
   if (body.kind === "reel") return reelPost(env, bytes, sig, body);
   if (bytes.byteLength > MAX_BODY) {
     return refuse("roster would not take this publish: the body is too large to be rows");
@@ -1284,8 +1284,8 @@ function reelRefuse(why, extra) {
 
 export async function reelPost(env, bytes, sig, body) {
   const kv = env && env.TZ_HISTORY;
-  const r2 = env && env.REELS;
-  if (!kv || !r2) return reelRefuse("storage unavailable (the REELS bucket is not bound to the site)");
+  const r2 = env && env.D2R_ROSTER_FRAMES;
+  if (!kv || !r2) return reelRefuse("storage unavailable (the reel bucket D2R_ROSTER_FRAMES is not bound to the site)");
   if (bytes.byteLength > REEL_MAX_BODY) return reelRefuse("the body is larger than " + REEL_MAX_BODY + " bytes");
   const owner = body.owner;
   if (OWNERS.indexOf(owner) === -1) return reelRefuse("the key is an owner label, not a machine");
@@ -1409,8 +1409,8 @@ function bytesOfB64(text) {
 // GET ?reel=<slotDir>&session=<s>            -> its manifest
 // GET ?reel=<slotDir>&session=<s>&frame=<f>  -> the frame's JPEG bytes
 export async function reelsGet(env, params) {
-  const r2 = env && env.REELS;
-  if (!r2) return pJson({ ok: false, why: "the REELS bucket is not bound to the site - UNKNOWN, not empty" });
+  const r2 = env && env.D2R_ROSTER_FRAMES;
+  if (!r2) return pJson({ ok: false, why: "the reel bucket D2R_ROSTER_FRAMES is not bound to the site - UNKNOWN, not empty" });
   const owner = params.get("reels");
   if (owner !== null) {
     if (OWNERS.indexOf(owner) === -1) return pJson({ ok: false, why: "not an owner label" });

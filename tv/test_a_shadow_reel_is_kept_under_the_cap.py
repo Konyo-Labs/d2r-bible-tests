@@ -64,7 +64,7 @@ const r2 = {
     return { objects, delimitedPrefixes: [...set], truncated: false };
   },
 };
-const env = CFG.unbound ? { TZ_HISTORY: kv } : { TZ_HISTORY: kv, REELS: r2 };
+const env = CFG.unbound ? { TZ_HISTORY: kv } : { TZ_HISTORY: kv, D2R_ROSTER_FRAMES: r2 };
 const mod = await import(pathToFileURL(CFG.file).href);
 const out = { steps: [] };
 for (const step of (CFG.steps || [])) {

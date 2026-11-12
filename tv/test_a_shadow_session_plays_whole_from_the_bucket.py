@@ -143,7 +143,7 @@ class TheWholeSessionPlayer(unittest.TestCase):
 
     def test_an_unanswered_bucket_is_unknown_on_every_row_never_not_uploaded(self):
         out = _node({"decorate": True, "rows": [S1, S2],
-                     "answers": {"?reels=": {"ok": False, "why": "the REELS bucket is not bound to the site"}}})
+                     "answers": {"?reels=": {"ok": False, "why": "the reel bucket D2R_ROSTER_FRAMES is not bound to the site"}}})
         for c in out["cells"]:
             self.assertIn("UNKNOWN", c["text"])
             self.assertIn("not bound", c["text"])

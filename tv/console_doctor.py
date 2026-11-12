@@ -2040,7 +2040,7 @@ def _check_the_shadow_reels_reach_the_bucket(root=None):
     Read from the lane's own receipt (.shadow_reels_state.json, written every tick by control_app._shadow_reels_once):
     a lane that waits (he is playing, the beacon held) or has nothing owed is OK and says so; a refusal, a bucket that did
     not answer or a plan that could not be made is MISSING with the lane's own words - the first one he will meet is
-    "the REELS bucket is not bound to the site", which is his Cloudflare step, not a code defect. No receipt is UNKNOWN."""
+    "the reel bucket D2R_ROSTER_FRAMES is not bound to the site", which is his Cloudflare step, not a code defect. No receipt is UNKNOWN."""
     if root is None and os.environ.get("TV_HIST"):
         return UNKNOWN, "a fixture world - this PC's reel lane receipt is not read here"
     path = os.path.join(root or HERE, ".shadow_reels_state.json")
