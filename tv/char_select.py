@@ -99,6 +99,33 @@ LOBBY_PANEL_RIGHT_SD = (0.08, 0.105)
 LOBBY_PANEL_LEFT_VAL = (0.155, 0.195)
 LOBBY_PANEL_LEFT_SD = (0.055, 0.095)
 LOBBY_PANEL_TOP_VAL_MIN = 0.20
+#: REG-3747 (#185) - THE JOIN GAME LOBBY, AS DEAN'S PC DRAWS IT. MEASURED 11-12 on his frozen footage (copied over SSH, kept off
+#: this public repo): two independent label sets - Vision OCR read 224 opening frames LOBBY by their words ("You have joined
+#: channel: Lobby"), GrokBot labelled 140 by eye (all Join Game, 0 Create Game) - and the reader agreed with 0 of them: his
+#: lobby is darker than the Create Game bands in every region (pane 0.122, chat 0.082, top 0.138). The box is the min-max of
+#: the nine stats over those lobbies, 0.01 wider; held out by sitting it keeps 221 of 224. Alone it also admitted dark
+#: in-game scenes (9 of 22 sampled in-box frames, looked at), so it needs the lobby's own mark: the fire DIABLO logo atop
+#: the centre column (fire share 0.164-0.19 on every lobby, 0.000 on the in-game menus and at most 0.010 on HUD frames).
+#: Checked over 6,000 sampled frames of his and 4,000 of the Mac's: every frame the rule admits is a lobby, looked at.
+JOIN_LOBBY_BOX = ((0.16, 0.217), (0.05, 0.138), (0.035, 0.105), (0.061, 0.204), (0.054, 0.139), (0.033, 0.094),
+                  (0.044, 0.12), (0.023, 0.083), (0.058, 0.169))
+JOIN_LOBBY_FIRE_MIN = 0.10
+#: where the fire logo sits in the game area (fractions) and what reads as its fire: hue red-orange, saturated, lit
+LOBBY_FIRE_BOX = (0.40, 0.03, 0.60, 0.18)
+
+
+def _fire_share(hsv):
+    """REG-3747 - the share of the centre-top region that is the fire logo's red-orange. -> float | None (no numpy)"""
+    try:
+        import numpy as np
+        w, h = hsv.size
+        x0, y0, x1, y1 = LOBBY_FIRE_BOX
+        c = np.asarray(hsv.crop((int(x0 * w), int(y0 * h), max(int(x0 * w) + 1, int(x1 * w)),
+                                 max(int(y0 * h) + 1, int(y1 * h)))), dtype=np.float32)
+        hue, sat, val = c[..., 0] / 255.0 * 360.0, c[..., 1] / 255.0, c[..., 2] / 255.0
+        return float((((hue < 45) | (hue > 345)) & (sat > 0.55) & (val > 0.45)).mean())
+    except Exception:
+        return None
 # REG-1874 — WHAT EACH FILM SIZE IS, LOOKED AT (2026-10-07). The bands are fractions of the frame, so one set can
 # serve every size the game is filmed at, and where it has been seen the counts say it does: the ALT matched 10,101 of 118,097 at 800x450, his Mac
 # matched at 1440x904, 1440x936, 1440x841, 1440x857, 2940x1912 and three more. Seven ALT lobby frames of 2026-10-06
@@ -313,7 +340,7 @@ def lobby_stats(path, image=None):
             rs, rv, rsd = sv((0.72 * w, 0.15 * h, 0.98 * w, 0.75 * h))
             _ls, lv, lsd = sv((0.02 * w, 0.15 * h, 0.28 * w, 0.75 * h))
             _ts, tv, _t = sv((0.02 * w, 0.02 * h, 0.98 * w, 0.10 * h))
-            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv
+            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv, _fire_share(im)   # REG-3747 - the 10th: the fire logo
         with Image.open(path) as im:
             im.draft("RGB", (max(1, im.size[0] // 4), max(1, im.size[1] // 4)))
             im = _in_game(im.convert("RGB")).convert("HSV")
@@ -328,7 +355,7 @@ def lobby_stats(path, image=None):
             rs, rv, rsd = sv((0.72 * w, 0.15 * h, 0.98 * w, 0.75 * h))
             _ls, lv, lsd = sv((0.02 * w, 0.15 * h, 0.28 * w, 0.75 * h))
             _ts, tv, _t = sv((0.02 * w, 0.02 * h, 0.98 * w, 0.10 * h))
-            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv
+            return fs, fv, bv, rs, rv, rsd, lv, lsd, tv, _fire_share(im)   # REG-3747 - the 10th: the fire logo
     except Exception:
         return None
 
@@ -407,7 +434,7 @@ def lobby_by_size(d):
 
 def looks_like_lobby(stats):
     """(bool, why) from lobby_stats(). The create-game lobby, and not the loading card, the skill tree, or play."""
-    if not stats or len(stats) not in (4, 9):
+    if not stats or len(stats) not in (4, 9, 10):
         return False, "frame unreadable"
     fs, fv, bv, rs = stats[:4]
     ok = (fs < LOBBY_FULL_SAT_MAX and LOBBY_FULL_VAL[0] < fv < LOBBY_FULL_VAL[1]
@@ -416,14 +443,18 @@ def looks_like_lobby(stats):
     if ok:
         return True, "create-game lobby (%s)" % say
     # v3890 (#183) - the same lobby in richer colour: the two colour limits relax ONLY when the panels read as the lobby's
-    if len(stats) == 9:
-        rv, rsd, lv, lsd, tv = stats[4:]
+    if len(stats) >= 9:
+        rv, rsd, lv, lsd, tv = stats[4:9]
         if (fs < LOBBY_PANEL_FULL_SAT_MAX and LOBBY_FULL_VAL[0] < fv < LOBBY_FULL_VAL[1] and bv > LOBBY_BOT_VAL_MIN
                 and rs < LOBBY_PANEL_RIGHT_SAT_MAX
                 and LOBBY_PANEL_RIGHT_VAL[0] < rv < LOBBY_PANEL_RIGHT_VAL[1] and LOBBY_PANEL_RIGHT_SD[0] < rsd < LOBBY_PANEL_RIGHT_SD[1]
                 and LOBBY_PANEL_LEFT_VAL[0] < lv < LOBBY_PANEL_LEFT_VAL[1] and LOBBY_PANEL_LEFT_SD[0] < lsd < LOBBY_PANEL_LEFT_SD[1]
                 and tv > LOBBY_PANEL_TOP_VAL_MIN):
             return True, "create-game lobby, by its panels (%s; panels %.3f/%.3f %.3f/%.3f, top %.3f)" % (say, rv, rsd, lv, lsd, tv)
+    # REG-3747 - the Join Game lobby as Dean's PC draws it: inside its measured box AND its fire logo atop the centre column
+    if len(stats) == 10 and stats[9] is not None and stats[9] >= JOIN_LOBBY_FIRE_MIN \
+            and all(lo <= stats[k] <= hi for k, (lo, hi) in enumerate(JOIN_LOBBY_BOX)):
+        return True, "join-game lobby (%s; fire logo %.3f)" % (say, stats[9])
     return False, "not the lobby (%s)" % say
 
 
