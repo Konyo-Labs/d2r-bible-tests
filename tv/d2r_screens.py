@@ -105,6 +105,60 @@ def _small(src):
     return a
 
 
+# REG-3754 (#188) - A WHOLE-DESKTOP CAPTURE: the D2R window is a box INSIDE the frame. MEASURED on Dean's PC (GrokBot's
+# labels, #230; frames frozen off the repo): 445 frames at 800x450 are his whole 1920x1080 desktop - the game a 627x315 box
+# under its white Windows title bar, the Battle.net launcher ("Playing") and his browser around it, the taskbar below. His
+# two logo sittings (10-29, 10-31) show the small corner logo ONLY in such frames, and screen_of read 3 of their 4 logo
+# frames as "not D2R": the corner box and the dark share were taken over the whole desktop. A frame that matches nothing
+# whole is now looked at once more inside the window it holds: a white title bar run (>= WIN_BAR_MIN_W of the width) and,
+# under it, the black client whose two edge strips stay dark down to the window's bottom. Only the door screens (logo,
+# title, Connecting) are named from that box - they all keep black edges - and a frame that already matched is unchanged.
+WIN_BAR_WHITE = 225
+WIN_BAR_MIN_W = 0.40
+WIN_EDGE_DARK = 0.80
+WIN_MIN_H = 0.25
+WIN_ASPECT = (1.3, 2.4)
+
+
+def _longest_run(row):
+    """-> (start, end) of the longest True run in a 1-D bool array, or (0, 0)."""
+    import numpy as np
+    v = np.concatenate(([0], row.astype(np.int8), [0]))
+    d = np.diff(v)
+    starts, ends = np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]
+    if not len(starts):
+        return 0, 0
+    k = int(np.argmax(ends - starts))
+    return int(starts[k]), int(ends[k])
+
+
+def window_box(a):
+    """REG-3754 - the D2R window's client area inside a whole-desktop frame. -> (y0, y1, x0, x1) | None"""
+    import numpy as np
+    H, W = a.shape[:2]
+    white = a.min(axis=-1) >= WIN_BAR_WHITE
+    dark = a.max(axis=-1) < DARK
+    for y in range(int(H * 0.6)):
+        x0, x1 = _longest_run(white[y])
+        if x1 - x0 < W * WIN_BAR_MIN_W:
+            continue
+        top = None
+        for yb in range(y + 1, min(H, y + 4)):      # the title bar sits DIRECTLY on the client: its last white row
+            if dark[yb, x0:x1].mean() >= WIN_EDGE_DARK:
+                top = yb
+                break
+        if top is None:
+            continue
+        e = max(2, (x1 - x0) // 60)
+        y1 = top
+        while y1 < H and dark[y1, x0 + 1:x0 + 1 + e].mean() >= WIN_EDGE_DARK and dark[y1, x1 - 1 - e:x1 - 1].mean() >= WIN_EDGE_DARK:
+            y1 += 1
+        w, h = x1 - x0, y1 - top
+        if h >= H * WIN_MIN_H and WIN_ASPECT[0] <= w / float(max(1, h)) <= WIN_ASPECT[1]:
+            return top, y1, x0, x1
+    return None
+
+
 def stats_of_array(a):
     """-> {"centre", "corner", "rest", "dark"}: the fire share in each box, and the dark share of the whole game."""
     import numpy as np
@@ -197,6 +251,21 @@ def screen_of(src, array=None):
     k, why = kind_of_stats(stats_of_array(a))
     if k:
         return k, why
+    # REG-3754 - nothing matched the whole frame: is it a whole desktop with the D2R window inside? Door screens only.
+    try:
+        box = window_box(a)
+        if box is not None:
+            y0, y1, x0, x1 = box
+            from PIL import Image
+            inner = Image.fromarray(a[y0:y1, x0:x1].astype("uint8"))
+            inner = inner.resize((WIDTH, max(1, int(round(WIDTH * (y1 - y0) / float(x1 - x0))))))
+            import numpy as np
+            k2, why2 = kind_of_stats(stats_of_array(np.asarray(inner, dtype=np.int16)))
+            if k2 in ("logo", "title", "connecting"):
+                return k2, "%s - inside a whole-desktop capture (the D2R window at x %d-%d, y %d-%d of %d px)" % (
+                    why2, x0, x1, y0, y1, a.shape[1])
+    except Exception:
+        pass
     if raw is not None:
         try:
             import char_select as _cs

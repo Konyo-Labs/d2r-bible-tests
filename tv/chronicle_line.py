@@ -448,7 +448,7 @@ def tick(root=None, budget_s=TICK_BUDGET_S, clock=None, reader=None, now_ms=None
             "owedReels": owed(d, alive)}
 
 
-MARKS_KEEP = 120   # a reel's door marks (logo, title, character select) kept in order: the chain needs the first few
+MARKS_KEEP = 120   # a reel's door marks (logo, title, Connecting, character select) kept in order: the chain needs the first few
 
 
 def _mark(rs, ts, kind):
@@ -460,7 +460,10 @@ def _mark(rs, ts, kind):
             rs["firstD2rTs"] = ts
         if not isinstance(rs.get("lastD2rTs"), int) or ts > rs["lastD2rTs"]:
             rs["lastD2rTs"] = ts
-        if kind in ("logo", "title", "char-select"):
+        # REG-3752 - CONNECTING TO BATTLE.NET is a door mark too (v3898 REG-3715; his 11-11 ruling: the D2 logo -> Connecting
+        # -> character select). The lane counted it and dropped the mark, so a reel whose title fell between two frames
+        # carried the logo alone and chain() named no door - the lane said the game was never entered.
+        if kind in ("logo", "title", "connecting", "char-select"):
             m = rs.setdefault("marks", [])
             if len(m) < MARKS_KEEP:
                 m.append([ts, kind])

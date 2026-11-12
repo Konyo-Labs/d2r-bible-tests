@@ -277,6 +277,9 @@ def _recorder(reel, session, src, list_frames):
     if reaps is not None:
         mine = [r for r in reaps if str(r.get("reel") or "") in (reel, session)]
     removed = None if mine is None else any(bool(r.get("removed")) for r in mine)
+    # REG-3751 - the reaper's INTENT line (written before the delete) with no outcome line after it: stopped mid-delete
+    intended = bool(mine) and not removed and any(r.get("intent") is True for r in mine) and not any(
+        isinstance(r.get("removed"), bool) for r in mine)
     last_reap = None if not mine else max((_int(r.get("ts")) or 0) for r in mine) or None
     # REG-1678 — a reap row says what the river had the reel at when it was taken. True only when a row that
     # REMOVED it carries readOwed true; a row from before the field (or one where the river could not be asked)
@@ -300,6 +303,9 @@ def _recorder(reel, session, src, list_frames):
         why = "on the shelf%s" % ((", filmed %s (clock: %s)" % (_when(at), clock)) if at else "")
     elif removed:
         why = "not on the shelf — the recorder's own reap record says its reaper removed it on %s" % _when(last_reap)
+    elif intended:
+        why = ("not on the shelf — the recorder's reap record holds its INTENT to remove it (%s) and no outcome: the "
+               "recorder stopped mid-delete" % _when(last_reap))
     else:
         why = "not on the shelf, and the recorder's reap record does not name it"
     return _hand("recorder", on_disk, at, why, clock=clock, frames=frames,

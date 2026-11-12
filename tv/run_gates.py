@@ -13946,6 +13946,25 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_reap_writes_its_intent_before_the_delete",
+         [sys.executable, os.path.join(HERE, "test_a_reap_writes_its_intent_before_the_delete.py")], 60,
+         needs_app=False,
+         why="v3901 (#217, REG-3751, the second eye on v3899) - the disk-floor reaper deleted first and recorded second, so "
+             "a recorder stopped mid-delete left a reel gone with no line; the intent line goes down first and is credited"),
+    Gate("test_the_lane_keeps_the_connecting_mark",
+         [sys.executable, os.path.join(HERE, "test_the_lane_keeps_the_connecting_mark.py")], 60,
+         needs_app=False,
+         why="v3901 (#188, REG-3752) - the chronicle lane counted Connecting to Battle.net and dropped its mark, so a logo "
+             "-> Connecting reel whose title fell between two frames named no door"),
+    Gate("test_the_reel_says_why_its_footage_stopped",
+         [sys.executable, os.path.join(HERE, "test_the_reel_says_why_its_footage_stopped.py")], 60,
+         why="v3901 (#188, REG-3753) - Dean 11-08: two reels filmed nothing for 31-34 min while reads ran and nothing said "
+             "why; each refused footage frame is counted by reason, the pause is said, the reel keeps the tally"),
+    Gate("test_a_desktop_capture_finds_the_logo_in_its_window",
+         [sys.executable, os.path.join(HERE, "test_a_desktop_capture_finds_the_logo_in_its_window.py")], 60,
+         needs_app=False,
+         why="v3901 (#188, REG-3754) - Dean's only logo sittings were whole-desktop 800x450 captures and 3 of 4 logo frames "
+             "read 'not D2R'; a frame that matches nothing is looked at inside its window, door screens only"),
     Gate("test_battle_net_arms_the_watcher",
          [sys.executable, os.path.join(HERE, "test_battle_net_arms_the_watcher.py")], 120,
          why="v3900 (#188, REG-3748, his 11-12 words) - Battle.net open arms the shadow watcher: a cheap process check every "

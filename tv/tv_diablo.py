@@ -2361,6 +2361,61 @@ def _foot_fps_now():
 NOGAME_TAIL_FRAMES = int(os.environ.get("TV_NOGAME_TAIL", "6") or 6)
 
 
+# REG-3753 (#188) - WHY THE FOOTAGE STOPPED, SAID AND KEPT. MEASURED 11-12 on Dean's frozen copy: two reels on 11-08 opened
+# ("Diablo is on screen"), their AI reads ran the whole time (Catacombs at 17:22), and the first footage frame landed 34 and
+# 31 minutes in - painted in-game frames, seconds after a disk-floor shed ("[reap] ... took 112 picture(s)"). The refusal
+# reason lived only in _FOOTAGE_WHY (memory, overwritten every second), so the agent log said nothing and the cause could not
+# be read after the fact. Now every refused frame is counted by reason, a pause and its end are said once each in the agent
+# log, and the reel's index carries the tally (footageRefused) when it seals.
+_FOOTAGE_REFUSED = {}
+_FOOTAGE_PAUSE = {"since": None, "kind": None, "n": 0}
+FOOTAGE_REFUSAL_WORDS = {
+    "source-missing": "the capture file is missing or under 4 KB",
+    "source-stale": "the capture file is older than 5 s (the capture side stopped writing it)",
+    "no-game": "no D2R window",
+    "warming-up": "warming up (the window is not painted yet)",
+    "disk-floor": "free disk is under the floor",
+    "write-failed": "the frame would not write",
+}
+
+
+def _footage_refused(kind, detail=""):
+    """REG-3753 - one refused footage frame: counted by reason; the first of a pause (or a new reason) is said. -> None"""
+    try:
+        _FOOTAGE_REFUSED[kind] = int(_FOOTAGE_REFUSED.get(kind) or 0) + 1
+        p = _FOOTAGE_PAUSE
+        if p["since"] is None:
+            p["since"], p["n"] = time.time(), 0
+        if p["kind"] != kind:
+            p["kind"] = kind
+            if kind != "warming-up":       # the warm-up skip is said at seal (v1548) and on resume, not every reel start
+                print("  ⏸ footage paused - %s%s" % (FOOTAGE_REFUSAL_WORDS.get(kind, kind),
+                                                     (" (%s)" % detail) if detail else ""), flush=True)
+        p["n"] += 1
+    except Exception:
+        pass
+
+
+def _footage_landed(now_f):
+    """REG-3753 - a footage frame landed; if a pause was running, say how long it lasted and why. -> None"""
+    try:
+        p = _FOOTAGE_PAUSE
+        if p["since"] is not None:
+            secs = max(0, int(now_f - p["since"]))
+            if p["kind"] != "warming-up" or secs >= 30:
+                print("  ▶ footage resumed - %d frame(s) refused over %d s (%s)"
+                      % (p["n"], secs, footage_refused_words()), flush=True)
+            p.update(since=None, kind=None, n=0)
+    except Exception:
+        pass
+
+
+def footage_refused_words(tally=None):
+    """'disk-floor 2040 · warming-up 12' - the reel's refusals, most first. -> str"""
+    t = _FOOTAGE_REFUSED if tally is None else tally
+    return " · ".join("%s %d" % (k, v) for k, v in sorted(t.items(), key=lambda kv: (-kv[1], kv[0]))) or "none"
+
+
 def _door_screen(path):
     """REG-3745 (#188) - is this flat-looking frame the game's own DOOR - the D2 logo, the title or Connecting? -> bool
 
@@ -2410,6 +2465,7 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
         globals()["_FOOTAGE_WHY"] = why
         if not src_path or not os.path.isfile(src_path) or os.path.getsize(src_path) < 4000:
             globals()["_FOOTAGE_REJECTS"] = int(globals().get("_FOOTAGE_REJECTS") or 0) + 1
+            _footage_refused("source-missing")
             return False
         # ── v2063 — DO NOT RECORD A GAME THAT IS NOT RUNNING ────────────────────────────────────
         # Konyo: "the shadow reader when toggled on, it needs to know when diablo ii window is open
@@ -2444,6 +2500,7 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
                     globals()["_NOGAME_SKIPPED"] = int(globals().get("_NOGAME_SKIPPED") or 0) + 1
                     globals()["_FOOTAGE_WHY"] = "no D2R window — not recording (%d frame(s) skipped)" % (
                         globals()["_NOGAME_SKIPPED"])
+                    _footage_refused("no-game")
                     return False
         # ── v1548 — THE WARM-UP GATE ────────────────────────────────────────────────────────────
         # 16 of the 17 blank captures in his worst reel land in the FIRST NINETEEN SECONDS: capture
@@ -2463,6 +2520,7 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
                 if _cr.is_dead_frame(src_path) and not _door_screen(src_path):
                     globals()["_FOOTAGE_WARMSKIP"] = int(globals().get("_FOOTAGE_WARMSKIP") or 0) + 1
                     globals()["_FOOTAGE_WHY"] = "warming-up (window not painted yet)"
+                    _footage_refused("warming-up")
                     return False
                 globals()["_FOOTAGE_WARM"] = True
             except Exception:
@@ -2472,8 +2530,10 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
         hist_dir = HIST_DIR
         _establish_footage()
         import shutil as _sh
-        if _disk_free_bytes(hist_dir) / 1e9 < MIN_FREE_GB:
+        _free_now = _disk_free_bytes(hist_dir) / 1e9
+        if _free_now < MIN_FREE_GB:
             globals()["_FOOTAGE_WHY"] = "disk-full"
+            _footage_refused("disk-floor", "%.1f GB free, the floor is %s GB" % (_free_now, MIN_FREE_GB))
             return False
         dest = os.path.join(hist_dir, "f_%d.jpg" % int(now_f * 1000))
         tmp = _cap_tmp(dest)
@@ -2529,8 +2589,10 @@ def _archive_footage_copy(src_path, now_f, why="ok", _consume_due=True):
                     os.remove(last_tmp)
             except Exception:
                 pass
+        _footage_landed(now_f)
         return True
     except Exception:
+        _footage_refused("write-failed")
         return False
 
 
@@ -3554,7 +3616,7 @@ def _reap_log_path(hist=None):
 
 
 def _reap_record(reel, frames, removed, shelf, by="recorder-disk-floor", names=None, kept=None, spared=None,
-                 river=None):
+                 river=None, intent=False):
     """A durable line for every emergency reel deletion. -> None
 
     ⚠⚠ THIS IS NOT THE TOMBSTONE STORE, ON PURPOSE. `reel_retention._tombstone` is the ONE writer
@@ -3563,13 +3625,18 @@ def _reap_record(reel, frames, removed, shelf, by="recorder-disk-floor", names=N
     RECORDER took under disk pressure, so an emergency deletion can never again leave no trace.
     Joining it into the tombstone proper is the retention lane's job, not the recorder's.
     ⚠ `frames=-1` means the count could not be taken — never a confident 0.
+    REG-3751 (the Grok CLI's second look on v3899) - `intent=True` writes the line BEFORE the deletion: `removed` is null
+    and `intent` is true. The reaper deleted first and recorded second, so a recorder stopped between the two (an update's
+    relaunch, a kill, a crash) left a reel gone with no line at all - the #217 shape. The outcome line still follows.
     -> True when the line was written, False (and said out loud) when it was not.
     """
     try:
         path = _reap_log_path()
         row = {"ts": int(time.time() * 1000), "reel": str(reel), "frames": int(frames),
-               "removed": bool(removed), "shelfBefore": int(shelf), "by": str(by),
+               "removed": (None if intent else bool(removed)), "shelfBefore": int(shelf), "by": str(by),
                "agentVer": VERSION, "minFreeGB": MIN_FREE_GB}
+        if intent:
+            row["intent"] = True
         # 2026-09-28 — WHICH frames, by name (bounded), so 'who took this picture' has an answer
         if names is not None:
             row["names"] = [str(x) for x in list(names)[:1200]]
@@ -4118,6 +4185,10 @@ def archive_read_frame(src_path, n, ts_ms=None):
                                 import shutil as _shr
                                 _vp = os.path.join(HIST_DIR, _pick["reel"])
                                 _n = _pick["frames"]
+                                # REG-3751 - the intent line goes down BEFORE the delete, so a recorder stopped mid-rmtree
+                                # still leaves the reel's record
+                                _reap_record(_pick["reel"], _n, None, len(_all), names=_pick["gone"], river=_rv,
+                                             intent=True)
                                 _shr.rmtree(_vp, ignore_errors=True)
                                 _gone = not os.path.exists(_vp)
                                 _reap_record(_pick["reel"], _n, _gone, len(_all), names=_pick["gone"], river=_rv)
@@ -4128,6 +4199,8 @@ def archive_read_frame(src_path, n, ts_ms=None):
                                 # reel_retention.release_uncited uses when retention releases a reel
                                 _vp = os.path.join(HIST_DIR, _pick["reel"])
                                 _took = []
+                                _reap_record(_pick["reel"], len(_pick["gone"]), None, len(_all), names=_pick["gone"],
+                                             kept=_pick["kept"], river=_rv, intent=True)   # REG-3751 - before the delete
                                 for _f in _pick["gone"]:
                                     try:
                                         os.remove(os.path.join(_vp, _f))
@@ -9135,6 +9208,10 @@ def main():
                 _wsrc, _wwhy = _weye, "win-eye"
                 if os.path.isfile(_wfull) and (_wnow - os.path.getmtime(_wfull)) < 5.0:
                     _wsrc, _wwhy = _wfull, "win-full"
+                if _wnow >= globals().get("_FOOTAGE_DUE", 0.0) and _wnow >= globals().get("_FOOT_STALE_DUE", 0.0) \
+                        and not (os.path.isfile(_wsrc) and (_wnow - os.path.getmtime(_wsrc)) < 5.0):
+                    globals()["_FOOT_STALE_DUE"] = _wnow + _wiv      # REG-3753 - once per footage interval
+                    _footage_refused("source-stale")
                 if os.path.isfile(_wsrc) and (_wnow - os.path.getmtime(_wsrc)) < 5.0 \
                         and _wnow >= globals().get("_FOOTAGE_DUE", 0.0):
                     try:
@@ -10163,6 +10240,11 @@ def close_session(reason="stop", farewell=True):
                         continue      # unparseable stamp is not a frame — same as v894
                 _ixdoc = {"sessionId": SESSION_ID, "n": len(_meta),
                           "blank": 0, "frames": _meta, "blankPass": False}
+                if _FOOTAGE_REFUSED:
+                    # REG-3753 - why footage was refused while this reel rolled, by reason (absent = none refused)
+                    _ixdoc["footageRefused"] = dict(_FOOTAGE_REFUSED)
+                    print("  ⏸ footage refused while this reel rolled: %s" % footage_refused_words(), flush=True)
+                    _FOOTAGE_REFUSED.clear()      # a process that seals a second reel starts its own tally
                 _cap = _capture_for_seal() or {}
                 try:
                     import capture_stamp as _cs

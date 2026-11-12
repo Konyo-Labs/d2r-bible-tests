@@ -570,6 +570,7 @@ def _deleter_records(hist):
         unread.append("the reap log's path could not be resolved (%s)" % type(e).__name__)
     if rp and os.path.exists(rp):
         torn = 0
+        intents, outcomes = {}, set()   # REG-3751 - an intent line whose outcome never landed (stopped mid-delete)
         try:
             with open(rp, encoding="utf-8") as fh:
                 for ln in fh:
@@ -580,10 +581,22 @@ def _deleter_records(hist):
                     except ValueError:
                         torn += 1          # counted below: a torn line may be the record of a deletion
                         continue
+                    if isinstance(r, dict) and r.get("intent") is True and r.get("reel"):
+                        intents[str(r["reel"])] = r
+                        continue
+                    if isinstance(r, dict) and r.get("reel") and isinstance(r.get("removed"), bool):
+                        outcomes.add(str(r["reel"]))
                     if isinstance(r, dict) and r.get("removed") is True and r.get("reel"):
                         recs.setdefault(str(r["reel"]), "reaped by %s (%s) - its reap log" % (
                             r.get("by") or "the recorder", time.strftime("%Y-%m-%d %H:%M", time.localtime(
                                 r["ts"] / 1000.0)) if isinstance(r.get("ts"), (int, float)) else "time unrecorded"))
+            for nm, r in intents.items():
+                if nm not in outcomes:
+                    recs.setdefault(nm, "reaped by %s (%s) - its reap log holds the INTENT line only: the recorder stopped "
+                                        "before it wrote the outcome" % (
+                                            r.get("by") or "the recorder", time.strftime("%Y-%m-%d %H:%M", time.localtime(
+                                                r["ts"] / 1000.0)) if isinstance(r.get("ts"), (int, float))
+                                            else "time unrecorded"))
         except Exception as e:
             unread.append("the reap log would not read (%s)" % type(e).__name__)
         if torn:
