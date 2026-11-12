@@ -182,7 +182,10 @@ modal, so each case's own staging never happened; each premise refused honestly,
 PC. The staging no longer leans on a font: the builder's INDENT measure narrows one multi-word label until it wraps when none
 does (measured, then put back; the hanging-indent red-proof still catches a flush line on any font), and the planner case
 shortens the modal 20 px at a time (floor 140) until the pane overflows before it scrolls it. Green on the Mac (where neither
-staging fires); the Windows run is owed after v3903's ship (a push waits for a running ship).
+staging fires). Windows results (ci/winlaws-v3904): the builder GREEN; the planner then printed its staging - lawH 140
+(the floor), overflow 0 - the edit pane never overflows on Windows even at a 140 px modal, so the reset the law guards
+cannot happen there or be seen: on Windows only, that measured case skips as UNMEASURED and its two proofs (the focus
+and the scroll reset) declare posix; anywhere else a pane that will not scroll stays the PREMISE red.
 
 ### REG-3811 - THE MASK-ENCODER LAW RACED AGAIN AFTER REG-3800: THE BOARD FRAME RE-BOUND ITS LSR BETWEEN WAIT AND ENCODE (v3904)
 v3903's GitHub round, agent-suite (5), run 43283651937: test_TWO_stores_are_UNIONED_not_last_one_wins - "the js encoder

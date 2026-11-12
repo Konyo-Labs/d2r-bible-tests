@@ -158,6 +158,11 @@ class ThePlannerSpinnerStaysUnderTheCursor(unittest.TestCase):
         # so its scrollTop was 0 before any key and putting it back after a repaint changed nothing this case can see.
         # The case now opens the modal at the 260 px its sibling proves makes the pane scroll, and says so first.
         _stage = board().run("OUT.s = window._lawStage || null;").get("s")
+        if os.name == "nt" and isinstance(_stage, dict) and _stage.get("overflow") == 0:
+            # #107 (REG-3812, windows-latest run 43308030093: lawH 140, overflow 0) - MEASURED: on Windows the edit pane never
+            # overflows even at a 140 px modal, so the reset this law guards cannot happen there or be seen - UNMEASURED here.
+            # Its two proofs declare posix; anywhere else a pane that will not scroll stays the PREMISE red below.
+            self.skipTest("the edit pane never overflows on this venue (measured down to a 140 px modal) - UNMEASURED here")
         self.assertGreater(o0["top"] or 0, 0, "PREMISE: the edit pane is not scrolled, so a repaint that sends it back to "
                                              "the top would change nothing this case can see: %r (staging: %r - topAfterStage > 0 "
                                              "and top 0 here means the baseline's repaint reset it)" % (o0, _stage))
@@ -192,12 +197,12 @@ RED_PROOF = [
      "file": "bible.html",
      "find": "    if (_fid){ var _f1 = document.getElementById(_fid); if (_f1 && typeof _f1.focus === 'function'){ try { _f1.focus({ preventScroll: true }); } catch (eFc) {} } }\n",
      "replace": "",
-     "matches": 1},
+     "matches": 1, "needs": "posix"},
     {"why": "REG-2833 - the repaint sends the edit pane back to the top",
      "file": "bible.html",
      "find": "    if (_ed1 && _edTop) _ed1.scrollTop = _edTop;\n",
      "replace": "",
-     "matches": 1},
+     "matches": 1, "needs": "posix"},
 ]
 
 if __name__ == "__main__":
