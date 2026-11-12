@@ -84,7 +84,7 @@ class TheLaneKeepsTheConnectingMark(unittest.TestCase):
     def test_premise_the_frames_are_what_they_claim(self):
         """the case distinguishes only if the saved JPEGs classify as the logo and Connecting"""
         d = os.path.join(self.hist, self.game)
-        kinds = [DS.screen_of(os.path.join(d, f))[0] for f in sorted(os.listdir(d))]
+        kinds = [DS.screen_of(os.path.join(d, f))[0] for f in sorted(os.listdir(d)) if f.endswith(".jpg")]
         self.assertEqual(kinds[:3], ["logo", "connecting", "connecting"], kinds)
 
     def test_a_logo_then_connecting_is_a_door(self):
