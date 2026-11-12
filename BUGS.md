@@ -218,7 +218,9 @@ finish_plan called makeup_due(tot) with no attempt, so a law red ONCE untampered
 On v3900's run 43156415620 it re-ran only cut shard 10 (rerun-jobs), the run became attempt 2, and shards 11 and 14 (the
 war-stash flake) were left for a human - and the ship then misread them too (REG-3770). The finisher now passes the round's
 attempt: on attempt 1 the cut shards and the first-attempt flakes are re-run together (rerun-failed); on attempt 2 a clean red
-is real and only cut-only shards are re-run. The workflow's header comment says so. Guard: test_a_timeout_is_finished_on_
+is real and only cut-only shards are re-run. Its own log on attempt 2 (run 43164986317) said it in words: "2 law(s) red
+untampered AGAIN on attempt None - real". The workflow's header comment says so, and its "UNMEASURED until it runs once on
+main" line is replaced by the measurement: GitHub DID fire the finisher again for the round it re-ran (05:35 and 05:59). Guard: test_a_timeout_is_finished_on_
 github_never_failed (new v3900 case, red-proof [0]; proof [4] re-anchored after it went INVALID on the moved line; 6/6 PROVEN).
 
 ### REG-3771 - THE DOCTOR'S "OUR SCRATCH IS COLLECTED" ROW COULD NEVER GO GREEN (two leaks)

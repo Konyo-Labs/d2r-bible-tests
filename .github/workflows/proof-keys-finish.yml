@@ -16,9 +16,9 @@ name: proof-keys finish - a round cut only by its bound is finished, never faile
 #
 # SAFETY: a workflow_run job runs THIS file from the default branch and checks out the default branch - no ci/ branch's code
 # ever runs with the actions: write token. The round's census is DATA (JSON), read by main's own proof_shard.py.
-# UNMEASURED until it runs once on main: whether GitHub starts a second workflow_run event for a round this job re-ran
-# (a GITHUB_TOKEN action may not trigger workflows) - if it does not, the bound below never matters and the ship's own
-# make-up (tv/ship_when_green.py, REG-3270/3386) stays the second layer.
+# MEASURED 11-12 on v3900's round 43156415620: GitHub DOES start a second workflow_run event for a round this job re-ran -
+# the finisher ran at 05:35 (attempt 1: re-ran cut shard 10) and again at 05:59 (attempt 2: "none"), so the attempt bound
+# below is load-bearing. The ship's own make-up (tv/ship_when_green.py, REG-3270/3386/3770) stays the second layer.
 on:
   workflow_run:
     workflows: ["proof-keys shards (ci/proof-keys-* only)"]
