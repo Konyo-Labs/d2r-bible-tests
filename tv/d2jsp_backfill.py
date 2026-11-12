@@ -44,6 +44,52 @@ def pager_offset(html):
         return None
 
 
+#: the same link's own href, exactly as the forum wrote it (#151 rerun: the runner follows the pager, never a guess)
+_NEXT_HREF = re.compile(
+    r"<a\s[^>]*href=[\"']([^\"']*search\.php[^\"']*[?&](?:amp;)?o=\d+[^\"']*)[\"'][^>]*>\s*(?:Next|&#62;|&gt;|&raquo;)",
+    re.I,
+)
+
+#: #151 rerun (GrokBot 13 Nov) - a later page that answers an earlier one again is asked again, up to this many times,
+#: and is never read as the last page (199 items stopped at o=10 holding page 1's posts and page 1's own Next o=10)
+STUCK_MAX = 3
+UNREAD_MAX = 5
+
+
+def pager_next_href(html):
+    """The pager's own Next href (entities undone, relative as written), or None."""
+    m = _NEXT_HREF.search(str(html or ""))
+    return m.group(1).replace("&amp;", "&") if m else None
+
+
+def page_fingerprint(html):
+    """The topic ids a results page lists, in order, once each. -> [str] ([] when it lists none)"""
+    out = []
+    for t in re.findall(r"topic\.php\?(?:[^\"'>]*?[&;])?t=(\d+)", str(html or "").replace("&amp;", "&")):
+        if t not in out:
+            out.append(t)
+    return out
+
+
+def page_did_not_advance(html, offset, last_fp=None):
+    """#151 rerun - True when the page fetched for &o=`offset` (> 0) is an EARLIER page again: its own Next points at or
+    before `offset` (page 1 says Next o=10), or it lists exactly the topics of the page before it. A real last page has no
+    Next and new topics; an empty page (no topics) is a real end. -> bool"""
+    try:
+        offset = int(offset or 0)
+    except (TypeError, ValueError):
+        return False
+    if offset <= 0:
+        return False
+    fp = page_fingerprint(html)
+    if not fp:
+        return False
+    nxt = pager_offset(html)
+    if isinstance(nxt, int) and nxt <= offset:
+        return True
+    return bool(last_fp) and ",".join(fp[:40]) == str(last_fp)
+
+
 class _RowLinks(HTMLParser):
     """Each <tr> of a page with the topic ids and the user.php names its whole subtree links to."""
 
@@ -252,10 +298,20 @@ def run_once(progress_path, db_path, fetch=None, parse=None, fold=None, now=None
         out["asked"] = picked
         out["offset"] = offset
         if html is None:
-            out["why"] = "fetch returned nothing for %s at o=%d - will retry" % (picked, offset)
-            st["why"] = "empty fetch"
+            # #151 rerun - a page not read is asked again, but never forever: after UNREAD_MAX passes in a row it is left
+            st["unread"] = int(st.get("unread") or 0) + 1
+            if st["unread"] >= UNREAD_MAX:
+                st["done"] = True
+                st["why"] = "o=%d not read %d times in a row - left" % (offset, st["unread"])
+                rec["cursor"] = (cursor + 1) % len(queue)
+                out["done"] = True
+                out["why"] = "fetch returned nothing for %s at o=%d %d times - left" % (picked, offset, st["unread"])
+            else:
+                out["why"] = "fetch returned nothing for %s at o=%d - will retry" % (picked, offset)
+                st["why"] = "empty fetch"
             progress_save(progress_path, rec)
             return out
+        st["unread"] = 0
         if parse is None:
             reading = {"reason": "read", "item": picked, "posts": []}
         else:
@@ -283,10 +339,32 @@ def run_once(progress_path, db_path, fetch=None, parse=None, fold=None, now=None
             added = int(added or 0)
         except (TypeError, ValueError):
             added = 0
+        out["folded"] = added
+        if page_did_not_advance(html, offset, st.get("fp")):
+            # #151 rerun - an earlier page came back (a fallback opened the results without &o=, or the GET failed and
+            # page 1 stood in). Never the last page: ask the same offset again, give up only after STUCK_MAX tries.
+            st["folded"] = int(st.get("folded") or 0) + added
+            st["stuck"] = int(st.get("stuck") or 0) + 1
+            if st["stuck"] >= STUCK_MAX:
+                st["done"] = True
+                st["why"] = "page did not advance past o=%d (%d tries)" % (offset, st["stuck"])
+                rec["cursor"] = (cursor + 1) % len(queue)
+                out["done"] = True
+            else:
+                st["why"] = "o=%d answered an earlier page - asking o=%d again" % (offset, offset)
+            out["why"] = "asked %s at o=%d - %s, folded %d" % (picked, offset, st["why"], added)
+            progress_save(progress_path, rec)
+            return out
+        st["stuck"] = 0
+        st["fp"] = ",".join(page_fingerprint(html)[:40])
         st["pages"] = int(st.get("pages") or 0) + 1
         st["folded"] = int(st.get("folded") or 0) + added
-        out["folded"] = added
         nxt = pager_offset(html)
+        href = pager_next_href(html)
+        if href and nxt is not None:
+            st["nextHref"] = href
+        else:
+            st.pop("nextHref", None)
         since = str(st.get("since") or "")
         days = [str(p.get("day") or "")[:10] for p in (reading.get("posts") or []) if isinstance(p, dict) and p.get("day")]
         if since and nxt is not None and days and all(d < since for d in days):

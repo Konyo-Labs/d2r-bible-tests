@@ -227,6 +227,20 @@ def load_catalog_full(root):
     return {"items": out, "priority": pri, "priorityByShard": by}
 
 
+def load_queue_file(path):
+    """#151 rerun - {"queue": [entries]} or [entries] -> the entries, once each, in order. Raises SystemExit when empty."""
+    rec = read_json(os.path.abspath(path))
+    raw = rec.get("queue") if isinstance(rec, dict) else rec
+    out = []
+    for x in raw or []:
+        s = str(x or "").strip()
+        if s and s not in out:
+            out.append(s)
+    if not out:
+        raise SystemExit("queue file %s is missing or empty" % path)
+    return out
+
+
 def load_catalog(root):
     return load_catalog_full(root)["items"]
 
@@ -421,8 +435,63 @@ def decode_page(raw):
     return str(raw or "")
 
 
+#: #151 rerun (GrokBot 13 Nov) - a queue entry may carry its own forum words: "Annihilus |q=annihilus" asks "annihilus"
+#: and folds under Annihilus's canonical key (its primary search words, "anni"), so a nickname never makes a second entry.
+ALT_SEP = " |q="
+
+
+def split_entry(entry):
+    """'Annihilus |q=annihilus' -> ('Annihilus', 'annihilus'); 'Annihilus' -> ('Annihilus', None)."""
+    s = str(entry or "")
+    if ALT_SEP in s:
+        item, words = s.split(ALT_SEP, 1)
+        item, words = item.strip(), " ".join(words.split())
+        return item, (words or None)
+    return s.strip(), None
+
+
+def entry_for(item, words=None):
+    item = str(item or "").strip()
+    words = " ".join(str(words or "").split())
+    return item + ALT_SEP + words if words else item
+
+
+def alt_queries(words):
+    """#151 rerun - the extra forum words for one item, from the quote lexicon's d2jspSearchWords(item)
+    ({query, slang, simple, forms}): the plain full name when the primary query is a nickname ("anni" ->
+    "annihilus"), then one more nickname. Never the primary query itself. -> [str] (at most 2)"""
+    if not isinstance(words, dict):
+        return []
+    primary = " ".join(str(words.get("query") or "").lower().split())
+    out = []
+    simple = " ".join(str(words.get("simple") or "").lower().split())
+    if simple and simple != primary:
+        out.append(simple)
+    for s in words.get("slang") or []:
+        s = " ".join(str(s or "").lower().split())
+        if s and s != primary and s not in out:
+            out.append(s)
+            break
+    return out[:2]
+
+
+def results_for(html):
+    """The words a results page says it searched ("Post Search Results for: anni in ..." -> 'anni'), or None."""
+    m = re.search(r"Post Search Results for:\s*([^<]{0,120})", str(html or ""), re.I)
+    if not m:
+        return None
+    said = " ".join(m.group(1).split())
+    said = re.split(r"\s+in\s+D2", said, maxsplit=1)[0]
+    return said.lower().strip() or None
+
+
 class FetchLane(object):
-    """Read-only signed-in fetch, paced by the caller. Cookie never stored on self in logs."""
+    """Read-only signed-in fetch, paced by the caller. Cookie never stored on self in logs.
+
+    #151 rerun - a later page is the pager's own Next href from the page before it (with_offset only when none is held),
+    a fallback opens THAT page (never the results without &o=), a failed paged GET is a page not read (never page 1 in
+    its place), and a results page that names another search is not read either (the saved results URL is dropped, so the
+    next pass searches again)."""
 
     def __init__(self, C, root, urls_path, holder):
         self.C = C
@@ -432,12 +501,42 @@ class FetchLane(object):
         self.urls = read_json(urls_path, {}) or {}
         if not isinstance(self.urls, dict):
             self.urls = {}
+        self.next_href = {}      # entry -> (next offset, absolute next URL), from the last page handed out
 
     def _remember_url(self, item, url):
         if not url:
             return
         self.urls[item] = url
         write_json(self.urls_path, self.urls)
+
+    def _forget_url(self, item):
+        if self.urls.pop(item, None) is not None:
+            write_json(self.urls_path, self.urls)
+        self.next_href.pop(item, None)
+
+    def _words(self, entry):
+        item, words = split_entry(entry)
+        if words:
+            return words
+        try:
+            w = self.C._search_keywords(item)
+        except Exception:
+            w = None
+        return w if isinstance(w, str) and w.strip() else item
+
+    def _body(self, entry):
+        item, words = split_entry(entry)
+        if words:
+            from urllib.parse import urlencode
+            return urlencode({"stext": words}).encode("utf-8")
+        return self.C._search_body(item)
+
+    def _page_url(self, entry, results_url, offset):
+        """The URL of &o=`offset`: the pager's own Next href when the last page named this offset, else built."""
+        held = self.next_href.get(entry)
+        if held and held[0] == int(offset) and held[1]:
+            return held[1]
+        return with_offset(results_url, offset) if results_url else None
 
     def _cookie(self):
         try:
@@ -471,17 +570,21 @@ class FetchLane(object):
             self.holder["chrome_err"] = msg or name
             return None
 
-    def _finish(self, item, page, results_url=None, cookie=None, tried_chrome=False):
+    def _finish(self, item, page, results_url=None, cookie=None, tried_chrome=False, page_url=None):
+        """`item` is the queue entry. `page_url` is the exact page asked (results_url + &o=, or the Next href)."""
         if results_url:
             self._remember_url(item, results_url)
+        name, words = split_entry(item)
         need_chrome = cookie is not None and not tried_chrome and (
             is_challenge(page, self.C) or is_hollow_results(page)
         )
         if need_chrome:
-            if results_url:
-                opened = self._open_via_chrome("results", results_url, cookie)
+            if page_url or results_url:
+                opened = self._open_via_chrome("results", page_url or results_url, cookie)
+            elif words:
+                opened = None        # the scratch Chrome types the primary words only; this entry's words wait a pass
             else:
-                opened = self._open_via_chrome("search", item, cookie)
+                opened = self._open_via_chrome("search", name, cookie)
             tried_chrome = True
             if isinstance(opened, str) and opened:
                 if not is_challenge(opened, self.C) and (
@@ -499,21 +602,43 @@ class FetchLane(object):
             self.holder["why"] = "results page had no topics (hollow shell) - will retry"
             self.holder["html"] = None
             return None
+        said = results_for(page)
+        want = " ".join(str(self._words(item) or "").lower().replace("'", "").split())
+        if said and want and want.split()[0] not in said.replace("'", "").split():
+            # the account's newest search is someone else's (another PC, the console): not this entry's page
+            self._forget_url(item)
+            self.holder["why"] = "results page belonged to another search - will search again"
+            self.holder["html"] = None
+            return None
         # keep a scrubbed copy locally, never in the repo tree
         try:
-            self.C.keep_results_page(item, page, base=os.path.join(self.root, "pages"))
+            self.C.keep_results_page(name, page, base=os.path.join(self.root, "pages"))
         except Exception:
             pass
+        import d2jsp_backfill as B
+        nxt, href = B.pager_offset(page), B.pager_next_href(page)
+        absu = None
+        if href and nxt is not None and hasattr(self.C, "_forum_redirect"):
+            try:
+                absu = self.C._forum_redirect(href)
+            except Exception:
+                absu = None
+        if absu:
+            self.next_href[item] = (int(nxt), absu)
+        else:
+            self.next_href.pop(item, None)
         self.holder["html"] = page
         self.holder["last_item"] = item
         return page
 
     def fetch(self, item, offset):
+        """`item` is a queue entry ('Annihilus' or 'Annihilus |q=annihilus'). -> html | None (not read, retry)"""
         self.holder.pop("chrome_err", None)
         self.holder["html"] = None
         cookie = self._cookie()
         if not cookie:
             return NEED_LOGIN_HTML
+        name, words = split_entry(item)
         transport = self.C._transport
         headers = self._headers(cookie)
         offset = int(offset or 0)
@@ -521,7 +646,7 @@ class FetchLane(object):
 
         if offset > 0 and results_url:
             get_headers = dict((k, v) for k, v in headers.items() if k != "Content-Type")
-            url = with_offset(results_url, offset)
+            url = self._page_url(item, results_url, offset)
             try:
                 status, hdrs, raw = transport("GET", url, get_headers, None)
             except Exception as e:
@@ -535,7 +660,7 @@ class FetchLane(object):
                     self.holder["why"] = "results page redirected to login"
                     return NEED_LOGIN_HTML
             if status == 200 and page and not is_challenge(page, self.C):
-                return self._finish(item, page, results_url=results_url, cookie=cookie)
+                return self._finish(item, page, results_url=results_url, cookie=cookie, page_url=url)
             # fall through: re-run the search, then open o=offset
 
         # New search (offset 0, or paging without a saved results URL, or a stale URL).
@@ -546,16 +671,17 @@ class FetchLane(object):
         err = None
         for _try in (1, 2):
             try:
-                status, hdrs, raw = transport("POST", self.C._search_url(item), headers, self.C._search_body(item))
+                status, hdrs, raw = transport("POST", self.C._search_url(name), headers, self._body(item))
                 err = None
                 break
             except Exception as e:
                 err = type(e).__name__
         if err is not None:
             self.holder["why"] = "search POST raised %s twice" % err
-            opened = self._open_via_chrome("search", item, cookie)
-            if isinstance(opened, str) and opened:
-                return self._finish(item, opened, cookie=cookie, tried_chrome=True)
+            if offset == 0 and not words:
+                opened = self._open_via_chrome("search", name, cookie)
+                if isinstance(opened, str) and opened:
+                    return self._finish(item, opened, cookie=cookie, tried_chrome=True)
             self.holder["stop"] = "challenge"
             self.holder["why"] = "search POST failed (%s) and Chrome did not open results" % err
             return None
@@ -590,22 +716,32 @@ class FetchLane(object):
         page = decode_page(raw)
         if not results_url:
             results_url = results_url_from_html(page, self.C)
-        if offset > 0 and results_url:
-            # same search, later page — one paced fetch
+        page_url = None
+        if offset > 0:
+            if not results_url:
+                self.holder["why"] = "no results URL to open o=%d - will retry" % offset
+                return None
+            # same search, later page - one paced fetch; a failed GET is a page not read, never page 1 in its place
+            self.next_href.pop(item, None)
             get_headers = dict((k, v) for k, v in headers.items() if k != "Content-Type")
-            url = with_offset(results_url, offset)
+            page_url = with_offset(results_url, offset)
             try:
-                status, hdrs, raw = transport("GET", url, get_headers, None)
-                page = decode_page(raw)
+                status, hdrs, raw = transport("GET", page_url, get_headers, None)
             except Exception as e:
-                self.holder["why"] = "paged GET raised %s" % type(e).__name__
-        return self._finish(item, page, results_url=results_url, cookie=cookie)
+                self.holder["why"] = "paged GET raised %s - will retry" % type(e).__name__
+                self._remember_url(item, results_url)
+                return None
+            page = decode_page(raw)
+        return self._finish(item, page, results_url=results_url, cookie=cookie, page_url=page_url)
 
 
 def make_parse(C, repo, holder):
     js_path = os.path.join(repo, "functions", "api", "d2jsp_quote.js")
 
     def parse(html, item, read_at):
+        # #151 rerun - a queue entry's own words ('Annihilus |q=annihilus') never reach the reader or the key: the item
+        # is read as itself and folded under its primary search words (d2jsp_price_db's canonical key)
+        item = split_entry(item)[0]
         if holder.get("stop") == "need-login":
             return {"reason": "need-login", "item": item, "posts": []}
         if holder.get("stop") == "challenge" or html is None:
@@ -777,16 +913,22 @@ def run_loop(args, C=None, sleep=None):
         log("STOP: this PC is not signed in. Nothing was asked.")
         return 3
 
-    catalog = load_catalog_full(root)
-    items_all = catalog["items"]
-    # Core catalog is sharded by index. Affix priority names are pinned to a shard
-    # in items.json (priorityByShard) so adding them cannot flip existing queues.
-    by = catalog.get("priorityByShard") or {}
-    priority = [str(x).strip() for x in (by.get(str(args.shard)) or by.get(args.shard) or []) if str(x).strip()]
-    if not priority:
-        priority = [n for i, n in enumerate(catalog.get("priority") or []) if i % args.shards == args.shard]
-    core = [n for n in items_all if n not in (catalog.get("priority") or [])]
-    queue = shard_items(core, args.shard, args.shards)
+    queue_file = getattr(args, "queue_file", None)
+    if queue_file:
+        # #151 rerun - an exact queue (thin items again, plus 'Item |q=words' nickname entries), no catalog, no priority
+        queue = load_queue_file(queue_file)
+        priority = []
+    else:
+        catalog = load_catalog_full(root)
+        items_all = catalog["items"]
+        # Core catalog is sharded by index. Affix priority names are pinned to a shard
+        # in items.json (priorityByShard) so adding them cannot flip existing queues.
+        by = catalog.get("priorityByShard") or {}
+        priority = [str(x).strip() for x in (by.get(str(args.shard)) or by.get(args.shard) or []) if str(x).strip()]
+        if not priority:
+            priority = [n for i, n in enumerate(catalog.get("priority") or []) if i % args.shards == args.shard]
+        core = [n for n in items_all if n not in (catalog.get("priority") or [])]
+        queue = shard_items(core, args.shard, args.shards)
     progress_path = os.path.join(root, "progress-shard%d.json" % args.shard)
     db_path = os.path.join(root, "prices-shard%d.json" % args.shard)
     urls_path = os.path.join(root, "results-urls-shard%d.json" % args.shard)
@@ -911,8 +1053,11 @@ def cmd_status(args):
     install_bare_rune_search(C)
     st = login_state(C)
     log("login: state=%s kind=%s ok=%s - %s" % (st["state"], st["kind"], st["ok"], st["why"]))
-    items_all = load_catalog(root)
-    queue = shard_items(items_all, args.shard, args.shards)
+    if getattr(args, "queue_file", None):
+        queue = load_queue_file(args.queue_file)
+    else:
+        items_all = load_catalog(root)
+        queue = shard_items(items_all, args.shard, args.shards)
     progress_path = os.path.join(root, "progress-shard%d.json" % args.shard)
     db_path = os.path.join(root, "prices-shard%d.json" % args.shard)
     summ = summarize_progress(progress_path, db_path, len(queue))
@@ -993,6 +1138,7 @@ def main(argv=None):
     p.add_argument("--no-self-log", action="store_true")
     p.add_argument("--ignore-challenge-file", action="store_true")
     p.add_argument("--no-console-wait", action="store_true", help=argparse.SUPPRESS)
+    p.add_argument("--queue-file", metavar="JSON", help="ask exactly these entries ('Item' or 'Item |q=words'), not items.json")
     p.add_argument("--refresh", action="store_true", help="monthly refresh: re-open only stale items, same pace")
     p.add_argument("--import-into", metavar="DB", help="fold prices-shard<N>.json into this price DB, then exit")
     p.add_argument("--dry-run", action="store_true", help="with --import-into: say what would change, write nothing")
