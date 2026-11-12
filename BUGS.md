@@ -142,6 +142,24 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3803 - THE SITE'S TASK BOARD KEPT THE OLDEST 200 CARDS: #201 ON NEVER LEFT THE MAC (v3903, his 11-12 ask)
+His words: "also this is not updated https://bull-4-u.com/d2r/tasks and synced to the local http://127.0.0.1:17955 should be
+updated the same". MEASURED: the lane posts (pacing record 18:01, the site's copy the same minute), and the site held 200 of
+the Mac's 218 cards - task_board.board cut sorted(cards)[:MAX_CARDS], the OLDEST 200, so #201-#218 (seven open: #208 #210
+#212 #213 #215 #217 #218) never reached the site, and the header counted the cut list (7 in progress + 9 pending where the
+Mac had 23 open). The law's huge-board case held 150 cards, under the cap, so it could not see the cut. Now carried(): every
+open card always, then the newest finished ones up to MAX_CARDS, in id order; the counts are the whole board's, and the page
+says how many old finished cards it left off (leftOff). Law: test_the_task_board_goes_online_scrubbed::
+test_a_board_past_the_cap_keeps_every_open_card_and_the_newest_done (+2 red-proofs, both PROVEN).
+
+### REG-3802 - A MAIN'S GEARED SPRITE SHOWED ONLY ITS HELM: THE CREST'S GRID ROW TOOK THE GIF'S OWN HEIGHT (v3903, #154)
+MEASURED on a render of the Characters room (fixture builds): the MAIN Paladin's crest drew art/d2cls_geared_paladin.gif
+(38x89) at 72x168 inside the 76x76 crest - a magnified, blurred helm and shoulders, no figure. The crest is display:grid with
+an auto row, so the img's height:100% had nothing definite to resolve against and the row took the sprite's own tall height;
+the square class art (480x480) hid it, its width giving the same height. The crest's one track is now minmax(0,1fr) both
+ways, and a geared figure (a whole body) is drawn at 1x (img.chx-geared) so its helm and feet stay in frame - measured after:
+72x72, the full armoured figure. The Warlock has no geared GIF and keeps its bare figure as a MAIN, by the v3899 note.
+
 ### REG-3801 - SEVEN LAWS READ RED ON WINDOWS FOR A WINDOWS FACT THEY NEVER ASKED ABOUT (v3903, #107)
 GitHub's Windows proof run on v3901 (43212958628, windows-latest) filed 15 laws ALREADY RED untampered and named each red
 case's assertion. Seven were the law's own instrument, never the product: (1) test_the_rehearsal_render_bound_moves_with_the_load

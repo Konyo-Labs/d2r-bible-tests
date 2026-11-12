@@ -11463,8 +11463,12 @@ input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio
    Vault plates use a 64-72px portrait, scaled with the tile (--vm-crest is 20% of the locker, clamped), so four
    lockers fit a row at 1512 and two or three fit at 901x900. */
 .chx-crest{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif-display);font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--chx-gold,#f0c060);border:1px solid rgba(240,192,96,.45);background:radial-gradient(circle at 50% 30%,rgba(240,192,96,.16),rgba(10,8,5,.9) 70%)}
-.chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
+.chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;grid-template:minmax(0,1fr)/minmax(0,1fr);border-color:rgba(240,192,96,.28);background:radial-gradient(circle at 50% 35%,rgba(240,192,96,.10),rgba(8,6,4,.95) 72%)}
 .chx-crest-sprite img{width:100%;height:100%;object-fit:contain;transform:scale(1.32);transform-origin:50% 42%;display:block}
+/* #154 (REG-3802) - the crest's one grid track is definite, so a sprite's height:100% is the crest's: with an auto row the
+   38x89 geared GIF sized its own row (168px) and the 76px crest showed only its helm. A geared figure is a whole body, drawn
+   at 1x so its helm and feet stay in the frame. */
+.chx-crest-sprite img.chx-geared{transform:none}
 .chx-crest.chx-crest-main{border:2px solid var(--chx-gold,#f0c060);box-shadow:0 0 12px rgba(240,192,96,.45),inset 0 0 10px rgba(240,192,96,.18)}
 #tab-chars .chx-crest.chx-crest-sprite{width:76px;height:76px}
 .vault-mule .chx-crest.chx-crest-sprite{width:var(--vm-crest);height:var(--vm-crest);min-width:64px;min-height:64px;max-width:72px;max-height:72px;border-radius:10px}
@@ -11785,9 +11789,10 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     var c = String(cls || ''), k = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase(), src = own.call(_CHX_CLASS_SPRITE, k) ? _CHX_CLASS_SPRITE[k] : null;
     var letter = esc(c.charAt(0) || '?');
     if (!src) return '<span class="chx-crest" aria-hidden="true">' + letter + '</span>';
-    if (isMain && own.call(_CHX_CLASS_GEARED, k)) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */
+    var geared = isMain && own.call(_CHX_CLASS_GEARED, k);
+    if (geared) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */
     return '<span class="chx-crest chx-crest-sprite' + (isMain ? ' chx-crest-main' : '') + '" aria-hidden="true">'
-      + '<img src="' + esc(src) + '" alt="" loading="lazy" onerror="var p=this.parentNode;p.className=\'chx-crest\';p.textContent=\'' + letter + '\'"></span>';
+      + '<img' + (geared ? ' class="chx-geared"' : '') + ' src="' + esc(src) + '" alt="" loading="lazy" onerror="var p=this.parentNode;p.className=\'chx-crest\';p.textContent=\'' + letter + '\'"></span>';
   }   // a JS string literal, safe inside an onclick="" attribute
   /* REG-3641 - a vault locker's plate wears a class figure from this same map, not from the mule's
      real class. The pick is seeded by the locker name so a reload does not reshuffle it; a neighbor's

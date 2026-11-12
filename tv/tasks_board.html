@@ -128,7 +128,9 @@
     if (typeof at === 'number') age.dataset.at = String(at);
     age.className = (typeof at === 'number' && Date.now() - at > STALE_MS) ? 'stale' : '';
     var n = b.counts || {};
-    document.getElementById('tb-counts').textContent = (n.completed | 0) + ' done · ' + (n.in_progress | 0) + ' in progress · ' + (n.pending | 0) + ' pending';
+    /* REG-3803 - the counts are the whole board's; the finished cards the site did not carry are said, never hidden */
+    document.getElementById('tb-counts').textContent = (n.completed | 0) + ' done · ' + (n.in_progress | 0) + ' in progress · ' + (n.pending | 0) + ' pending'
+      + ((b.leftOff | 0) > 0 ? ' · the ' + (b.leftOff | 0) + ' oldest done not shown' : '');
     /* REG-3218 - the board against the tree, counted: what disagrees, or why it could not be compared */
     var tr = document.getElementById('tb-truth'), t = b.truth;
     tr.className = '';

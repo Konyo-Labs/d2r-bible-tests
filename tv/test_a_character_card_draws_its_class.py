@@ -77,6 +77,14 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
         self.assertNotIn("<span class=\"chx-crest\" aria-hidden=\"true\">' + esc(String(", self.src, "a card still draws a bare letter")
 
     @unittest.skipUnless(NODE, "node is required to run the page's helper - UNMEASURED without it")
+    def test_a_geared_figure_fits_its_crest_whole(self):
+        """REG-3802 (#154) - MEASURED: the 38x89 geared GIF drew at 72x168 in the 76x76 crest (only its helm showed): the
+        crest is a grid whose auto row took the img's own height. Its one track is definite, and a geared body is drawn at 1x."""
+        self.assertIn(".chx-crest.chx-crest-sprite{width:76px;height:76px;border-radius:12px;overflow:hidden;padding:0;"
+                      "grid-template:minmax(0,1fr)/minmax(0,1fr);", self.src, "the crest's grid row may size itself to its figure")
+        self.assertIn("\n.chx-crest-sprite img.chx-geared{transform:none}\n", self.src,
+                      "a geared figure is magnified past its crest again")
+
     def test_the_helper_draws_the_figure_frames_a_main_and_keeps_an_unknown_letter(self):
         """* THE POINT"""
         i = self.src.index("  var _CHX_CLASS_SPRITE = ")
@@ -96,6 +104,9 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
         self.assertIn('src="art/d2cls_geared_paladin.gif"', pal, "a class spelled in lower case found no figure, or a MAIN "
                       "lost its geared figure (v3899 #154)")
         self.assertIn("chx-crest-main", pal, "the MAIN's figure has no gold frame")
+        # REG-3802 (#154) - the geared figure is marked so it is drawn whole; a bare figure is not
+        self.assertIn('<img class="chx-geared" src="art/d2cls_geared_paladin.gif"', pal, "the geared figure is not marked")
+        self.assertNotIn("chx-geared", pal_card + wl_main + sorc, "a bare figure was marked geared")
         self.assertNotIn("<img", monk, "a class the map does not name drew another class's figure")
         self.assertIn(">M</span>", monk)
         self.assertIn(">?</span>", none)
@@ -104,7 +115,7 @@ class ACharacterCardDrawsItsClass(unittest.TestCase):
 RED_PROOF = [
     {"why": "v3899 (#154) - a MAIN draws its bare starting figure again, never its geared one",
      "file": "bible.html",
-     "find": "    if (isMain && own.call(_CHX_CLASS_GEARED, k)) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */\n",
+     "find": "    if (geared) src = _CHX_CLASS_GEARED[k];   /* v3899 (#154) - a MAIN, geared */\n",   # REG-3802 re-aimed
      "replace": "",
      "matches": 1, "needs": "node"},
     {"why": "v3887 (#154) - the in-game card draws its bare letter again",
@@ -115,6 +126,16 @@ RED_PROOF = [
     {"why": "v3887 (#154) - the MAIN loses its gold frame",
      "file": "bible.html",
      "find": "(isMain ? ' chx-crest-main' : '')",
+     "replace": "('')",
+     "matches": 1, "needs": "node"},
+    {"why": "REG-3802 (#154) - the crest's grid row sizes itself to a tall figure again (a MAIN shows only its helm)",
+     "file": "bible.html",
+     "find": "padding:0;grid-template:minmax(0,1fr)/minmax(0,1fr);border-color:",
+     "replace": "padding:0;border-color:",
+     "matches": 1},
+    {"why": "REG-3802 (#154) - the geared figure is no longer marked, so it is magnified like the bare art",
+     "file": "bible.html",
+     "find": "(geared ? ' class=\"chx-geared\"' : '')",
      "replace": "('')",
      "matches": 1, "needs": "node"},
 ]

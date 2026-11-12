@@ -71,6 +71,27 @@ class TheBoardIsScrubbed(unittest.TestCase):
         self.assertLessEqual(len(json.dumps(b, ensure_ascii=False).encode("utf-8")), TB.BOARD_MAX_BYTES)
 
 
+    def test_a_board_past_the_cap_keeps_every_open_card_and_the_newest_done(self):
+        """REG-3803 (his 11-12: "this is not updated https://bull-4-u.com/d2r/tasks") - MEASURED: 218 cards on the Mac and the
+        site kept the OLDEST 200, so #201-#218 (seven open) never left the Mac, and the header counted the cut list. The case
+        above held 150 cards, under the cap, so it could not see the cut."""
+        n = TB.MAX_CARDS + 30
+        cards = [_card(i, "completed" if i <= TB.MAX_CARDS or i % 3 else "in_progress", "card %d" % i) for i in range(1, n + 1)]
+        cards[4] = _card(5, "pending", "an old open card")          # an OLD open card is carried too, never only new ones
+        self.assertGreater(len(cards), TB.MAX_CARDS, "PREMISE: the board is not past the cap")
+        b = TB.board(cards, "big", T0)
+        ids = [c["id"] for c in b["cards"]]
+        opened = [str(c["id"]) for c in cards if c["status"] != "completed"]
+        self.assertTrue(set(opened) <= set(ids), "an open card was left off: %s" % sorted(set(opened) - set(ids)))
+        self.assertIn(str(n), ids, "the newest card was left off")
+        self.assertEqual(len(ids), TB.MAX_CARDS)
+        self.assertEqual(ids, sorted(ids, key=int), "cards out of id order")
+        self.assertEqual(sum(b["counts"].values()), n, "the header counts the cut list, not the board")
+        self.assertEqual(b["counts"]["in_progress"], sum(1 for c in cards if c["status"] == "in_progress"))
+        self.assertEqual(b["leftOff"], n - TB.MAX_CARDS, "the finished cards left off are not said")
+        self.assertNotIn("leftOff", TB.board(cards[:10], "small", T0), "a board under the cap says it left cards off")
+
+
 class ItIsPostedAtItsOwnPace(unittest.TestCase):
 
     def test_first_change_and_refresh(self):
@@ -293,6 +314,16 @@ RED_PROOF = [
      "file": "deploy.sh",
      "find": "cp tv/tasks_board.html \"$DIST/d2r/tasks.html\"",
      "replace": "true",
+     "matches": 1},
+    {"why": "REG-3803 - a board past the cap keeps its oldest 200 cards, so the newest (open ones too) never reach the site",
+     "file": "tv/task_board.py",
+     "find": "    keep, left_off = carried(cards)\n",
+     "replace": "    keep, left_off = sorted(cards or [], key=_id_key)[:MAX_CARDS], 0\n",
+     "matches": 1},
+    {"why": "REG-3803 - the header counts the cut list, not the board",
+     "file": "tv/task_board.py",
+     "find": "    counts = dict((s, sum(1 for c in (cards or []) if _status(c) == s)) for s in STATUSES)\n",
+     "replace": "    counts = dict((s, sum(1 for r in rows if r[\"status\"] == s)) for s in STATUSES)\n",
      "matches": 1},
 ]
 

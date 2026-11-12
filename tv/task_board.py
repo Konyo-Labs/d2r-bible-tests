@@ -147,14 +147,32 @@ def _drift(d):
     return {"kind": _cut(dr.get("kind"), 32), "say": _cut(dr.get("say"), 300)}
 
 
+def _status(c):
+    return c.get("status") if c.get("status") in STATUSES else "pending"
+
+
+def carried(cards):
+    """REG-3803 (his 11-12: "this is not updated https://bull-4-u.com/d2r/tasks") - WHICH CARDS THE SITE KEEPS: every open card,
+    always, then the newest finished ones up to MAX_CARDS, in id order. MEASURED that evening: the board held 218 cards and
+    `sorted(cards)[:MAX_CARDS]` kept the OLDEST 200, so #201-#218 - seven of them open - never reached the site, and its header
+    counted the cut list (16 open where the Mac had 23). -> (cards in id order, finished cards left off)"""
+    allc = sorted(cards or [], key=_id_key)
+    open_ = [c for c in allc if _status(c) != "completed"]
+    done = [c for c in allc if _status(c) == "completed"]
+    room = max(0, MAX_CARDS - len(open_))
+    keep = set(id(c) for c in open_ + (done[len(done) - room:] if room else []))
+    return [c for c in allc if id(c) in keep], len(allc) - len(keep)
+
+
 def board(cards, title, now_ms, truth=None):
     """-> the record the site keeps: {title, at, counts, cards: [{id, subject, status, active, description, phase, drift}],
     truth}. `truth` is tv/task_truth.derive's answer (REG-3217/3218); without one the cards carry no phase and the record no
     truth - never a phase nobody derived."""
     rows = []
     by = (truth or {}).get("byCard") if isinstance(truth, dict) else None
-    for c in sorted(cards or [], key=_id_key)[:MAX_CARDS]:
-        st = c.get("status") if c.get("status") in STATUSES else "pending"
+    keep, left_off = carried(cards)
+    for c in keep:
+        st = _status(c)
         row = {"id": _cut(c.get("id"), 12), "subject": _cut(c.get("subject"), SUBJECT_MAX), "status": st,
                "active": _cut(c.get("activeForm"), ACTIVE_MAX), "description": _cut(c.get("description"), DESC_MAX)}
         if isinstance(by, dict):
@@ -162,8 +180,11 @@ def board(cards, title, now_ms, truth=None):
             row["phase"] = _chip(d) or {"p": "unknown", "why": "this card was not derived"}
             row["drift"] = _drift(d)
         rows.append(row)
-    counts = dict((s, sum(1 for r in rows if r["status"] == s)) for s in STATUSES)
+    # REG-3803 - the header counts the WHOLE board, and says how many finished cards it did not carry
+    counts = dict((s, sum(1 for c in (cards or []) if _status(c) == s)) for s in STATUSES)
     out = {"title": _cut(title or "the task board", 120), "at": int(now_ms), "counts": counts, "cards": rows}
+    if left_off:
+        out["leftOff"] = int(left_off)
     if isinstance(truth, dict):
         sm = truth.get("summary") or {}
         out["truth"] = {"ok": bool(truth.get("ok")), "why": _cut(truth.get("why"), 200) if truth.get("why") else None,
