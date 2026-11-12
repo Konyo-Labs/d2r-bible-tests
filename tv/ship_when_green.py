@@ -673,7 +673,11 @@ def post_land_status(version, run, say, url=STATUS_URL):
         return None  # could not ask; not the same as "the live console is on this version"
     have = None
     if isinstance(data, dict):
-        have = data.get("version") or data.get("build") or (data.get("ship") or {}).get("version")
+        # REG-3777 (11-12) - his console sends its running version as "ver" (the stamp the bump writes into control_app.py);
+        # "version" / "build" / "ship.version" are names it never sends, so after every ship this line said None
+        # ("says None, expected v3900") - a check that had never measured anything.
+        have = (data.get("ver") or data.get("version") or data.get("build")
+                or (data.get("ship") or {}).get("version"))
     if have == version or (isinstance(have, str) and have.rstrip() == version):
         say("ship: post-land /api/status is %s" % version)
         return 0
