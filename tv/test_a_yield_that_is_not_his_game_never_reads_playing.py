@@ -120,7 +120,48 @@ class TheFleetNamesTheWait(unittest.TestCase):
         self.assertEqual(ui.count("playing: 'you are playing'"), 1, "PREMISE: the row's wait table moved")
 
 
+class TheRecordSaysPlayingOnlyForHisGame(unittest.TestCase):
+    """REG-3749 (v3900) - MEASURED 11-12 on Dean's PC: the prover's record read playing: true for hours with no D2R.exe
+    running (self_prove.playing_state False when asked live) - the yes was GitHub's import, and the proof carrier then refused
+    "he is playing". The record's playing is his game only; any other yes leaves it UNASKED (None) and names it in yieldFor."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="tvd_yield_rec_")
+        self.addCleanup(shutil.rmtree, self.d, True)
+
+    def _tick(self, judge):
+        def spawn(*a, **k):
+            raise AssertionError("a proof was started beside a yes")
+        return SP.tick(now_s=100000.0, busy=0, tree=("installed", "fixture"),
+                       census={"state": "stale", "owed": 3, "fingerprint": "fp", "why": "fixture"},
+                       path=os.path.join(self.d, "self_prove.json"), spawn_fn=spawn, env={"TV_SELF_PROVE": "1"},
+                       playing=judge, free=99999)
+
+    def test_an_import_yield_is_not_playing(self):
+        """* THE POINT - Dean 11-12: playing true for hours while GitHub's proofs imported"""
+        r = self._tick(_judge("GitHub's proofs for this commit are being imported", "import-first"))
+        self.assertIsNone(r.get("playing"), "an import yield was recorded as his game: %r" % r.get("playing"))
+        self.assertEqual(r.get("yieldFor"), "import-first")
+
+    def test_a_reason_without_a_key_is_not_playing_either(self):
+        r = self._tick(_judge("something that is not his game", None))
+        self.assertIsNone(r.get("playing"))
+        self.assertEqual(r.get("yieldFor"), "yield")
+
+    def test_baseline_his_game_is_playing_and_no_yield_is_not(self):
+        r = self._tick(_judge(None, None))
+        self.assertIs(r.get("playing"), True, "his own game no longer reads playing in the record")
+        self.assertIsNone(r.get("yieldFor"))
+        r2 = self._tick(lambda: False)
+        self.assertIs(r2.get("playing"), False)
+
+
 RED_PROOF = [
+    {"why": "REG-3749 - the prover's record says playing for an import yield again (Dean 11-12)",
+     "file": "tv/self_prove.py",
+     "find": "            \"playing\": (play_now if (play_now is not True or (play_key is None and not play_why)) else None),\n",
+     "replace": "            \"playing\": play_now,\n",
+     "matches": 1},
     {"why": "v3898 (#207) - a push grading is filed as 'he is playing on this PC' again (his MacBook, 11-11 13:19)",
      "file": "tv/self_prove.py",
      "find": "    if d.get(\"key\") == \"playing\" and play_why:\n",

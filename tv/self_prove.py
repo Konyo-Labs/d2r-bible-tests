@@ -2022,7 +2022,13 @@ def _tick(now_s, busy, tree, census, path, spawn_fn, env, playing=None, free=Non
             # #186 - the last ended prover's own count: {served, of, banked, at}; None until one has said it (UNKNOWN)
             "reuse": (mem.get("reuse") if isinstance(mem.get("reuse"), dict) else None),
             "key": d["key"], "say": d["why"], "census": st, "blind": census.get("blind"),
-            "running": bool(mem.get("pid")), "playing": play_now, "freeMb": free_now,
+            # REG-3749 - "playing" is HIS GAME only. MEASURED 11-12 on Dean's PC: the record read playing: true for hours with no
+            # D2R.exe running (self_prove.playing_state said False when asked) - the judge's yes was "GitHub's proofs are being
+            # imported", and the carrier then refused "he is playing". A yes for any other reason leaves his game UNASKED (None)
+            # and says what the proof gave way to in yieldFor.
+            "running": bool(mem.get("pid")),
+            "playing": (play_now if (play_now is not True or (play_key is None and not play_why)) else None),
+            "yieldFor": ((play_key or ("yield" if play_why else None)) if play_now is True else None), "freeMb": free_now,
             "stoodAside": _int(mem.get("stoodAside")), "asideSurvived": _int(mem.get("asideSurvived")),
             # REG-1674 - the heartbeat, in the lane's own words: how long its log has been still, the bound, the stalls
             "logAgeS": (int(_quiet) if _quiet is not None else None), "silentBoundS": _bound,
