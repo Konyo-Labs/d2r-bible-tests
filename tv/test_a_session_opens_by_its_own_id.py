@@ -119,7 +119,9 @@ class EveryDoorPassesTheIdItCarries(unittest.TestCase):
         code = _code()
         self.assertIn("data-sid=\"' + esc(sid || '') + '\"", code, "the highlight card template carries no id")
         for who in ("bGrail", "bReads", "bRph", "bCov"):
-            self.assertEqual(code.count("%s.n, %s.sid))" % (who, who)), 1, "%s's card is painted without its id" % who)
+            # v3902 (REG-3768) - a card may also hand its tooltip after the id: "<x>.n, <x>.sid, _shRunTip(<x>)))"
+            n = code.count("%s.n, %s.sid))" % (who, who)) + code.count("%s.n, %s.sid, _shRunTip(%s)))" % (who, who, who))
+            self.assertEqual(n, 1, "%s's card is painted without its id" % who)
 
 
 RED_PROOF = [
@@ -140,8 +142,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "#135 - the Best run card is painted without its id",
      "file": "control_ui.html",
-     "find": "bGrail.n, bGrail.sid));",
-     "replace": "bGrail.n));",
+     "find": "bGrail.n, bGrail.sid, _shRunTip(bGrail)));",
+     "replace": "bGrail.n, null, _shRunTip(bGrail)));",
      "matches": 1},
 ]
 

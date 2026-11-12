@@ -85,7 +85,7 @@ RED_PROOF = [
      "replace": "        pass\n",
      "matches": 1},
     {"why": "REG-3780 - the eagle child's answers show in git status again",
-     "file": ".gitignore",
+     "file": "../.gitignore",          # the ROOT one: heart2 resolves tv/ first, and tv/.gitignore exists
      "find": "tv/.eagle_child_*.json\n",
      "replace": "",
      "matches": 1},
