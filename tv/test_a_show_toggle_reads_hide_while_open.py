@@ -25,6 +25,11 @@ class AShowToggleReadsHideWhileOpen(unittest.TestCase):
         b = Board()
         b.open()
         t = b.t
+        # #107 (REG-3813, windows-latest: "the drawer snapped shut with no slide") - the case is about the slide WITH motion
+        # allowed; a Windows Server runner reports prefers-reduced-motion: reduce, where the board rightly does not slide
+        t.send("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "no-preference"}])
+        self.assertTrue(b.run("OUT.m = matchMedia('(prefers-reduced-motion: no-preference)').matches;")["m"],
+                        "PREMISE: motion is not allowed in this tab, so a slide could not be told from none")
         r = b.run("var h = document.createElement('div'); h.id = 'sh-probe'; h.style.cssText = 'position:fixed;left:20px;top:20px;z-index:2147483647;background:#000';"
                   "h.innerHTML = d2jspEvidenceHtml(%s); document.body.appendChild(h);"
                   "var s = h.querySelector('summary'), q = s.getBoundingClientRect(); OUT.x = q.left + 20; OUT.y = q.top + q.height / 2;"

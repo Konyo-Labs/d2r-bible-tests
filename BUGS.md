@@ -142,6 +142,14 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3813 - THE SHOW-TOGGLE LAW READ A WINDOWS RUNNER'S REDUCED MOTION AS A DRAWER THAT SNAPS SHUT (v3904, #107)
+GitHub windows-latest on v3903 (ci/winlaws): test_a_show_toggle_reads_hide_while_open - "the drawer snapped shut with no
+slide" (310 -> 24 between two samples). The law's own header says the board slides both ways and does NOT under reduced
+motion; a Windows Server runner reports prefers-reduced-motion: reduce, so the board was right and the law never said which
+motion it measured. The case now pins prefers-reduced-motion: no-preference through CDP (Emulation.setEmulatedMedia) and
+refuses as a PREMISE when the tab still does not allow motion. The reduced-motion branch its header names stays unmeasured
+by a case - named here, not built.
+
 ### REG-3812 - TWO BROWSER LAWS COULD NOT STAGE THEIR CASE ON WINDOWS FONTS (v3904, #107)
 GitHub windows-latest on v3903 and v3904 (ci/winlaws): test_the_character_builder_fits_at_every_width's round-2 case read
 "PREMISE: no stat label wraps at 1280" and test_the_planner_spinner_stays_under_the_cursor's sockets case read "PREMISE: the
