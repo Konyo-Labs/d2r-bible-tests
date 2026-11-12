@@ -6167,6 +6167,23 @@ def _check_the_fleet_lane_is_reachable():
                         g_on, g_off, g_on + g_off, why))
 
 
+#: REG-3757 - the shelf lanes whose reads are paid Claude reads (shelf_driver.OWED_BY: the chronicle sweep and the vault sweep)
+PAID_READ_LANES = ("chronicle", "vault")
+
+
+def _claude_signed_out():
+    """REG-3757 - is the Claude reader signed out on THIS PC, by the readers' own lamp (control_app._reader_health)? -> its why
+    | None (signed in, unknown, or the lamp could not be asked - UNKNOWN never reads as signed out)"""
+    try:
+        import control_app as _ca
+        lamp = (_serving_console(_ca)._reader_health() or {}).get("claude") or {}
+    except Exception:
+        return None
+    if lamp.get("state") == "off" and lamp.get("needsLogin") is True:
+        return str(lamp.get("why") or "signed out")
+    return None
+
+
 def _check_the_shelf_lanes_are_still_reading():
     """★ A LANE THAT STOPS READING MUST GO RED ON ITS OWN — Konyo, 2026-09-10, which is what
     `shelf_driver.py` was written for at v2909 (REG-908). It shipped 773 lines, a registered gate
@@ -6250,10 +6267,20 @@ def _check_the_shelf_lanes_are_still_reading():
             # beat's own rows named them: chronicle (38 owed, 0 work) and deleter (130 owed, 0 work) - both behind locks
             # his BLIND laws kept shut. The rows are in the beat; the row now names each stopped lane and what it owes.
             _named = []
+            _signed_out = None
             for _r in (beat.get("lanes") or []):
                 if isinstance(_r, dict) and str(_r.get("state") or "").upper() in ("DARK", "STALLED") and _r.get("lane"):
-                    _named.append("%s %s (%s owed)" % (_r["lane"], str(_r["state"]).lower(),
-                                                       _r.get("owed") if _r.get("owed") is not None else "?"))
+                    _say = "%s %s (%s owed)" % (_r["lane"], str(_r["state"]).lower(),
+                                                _r.get("owed") if _r.get("owed") is not None else "?")
+                    # REG-3757 (Dean 11-11: "chronicle dark (51 owed)" while his Claude was signed out - OAuth expired) - a
+                    # lane whose reads are PAID cannot run with the reader signed out; the row names that, so the person at
+                    # the PC sees the one step that unblocks it instead of a bare "dark"
+                    if str(_r["lane"]) in PAID_READ_LANES:
+                        if _signed_out is None:
+                            _signed_out = _claude_signed_out() or ""
+                        if _signed_out:
+                            _say += " - Claude is signed out on this PC, so its paid reads cannot run: sign in (CLAUDE / SIGN IN, top right)"
+                    _named.append(_say)
             return MISSING, ("the shelf driver beat %.1fh ago, but %s%s — a lane in that state has "
                              "stopped reading and the plan being readable does not cover it%s"
                              % (age_h, ", ".join("%d %s" % (v, k) for k, v in sorted(_bad.items())),

@@ -13946,6 +13946,11 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_dark_paid_lane_names_a_signed_out_reader",
+         [sys.executable, os.path.join(HERE, "test_a_dark_paid_lane_names_a_signed_out_reader.py")], 60,
+         needs_app=False,
+         why="v3901 (REG-3757, Dean 11-11) - 'chronicle dark (51 owed)' while Claude was signed out on his PC; a dark paid "
+             "-read lane (chronicle, vault) now names the sign-in that unblocks it, from the readers' own lamp"),
     Gate("test_a_seal_that_found_no_page_owes_no_sighting",
          [sys.executable, os.path.join(HERE, "test_a_seal_that_found_no_page_owes_no_sighting.py")], 60,
          needs_app=False,
