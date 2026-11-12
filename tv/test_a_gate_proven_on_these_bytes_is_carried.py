@@ -1806,9 +1806,9 @@ RED_PROOF = [
     },
     {
         "why": "REG-3808 (#107) - on Windows a law's exists() and realpath() probes go untraced again, and gitignored state carries",
-        "file": "heart2.py",
-        "find": "    if _o.name == \"nt\":\n        _op = _o.path\n",
-        "replace": "    if False:\n        _op = _o.path\n",
+        "file": "gate_trace/sitecustomize.py",
+        "find": "    if _NT:  # LEDGER-TRACE-NT\n",
+        "replace": "    if False:  # LEDGER-TRACE-NT\n",
         "matches": 1, "needs": "windows",
     },
 ]

@@ -151,8 +151,9 @@ Windows, so the sabotage never fired ('pruned' != 'waiting') and the premise rea
 
 ### REG-3808 - ON WINDOWS THE PROOF TRACE NEVER SAW exists() OR realpath(): GITIGNORED STATE WAS CARRIED (v3904, #107)
 GitHub windows-latest on v3903 (the ci/winlaws run): test_a_gate_proven_on_these_bytes_is_carried read "a read of ignored
-local state was carried" and "os.path.realpath is not traced". The trace wraps os.stat / lstat / access / readlink, and on
-POSIX every os.path probe goes through them. On Windows os.path is ntpath, whose exists / lexists / isfile / isdir / islink /
+local state was carried" and "os.path.realpath is not traced". gate_trace/sitecustomize.py (the run_gates ledger's carry
+trace) wraps os.stat / lstat / access / readlink, and on POSIX every os.path probe goes through them (heart2's own trace
+already calls a Windows run incomplete and drops nothing; a first cut wrapped THAT copy and the run stayed red). On Windows os.path is ntpath, whose exists / lexists / isfile / isdir / islink /
 isjunction are bound at import to nt's C fast paths and whose realpath calls nt._getfinalpathname - none reaches os.stat, so a
 Windows PC could bank a proof whose law read gitignored local state, and a realpath probe never keyed its file. Each is now
 a probe of its own when os.name is nt. A new capability, windows (heart2._host_is_windows, the carry rule's CARRY_OS), lets

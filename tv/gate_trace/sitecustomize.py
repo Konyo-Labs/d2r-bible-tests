@@ -471,7 +471,16 @@ def _boot():
     os.lstat = stat_wrap(os.lstat)
     os.access = probe_wrap(os.access)
     os.readlink = probe_wrap(os.readlink)  # LEDGER-TRACE-PROBE
-    # os.path.realpath needs no wrap: it walks the path through os.lstat, which is wrapped above
+    # On POSIX os.path.realpath needs no wrap: it walks the path through os.lstat, which is wrapped above.
+    # REG-3808 (#107, GitHub windows-latest on v3903: "a read of ignored local state was carried", "os.path.realpath is not
+    # traced") - ON WINDOWS os.path IS ntpath, whose exists / lexists / isfile / isdir / islink / isjunction are bound at
+    # import to nt's C fast paths and whose realpath calls nt._getfinalpathname: none reaches the wraps above. Each is a
+    # probe of its own there (a False answer is an absent path, as os.access's).
+    if _NT:  # LEDGER-TRACE-NT
+        for _n in ("exists", "lexists", "isfile", "isdir", "islink", "isjunction", "realpath"):
+            _f = getattr(os.path, _n, None)
+            if _f is not None:
+                setattr(os.path, _n, probe_wrap(_f))
     if hasattr(os, "register_at_fork"):
         os.register_at_fork(after_in_child=after_fork)
     sys.addaudithook(hook)
