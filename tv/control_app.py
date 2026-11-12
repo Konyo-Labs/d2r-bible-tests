@@ -40520,26 +40520,42 @@ def reel_film_is_frozen_non_d2r(now_ms=None):
 
     Uses the unified scenario classifier (d2r_screens.frozen_non_d2r / screen_of) on the newest
     film frames of this reel. A frozen GeForce NOW / Boosteroid idle page or launcher is True;
-    any recent D2R screen, or a changing (not frozen) picture, is False; too few frames is UNKNOWN."""
+    any recent D2R screen, or a changing (not frozen) picture, is False; too few frames is UNKNOWN.
+
+    REG-3762 (#188, GrokBot #230 11-12 on the work ALT: GeForce NOW's "session ended due to inactivity" dialog filmed for
+    54 min then 24+ min more on v3899, 949 of 989 frames byte-identical, no frozen-idle seal) - THE ROLLING REEL'S FRAMES
+    ARE LOOSE. Every recorder writes f_<ms>.jpg straight into hist/ and folds them into reel_<sid>/ only at the seal, and
+    this looked ONLY in reel_<sid>/ under the id the agent's bridge reports (None when :17771 does not answer) - so it
+    answered UNKNOWN on every look and neither frozen clock ever started. Its law stubbed this function. It now takes the
+    fresh frames wherever they are: the reel's folder when the bridge names it, and the loose ones (fresh ones are the
+    rolling reel's - one reel rolls at a time)."""
+    hist = os.environ.get("TV_HIST") or HIST_DIR
+    paths = []
     try:
         sid = _mini_sid()
     except Exception:
-        return None
-    if not sid:
-        return None
-    d = os.path.join(os.environ.get("TV_HIST") or HIST_DIR, "reel_" + str(sid))
+        sid = None
+    if sid:
+        d = os.path.join(hist, "reel_" + str(sid))
+        try:
+            paths += [os.path.join(d, n) for n in os.listdir(d)
+                      if _film_ts(n) is not None and n.lower().endswith(".jpg")]
+        except OSError:
+            pass
     try:
-        names = [n for n in os.listdir(d) if _film_ts(n) is not None and n.lower().endswith(".jpg")]
+        paths += [os.path.join(hist, n) for n in os.listdir(hist)
+                  if _film_ts(n) is not None and n.lower().endswith(".jpg")]
     except OSError:
-        return None
+        pass
     now = _shadow_now_ms() if now_ms is None else int(now_ms)
-    picks = [n for n in sorted(names, key=_film_ts, reverse=True)[:_FROZEN_IDLE_FRAMES]
-             if 0 <= now - _film_ts(n) <= _FROZEN_IDLE_FRESH_S * 1000]
+    _ts = lambda p: _film_ts(os.path.basename(p))
+    picks = [p for p in sorted(set(paths), key=_ts, reverse=True)[:_FROZEN_IDLE_FRAMES]
+             if 0 <= now - _ts(p) <= _FROZEN_IDLE_FRESH_S * 1000]
     if len(picks) < 2:
         return None
     try:
         import d2r_screens as _DS
-        return _DS.frozen_non_d2r([os.path.join(d, n) for n in picks])
+        return _DS.frozen_non_d2r(picks)
     except Exception:
         return None
 

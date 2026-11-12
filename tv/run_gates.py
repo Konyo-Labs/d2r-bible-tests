@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_frozen_cloud_page_is_read_from_its_loose_frames",
+         [sys.executable, os.path.join(HERE, "test_a_frozen_cloud_page_is_read_from_its_loose_frames.py")], 120,
+         why="v3901 (#188, REG-3762) - GrokBot on the work ALT: a frozen GeForce NOW dialog filmed 54+24 min with no seal; "
+             "the judge read only reel_<sid>/ while a rolling reel's frames are loose in hist/ until the seal"),
     Gate("test_a_rolling_reel_that_films_nothing_is_said",
          [sys.executable, os.path.join(HERE, "test_a_rolling_reel_that_films_nothing_is_said.py")], 60,
          why="v3901 (#188, REG-3761) - Dean 11-08: two reels filmed nothing for 31-34 min and no surface said so; the "
