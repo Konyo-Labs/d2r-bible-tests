@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3902** | `(this commit)` | v3902 — the board says where each version is, the Council priests wear their own sprites, a flake is judged per shard |
+| **v3903** | `(this commit)` | v3903 — clean Theatre, the site task board whole, seven Windows laws and the Fleet boot window |
+| **v3902** | `2e874e23` | v3902 — the board says where each version is, the Council priests wear their own sprites, a flake is judged per shard |
 | **v3901** | `7f1a8149` | v3901 — game began at the D2 logo, footage pauses said, frozen cloud pages end, Dean char select |
 | **v3900** | `35a9c0e5` | v3900 — Dean measured and calibrated, the door kept, the watcher armed |
 | **v3899** | `d856baf9` | v3899 — No reel leaves unrecorded, each priest its own picture, one d2jsp vote rule, the likely reds run first |
