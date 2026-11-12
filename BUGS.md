@@ -141,6 +141,14 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 ### REG-3743 - THE PRE-FLIGHT RAN 33 MIN OF LAWS IN AN UNSEEDED WORKTREE, THEN WENT RED ON "Node.js v24.13.0" (v3900, card #200)
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
+### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3903, #200 card #218)
+Over PROVE_MAX (40) tv/preflight.prove_changed left every changed law to GitHub, and the GREEN line still read "the changed laws
+are proven". GitHub then read the REG-3784 proof BLIND - its anchor sat on line 52 and the hunk that made it dead began on 53.
+MEASURED on v3901: 4,749 proofs tamper a changed file; 67 proofs in 39 laws sit within 10 lines of a changed hunk. Now, over the
+cap, changed_hunks reads base..HEAD's -U0 hunks (an unread diff is UNKNOWN, said) and edit_laws picks the laws whose red-proof
+anchors lie within EDIT_PAD lines of a changed line, nearest first, capped at PROVE_MAX; the GREEN line counts the changed laws
+proven here. Law: test_the_preflight_proves_the_laws_at_the_edit (6 red-proofs).
+
 ### REG-3784 - v3901'S GITHUB ROUND READ THE PRE-FLIGHT'S BROWSER LAW BLIND: ITS RED-PROOF CUT A PATTERN NOTHING READ ANY MORE (v3901, #200)
 Proof shard 9 of run 43178653355 (v3901, 3cd26bce4): test_a_version_is_preflighted_before_github_grades_it[4] BLIND - the REG-3310 tamper
 (drop `_Tab(` and `_chrome_up(` from the browser-call pattern) left the law green. REG-3764 split tv/preflight.py's matching into

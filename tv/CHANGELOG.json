@@ -20,7 +20,8 @@
       "REG-3780 - leftover eagle child answers are swept and its runtime files stay out of git status",
       "REG-3781 - the board title says where each version stands, the console keeps it current every minute",
       "REG-3782 - the Travincal Council rows draw Toorc, Geleb and Ismail with their own sprites (#91)",
-      "REG-3783 - a PC stale at boot reads UPDATING before its proof import counts arrive, it read BLOCKED"
+      "REG-3783 - a PC stale at boot reads UPDATING before its proof import counts arrive, it read BLOCKED",
+      "Over its 40-law cap the pre-flight proves the laws whose red-proofs sit at the edit, and says how many (#200, REG-3785)"
     ]
   },
   {

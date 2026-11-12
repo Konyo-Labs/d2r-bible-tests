@@ -13973,6 +13973,10 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_a_council_group_row_draws_each_priests_sprite.py")], 360,
          why="v3902 (#91, REG-3782) - his 11-12 ruling 'show their own sprites': the Bosses chip and the Runes row that name "
              "the Council drew one shared picture; a group row draws Toorc, Geleb and Ismail's own sprites"),
+    Gate("test_the_preflight_proves_the_laws_at_the_edit",
+         [sys.executable, os.path.join(HERE, "test_the_preflight_proves_the_laws_at_the_edit.py")], 120,
+         why="v3903 (REG-3785, #200) - v3901 changed 1,426 laws, over the 40 the pre-flight proves, so it proved none and a "
+             "BLIND proof one line from its edit cost a GitHub round: over the cap the laws at the edit are proved here"),
     Gate("test_the_board_title_says_where_each_version_is",
          [sys.executable, os.path.join(HERE, "test_the_board_title_says_where_each_version_is.py")], 120,
          why="v3902 (REG-3781) - his board read 'v3894 shipping' while v3900 was live: the console derives the title's version "

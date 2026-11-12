@@ -328,7 +328,73 @@ def prove_base(version=None, _git_=None):
     return None
 
 
-def prove_changed(version=None, here=HERE, prove_max=PROVE_MAX, _run=None, _git_=None, _gates=None, say=print):
+#: v3903 (REG-3785, #200 card #218) - PROOFS AT THE EDIT. v3901 changed 1,426 laws, over the 40 this PC proves, so the
+#: pre-flight proved NONE and said "the changed laws are proven"; GitHub then read test_a_version_is_preflighted_before_
+#: github_grades_it[4] BLIND - its red-proof cut a pattern copy REG-3764 had left dead ONE line above the edit (REG-3784). A
+#: proof goes blind or invalid where the code around its anchor moved, so when the changed set is over the cap the laws whose
+#: anchors sit within EDIT_PAD lines of a changed line are proved here, nearest first. MEASURED on v3901: 4,749 proofs tamper a
+#: changed file; 67 proofs in 39 laws sit within 10 lines of a changed hunk.
+EDIT_PAD = 10
+
+
+def changed_hunks(base, files, _git_=None):
+    """-> {file: [(first, last)]} the line ranges base..HEAD changed, HEAD's numbering (a pure deletion is the line after it).
+    A file whose diff will not read maps to None - UNKNOWN, never "nothing changed there"."""
+    g = _git_ or _git
+    out = {}
+    for f in files:
+        ok, d = g("diff", "-U0", "%s..HEAD" % base, "--", f)
+        if not ok:
+            out[f] = None
+            continue
+        spans = []
+        for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", d, re.M):
+            lo, n = int(m.group(1)), int(m.group(2) if m.group(2) is not None else 1)
+            spans.append((lo, lo + max(n, 1) - 1) if n else (lo + 1, lo + 1))
+        out[f] = spans
+    return out
+
+
+def edit_laws(hunks, here=HERE, pad=EDIT_PAD, _gates=None, _proofs=None, _read=None):
+    """The laws with a red-proof whose anchor lies within `pad` lines of a changed line. -> [(distance, law)] nearest first.
+
+    `hunks` is changed_hunks()'s map. A proof's file resolves as heart2 resolves it (tv/ first, then the root); an anchor that
+    no longer matches is left to the anchor census, which already refuses it."""
+    if not any(hunks.values()):
+        return []                                     # nothing changed that a proof could sit beside: no gate is read
+    import heart2 as _h2
+    gates = _gates() if _gates is not None else _h2.gate_files(say=lambda *a, **k: None)
+    texts, best = {}, {}
+    for name, filename in gates:
+        proofs = (_proofs or _h2.red_proofs_in)(filename) or []
+        for x in proofs:
+            if not isinstance(x, dict):
+                continue
+            rel, find = str(x.get("file") or ""), x.get("find") or ""
+            key = os.path.relpath(_h2.resolve_proof_target(here, rel), os.path.dirname(here)).replace(os.sep, "/")
+            spans = hunks.get(key)
+            if not spans or not find:
+                continue
+            if key not in texts:
+                try:
+                    texts[key] = (_read or (lambda k: io.open(os.path.join(os.path.dirname(here), k), encoding="utf-8",
+                                                               errors="replace").read()))(key)
+                except OSError:
+                    texts[key] = None
+            src = texts[key]
+            k = src.find(find) if src else -1
+            if k < 0:
+                continue
+            a = src.count("\n", 0, k) + 1
+            b = a + find.count("\n")
+            d = min(0 if (lo <= b and a <= hi) else min(abs(lo - b), abs(a - hi)) for lo, hi in spans)
+            if d <= pad and d < best.get(name, pad + 1):
+                best[name] = d
+    return sorted((d, n) for n, d in best.items())
+
+
+def prove_changed(version=None, here=HERE, prove_max=PROVE_MAX, _run=None, _git_=None, _gates=None, say=print,
+                  _edit=None):
     """heart2 --prove over the laws changed since prove_base(version), browser laws left out.
     -> (owed [line], names proved, why-or-None)"""
     base = prove_base(version, _git_)
@@ -351,10 +417,30 @@ def prove_changed(version=None, here=HERE, prove_max=PROVE_MAX, _run=None, _git_
         say("preflight: no non-browser law changed since %s - nothing to prove" % base)
         return [], [], None
     if len(names) > prove_max:
-        say("preflight: %d laws changed since %s - over the %d this PC proves; GitHub proves them (not passed here)"
-            % (len(names), base, prove_max))
-        return [], [], None
-    say("preflight: proving %d changed law(s) since %s" % (len(names), base))
+        def _at_edit():
+            hunks = changed_hunks(base, changed, _git_)
+            unread = sorted(f for f, v in hunks.items() if v is None)
+            if unread:
+                say("preflight: %d changed file(s) would not diff (%s) - the laws at their edits are UNKNOWN here, GitHub's"
+                    % (len(unread), ", ".join(unread[:3])))
+            return edit_laws(hunks, here)
+        try:
+            near = (_edit or _at_edit)()
+        except Exception as e:
+            near = None
+            say("preflight: the laws at the edit would not compute (%s) - UNKNOWN" % type(e).__name__)
+        allowed = set(names)
+        picked = [n for _d, n in (near or []) if n in allowed][:prove_max]
+        if not picked:
+            say("preflight: %d laws changed since %s - over the %d this PC proves, and none has a red-proof at the edit; "
+                "GitHub proves them (not passed here)" % (len(names), base, prove_max))
+            return [], [], None
+        say("preflight: %d laws changed since %s - over the %d this PC proves; proving the %d whose red-proofs sit within %d "
+            "line(s) of a changed line (REG-3785), GitHub proves the other %d" % (len(names), base, prove_max, len(picked),
+                                                                                EDIT_PAD, len(names) - len(picked)))
+        names = picked
+    else:
+        say("preflight: proving %d changed law(s) since %s" % (len(names), base))
     cmd = ([] if os.name == "nt" else ["nice", "-n", "10"]) + [sys.executable, "heart2.py", "--prove"] + names
     r = (_run or subprocess.run)(cmd, cwd=here, env=_law_env(), capture_output=True, text=True, encoding="utf-8",
                                  errors="replace", timeout=3 * 3600)
@@ -712,7 +798,7 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         unknown.append("render: " + rwhy)
         say("preflight: " + unknown[-1])
     if prove:
-        owed, _proved, why = (_prove or (lambda: prove_changed(version, here, say=say)))()
+        owed, proved, why = (_prove or (lambda: prove_changed(version, here, say=say)))()
         if why:
             say("preflight: the changed laws were not proved - %s" % why)
             return (1 if reds else 2), reds
@@ -726,9 +812,11 @@ def preflight(cap_s=CAP_S, workers=WORKERS, prove=True, here=HERE, say=print, ve
         say("preflight: UNKNOWN - a Mac-only gate the main push runs was owed and could not be measured here: %s"
             % "; ".join(unknown)[:300])
         return 2, []
+    # REG-3785 - say what was PROVEN, never more: over the cap only the laws at the edit are, and v3901's line said all were
     say("preflight: GREEN - %d law(s) ran clean%s%s, anchors hold" % (
         len(s["run"]) - len(skipped), (" (%d skipped, said above)" % len(skipped)) if skipped else "",
-        ", the changed laws are proven" if prove else ""))
+        (", %d changed law(s) proven here (the rest, if any, are GitHub's - said above)" % len(proved or [])) if prove
+        else ""))
     return 0, []
 
 
