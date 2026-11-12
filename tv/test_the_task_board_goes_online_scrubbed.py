@@ -65,10 +65,24 @@ class TheBoardIsScrubbed(unittest.TestCase):
         self.assertEqual(b["at"], T0)
 
     def test_a_huge_board_gives_up_words_never_cards(self):
-        cards = [_card(i, "pending", "card %d" % i, "x" * 5000) for i in range(150)]
+        n = TB.MAX_CARDS            # REG-3803 - sized from the caps, so the trim is really reached
+        cards = [_card(i, "pending", "card %d " % i + "y" * 200, "x" * 5000) for i in range(n)]
+        from unittest import mock
+        with mock.patch.object(TB, "BOARD_MAX_BYTES", 10 ** 9):          # MEASURED untrimmed, never estimated
+            untrimmed = len(json.dumps(TB.board(cards, "big", T0), ensure_ascii=False).encode("utf-8"))
+        self.assertGreater(untrimmed, TB.BOARD_MAX_BYTES, "PREMISE: this board never reaches the byte cap")
         b = TB.board(cards, "big", T0)
-        self.assertEqual(len(b["cards"]), 150, "a card was dropped to fit")
+        self.assertEqual(len(b["cards"]), n, "a card was dropped to fit")
         self.assertLessEqual(len(json.dumps(b, ensure_ascii=False).encode("utf-8")), TB.BOARD_MAX_BYTES)
+
+    def test_the_worker_takes_the_whole_board_the_mac_sends(self):
+        """REG-3803 - the builder's caps and the worker's must meet: a board the Mac builds is one the site keeps"""
+        js = io.open(os.path.join(ROOT, "functions", "api", "roster.js"), encoding="utf-8").read()
+        import re
+        body = int(re.search(r"export const TASKS_MAX_BODY = (\d+);", js).group(1))
+        cards = int(re.search(r"!Array\.isArray\(b\.cards\) \|\| b\.cards\.length > (\d+)\)", js).group(1))
+        self.assertGreaterEqual(cards, TB.MAX_CARDS, "the worker refuses a board of MAX_CARDS cards")
+        self.assertGreater(body, TB.BOARD_MAX_BYTES + 4096, "the worker refuses a board at the builder's byte cap")
 
 
     def test_a_board_past_the_cap_keeps_every_open_card_and_the_newest_done(self):
@@ -324,6 +338,11 @@ RED_PROOF = [
      "file": "tv/task_board.py",
      "find": "    counts = dict((s, sum(1 for c in (cards or []) if _status(c) == s)) for s in STATUSES)\n",
      "replace": "    counts = dict((s, sum(1 for r in rows if r[\"status\"] == s)) for s in STATUSES)\n",
+     "matches": 1},
+    {"why": "REG-3803 - the worker refuses a board of the builder's MAX_CARDS again (the site keeps 400 of 1000)",
+     "file": "functions/api/roster.js",
+     "find": "!Array.isArray(b.cards) || b.cards.length > 1000) {",
+     "replace": "!Array.isArray(b.cards) || b.cards.length > 400) {",
      "matches": 1},
 ]
 

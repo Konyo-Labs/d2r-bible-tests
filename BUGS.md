@@ -178,7 +178,10 @@ the Mac's 218 cards - task_board.board cut sorted(cards)[:MAX_CARDS], the OLDEST
 #212 #213 #215 #217 #218) never reached the site, and the header counted the cut list (7 in progress + 9 pending where the
 Mac had 23 open). The law's huge-board case held 150 cards, under the cap, so it could not see the cut. Now carried(): every
 open card always, then the newest finished ones up to MAX_CARDS, in id order; the counts are the whole board's, and the page
-says how many old finished cards it left off (leftOff). Law: test_the_task_board_goes_online_scrubbed::
+says how many old finished cards it left off (leftOff). Then his ask, same evening: "changing the cap to 1000? so it can
+render the proper synced amount the local does" - MAX_CARDS 200 -> 1000 and BOARD_MAX_BYTES 180 KB -> 1.5 MB (219 cards
+measured 275 KB untrimmed, ~1.26 KB a card), and the worker's own limits moved with them (1000 cards, 1.6 MB a post) - a
+new case reads both sides so the builder and the worker always meet. Law: test_the_task_board_goes_online_scrubbed::
 test_a_board_past_the_cap_keeps_every_open_card_and_the_newest_done (+2 red-proofs, both PROVEN).
 
 ### REG-3802 - A MAIN'S GEARED SPRITE SHOWED ONLY ITS HELM: THE CREST'S GRID ROW TOOK THE GIF'S OWN HEIGHT (v3903, #154)

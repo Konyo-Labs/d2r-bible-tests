@@ -19,11 +19,13 @@ import re
 
 TASKS_DIR = os.path.join(os.path.expanduser("~"), ".claude", "tasks")
 NAMES_FILE = "_session_names.json"
-MAX_CARDS = 200
+# REG-3803 (his 11-12: "changing the cap to 1000? so it can render the proper synced amount the local does") - the site
+# carries the whole board: 219 cards measured 275 KB untrimmed (~1.26 KB a card), so 1000 is ~1.3 MB, under the cap below
+MAX_CARDS = 1000
 SUBJECT_MAX = 300
 ACTIVE_MAX = 120
 DESC_MAX = 1500
-BOARD_MAX_BYTES = 180 * 1024
+BOARD_MAX_BYTES = 1536 * 1024       # REG-3803 - words are given up past this, never cards
 POST_MIN_GAP_MS = 2 * 60 * 1000          # a change is published at most every 2 min
 POST_REFRESH_MS = 30 * 60 * 1000         # an unchanged board is re-posted every 30 min (the page says how old it is)
 STATUSES = ("in_progress", "pending", "completed")

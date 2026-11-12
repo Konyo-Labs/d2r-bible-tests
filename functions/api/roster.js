@@ -422,7 +422,7 @@ export async function approvePost(env, sig, body) {
 // it was signed (tv/task_board.py). One KV record, replaced; a write closer than TASKS_MIN_GAP_MS to the last is refused, so a
 // busy board cannot spend the KV budget. GET ?tasks=1 hands it to /d2r/tasks.html (behind the site password).
 export const TASKS_KEY = "tasks:board";
-export const TASKS_MAX_BODY = 200000;
+export const TASKS_MAX_BODY = 1600000;   // REG-3803 - the whole board (task_board BOARD_MAX_BYTES 1.5 MB + the envelope)
 export const TASKS_MIN_GAP_MS = 60 * 1000;
 export async function tasksPost(env, bytes, sig, body) {
   const kv = env && env.TZ_HISTORY;
@@ -435,7 +435,7 @@ export async function tasksPost(env, bytes, sig, body) {
     return refuse("roster would not take this board: signedAt is missing or not within 15 min of now");
   }
   const b = body.board;
-  if (!b || typeof b !== "object" || !Array.isArray(b.cards) || b.cards.length > 400) {
+  if (!b || typeof b !== "object" || !Array.isArray(b.cards) || b.cards.length > 1000) {   // REG-3803 - task_board MAX_CARDS
     return refuse("roster would not take this board: it has no list of cards");
   }
   let registered;
