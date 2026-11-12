@@ -484,6 +484,9 @@ def digest(rows, hist_dir, is_read, now_ms, make=_make_thumb, witness_ids=None, 
         out["notGame"] = len(_kept) - len(_game)
         _kept = _game
     groups = _kept
+    # REG-3763 (#213, GrokBot #230 11-12: "work ALT 16 against 134 on its own console") - EVERY run this PC holds, not the
+    # MAX_SESSIONS it publishes, so a reader can say its real count and how many of them it was shown
+    out["runs"] = len(groups)
     for g in groups[:MAX_SESSIONS]:
         reads = [r for r in g if is_read(r)]
         moments = _rp.session_moments(g) or []

@@ -17372,7 +17372,13 @@ window._lockMark = function(isOpen, px, label){
       var r = f.owners[o] || {};
       if (r.n == null) return o + ' UNKNOWN';
       var m = (typeof r.ageMs === 'number') ? Math.round(r.ageMs / 60000) : null;
-      return o + ' ' + r.n + (m == null ? '' : ' (as of ' + (m < 120 ? m + ' min' : Math.round(m / 60) + ' h') + ' ago)');
+      var ago = (m == null ? '' : 'as of ' + (m < 120 ? m + ' min' : Math.round(m / 60) + ' h') + ' ago');
+      /* REG-3763 (#213, GrokBot #230 11-12: every PC read 16 - the window it publishes - while the work ALT holds 134) -
+         its own run count when its copy says it, with how many of them this PC was shown; an older copy says its
+         number is the window, never passes it off as the PC's total */
+      if (typeof r.total === 'number' && r.total >= r.n)
+        return o + ' ' + r.total + ' runs (' + r.n + ' shown' + (ago ? ', ' + ago : '') + ')';
+      return o + ' ' + r.n + ' newest shown, total UNKNOWN' + (ago ? ' (' + ago + ')' : '');
     });
     return parts.length ? '<div class="sh-fleet-src" title="each PC is counted from the copy of its published sessions this PC keeps">counts every PC \u00b7 ' + esc(parts.join(' \u00b7 ')) + '</div>' : '';
   }
@@ -17418,7 +17424,20 @@ window._lockMark = function(isOpen, px, label){
     if (bReads) cards.push(card('⚡', 'Most reads', _shRunName(bReads), _kpiFmt(bReads.reads) + ' reads', bReads.n, bReads.sid));
     if (bRph) cards.push(card('📈', 'Top reads/hr', _shRunName(bRph), _kpiFmt(bRph.rph) + ' /hr', bRph.n, bRph.sid));
     if (bCov) cards.push(card('📊', 'Best coverage', 'Session ' + bCov.n, bCov.cov + '%', bCov.n, bCov.sid));
-    cards.push(card('🔥', 'Streak', streak ? (streak + ' day' + (streak > 1 ? 's' : '')) : '—', runs.length + ' run' + (runs.length > 1 ? 's' : '') + ' logged'));
+    /* REG-3763 (#213) - "N runs logged" counted the rows this PC holds (its own + each other PC's 16-run window); each other PC
+       counts its own total when its copy says it, and a PC whose copy does not say makes the figure a floor ("at least") */
+    var _logged = runs.length, _floor = false;
+    try {
+      var _fo = (window._shFleet && window._shFleet.owners) || {};
+      if (Object.keys(_fo).length) {        /* an answer with no owners map (older shape) keeps the rows it carries */
+        _logged = _cmpList().length;
+        Object.keys(_fo).forEach(function(o){ var r = _fo[o] || {};
+          if (typeof r.total === 'number' && typeof r.n === 'number' && r.total >= r.n) _logged += r.total;
+          else if (typeof r.n === 'number') { _logged += r.n; _floor = true; } });
+      }
+    } catch (eLg) { _logged = runs.length; }
+    cards.push(card('🔥', 'Streak', streak ? (streak + ' day' + (streak > 1 ? 's' : '')) : '—',
+      (_floor ? 'at least ' : '') + _logged + ' run' + (_logged > 1 ? 's' : '') + ' logged'));
     return '<div class="sh-hi">' + cards.join('') + '</div>';
   }
   function thDossierLine(b){

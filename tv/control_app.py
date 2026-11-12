@@ -6510,11 +6510,15 @@ def _shelf_fleet(refresh=True, now_ms=None):
                 rows.append({"owner": owner, "sessionId": x.get("sessionId"), "t0": x.get("t0"), "t1": x.get("t1"),
                              "reads": rd if isinstance(rd, int) and not isinstance(rd, bool) else None,
                              "chron": ch if isinstance(ch, int) and not isinstance(ch, bool) else None})
-            summ = {"cachedAt": rec.get("t"), "rows": rows}
+            _tot = (rec.get("digest") or {}).get("runs")
+            summ = {"cachedAt": rec.get("t"), "rows": rows,
+                    # REG-3763 - the PC's own run count (all its runs, not the window it publishes); None = a copy from
+                    # before it was published, never taken from the window's length
+                    "total": _tot if isinstance(_tot, int) and not isinstance(_tot, bool) else None}
             _SHELF_FLEET_MEMO[path] = (mt, summ)
         at = summ.get("cachedAt")
         age = (now - int(at)) if isinstance(at, (int, float)) else None
-        out["owners"][owner] = {"cachedAt": at, "ageMs": age, "n": len(summ["rows"])}
+        out["owners"][owner] = {"cachedAt": at, "ageMs": age, "n": len(summ["rows"]), "total": summ.get("total")}
         out["sessions"].extend(summ["rows"])
         if age is None or age > SHELF_FLEET_STALE_S * 1000:
             stale.append(owner)

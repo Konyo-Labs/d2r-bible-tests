@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_the_shelf_says_each_pcs_real_run_count",
+         [sys.executable, os.path.join(HERE, "test_the_shelf_says_each_pcs_real_run_count.py")], 120,
+         why="v3901 (#213, REG-3763) - GrokBot: every PC read 16 (the window it publishes) against the work ALT's own 134; "
+             "the digest publishes its run count and the header and 'runs logged' say it"),
     Gate("test_a_frozen_cloud_page_is_read_from_its_loose_frames",
          [sys.executable, os.path.join(HERE, "test_a_frozen_cloud_page_is_read_from_its_loose_frames.py")], 120,
          why="v3901 (#188, REG-3762) - GrokBot on the work ALT: a frozen GeForce NOW dialog filmed 54+24 min with no seal; "
