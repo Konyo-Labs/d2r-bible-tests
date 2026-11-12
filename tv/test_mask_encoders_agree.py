@@ -185,6 +185,16 @@ class TheTwoEncodersAgreeByteForByte(unittest.TestCase):
             except Exception:
                 pass
 
+    def test_a_page_is_ready_only_with_its_lsr(self):
+        """REG-3800 - 'complete' without window.LSR is NOT ready: the snippet refuses there (v3215), so a case that ran on such
+        a page went red for the harness's reason (v3902's round 2 on GitHub)"""
+        url = "http://127.0.0.1:17999/board?app=1"
+        self.assertFalse(_page_ready(url, "complete", False), "a complete page with no LSR was taken as ready")
+        self.assertTrue(_page_ready(url, "interactive", True))
+        self.assertTrue(_page_ready(url, "complete", True))
+        self.assertFalse(_page_ready("about:blank", "complete", True), "the tab's about:blank placeholder was taken as ready")
+        self.assertFalse(_page_ready(url, "loading", True))
+
     def _js_mask(self, owned, extra=None):
         """Execute the shipped snippet in headless Chrome. -> dict | None (None = could not ask)"""
         try:
@@ -278,12 +288,19 @@ class TheTwoEncodersAgreeByteForByte(unittest.TestCase):
                 _patience = 1.0
             _deadline = time.time() + 15.0 * _patience
             while time.time() < _deadline:
+                # REG-3800 - LSR WHERE THE SNIPPET READS IT: the top window, else the board frame #tvd-eng (control_app's hop,
+                # v3213) - the served console's own window has none (measured: 'undefined' for 20 s), its board frame does
                 _st = tab.ev("[location.href, document.readyState, "
-                             "!!(window.LSR && window.LSR.getItem)]") or []
+                             "!!(window.LSR && window.LSR.getItem) || (function(){ try { var f = document.getElementById('tvd-eng'),"
+                             " w = f && f.contentWindow; return !!(w && w.LSR && w.LSR.getItem); } catch (e) { return false; } })()]") or []
                 _href = str(_st[0]) if len(_st) > 0 else ""
                 _rs = str(_st[1]) if len(_st) > 1 else ""
                 _lsr = bool(_st[2]) if len(_st) > 2 else False
-                if _href and _href != "about:blank" and (_rs == "complete" or (_rs == "interactive" and _lsr)):
+                # REG-3800 (v3902's round 2, agent-suite (5) on GitHub: test_owning_EVERYTHING - "the js encoder refused:
+                # this page has no LSR") - 'complete' alone was taken as ready, and the snippet REFUSES without window.LSR
+                # (v3215: no bare-localStorage fallback), so a page complete before its LSR wrapper bound raced one case red.
+                # Ready is the served page AND its LSR; a page that never binds one is a skip, never a pass.
+                if _page_ready(_href, _rs, _lsr):
                     break
                 time.sleep(0.2)
             else:
@@ -413,7 +430,20 @@ class TheGuardCanFail(unittest.TestCase):
         self.assertIn("return None", src)
 
 
+def _page_ready(href, ready_state, has_lsr):
+    """REG-3800 - is the served page ready for the shipped mask snippet? -> bool. It needs the page (never the tab's about:blank
+    placeholder), parsed (interactive or complete) AND its window.LSR wrapper - the snippet refuses without one."""
+    return bool(href and href != "about:blank" and ready_state in ("interactive", "complete") and has_lsr)
+
+
 RED_PROOF = [
+    {
+        'why': 'REG-3800 - a complete page with no LSR is taken as ready again; a case races the snippet\'s refusal red',
+        'file': 'tv/test_mask_encoders_agree.py',
+        'find': '    return bool(href and href != "about:blank" and ready_state in ("interactive", "complete") and has_lsr)\n',
+        'replace': '    return bool(href and href != "about:blank" and (ready_state == "complete" or (ready_state == "interactive" and has_lsr)))\n',
+        'matches': 1,
+    },
     {
         'why': 'binding `_fm` to a different module means the mask on the wire is minted by code '
                'no case in this file compares; the production-encoder join must go red',
