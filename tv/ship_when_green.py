@@ -263,7 +263,7 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
         killed = set()
         if isinstance(tot, dict) and tot.get("lost") and not tot.get("fix"):
             killed = killed_shards(rid, tot.get("lost"), run)          # REG-3292 - a runner shutdown is no law's fault
-        due, why = PS.makeup_due(tot, killed=killed, attempt=run_attempt(rid, run))   # #146 - a first attempt's clean red
+        due, why = PS.makeup_due(tot, killed=killed, attempt=red_shard_tries(rid, tot, run))   # #146 / REG-3770 per shard
         if not due:
             say("ship: REG-3270 not made up - %s" % (why if tot is not None else "the census could not be read (UNKNOWN)"))
             made[rid] = None
@@ -286,6 +286,41 @@ def makeup(sha, runs, run, say, made, clock, tmp=None):
     finally:
         if tmp is None:
             shutil.rmtree(d, ignore_errors=True)
+
+
+def red_shard_tries(rid, tot, run):
+    """REG-3770 (#200, v3900's round 11-12) - HOW MANY TIMES WERE THE SHARDS A LAW WENT RED IN REALLY GRADED? -> int | None.
+
+    MEASURED on run 43156415620: attempt 1 left shards 10 (proofs cut by the bound), 11 and 14 (the war-stash law red once,
+    untampered) red; GitHub's proof-keys finisher re-ran ONLY shard 10, which made the run attempt 2 - and makeup_due, asked
+    with the RUN's attempt, read the two never-re-run shards as "red untampered AGAIN on attempt 2 - real". A job carried over
+    into a later attempt keeps its first start time (its id changes); a job really re-run starts again. So a shard's tries are
+    its DISTINCT start times across the run's attempts, and the answer is the most any red shard was tried. With no named red
+    shard, or on a first attempt, it is the run's attempt (the old rule). Any attempt's job list that will not read, or a red shard with no start
+    time, is None - UNKNOWN is never a first try."""
+    import json
+    att = run_attempt(rid, run)
+    shards = sorted(set(str(f[4]) for f in ((tot or {}).get("fix") or []) if isinstance(f, (list, tuple)) and len(f) > 4))
+    if att is None or att == 1 or not shards:
+        return att          # a first attempt graded every shard once - nothing to ask
+    seen = dict((k, set()) for k in shards)
+    for a in range(1, att + 1):
+        r = run(["gh", "api", "repos/%s/actions/runs/%s/attempts/%d/jobs?per_page=100" % (CV.REPO_SLUG, rid, a)],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if getattr(r, "returncode", 1) != 0:
+            return None
+        try:
+            jobs = (json.loads(r.stdout or "{}") or {}).get("jobs") or []
+        except ValueError:
+            return None
+        for j in jobs:
+            nm = str((j or {}).get("name") or "")
+            k = nm[len("shard "):].strip() if nm.startswith("shard ") else None
+            if k in seen and j.get("started_at"):
+                seen[k].add(str(j["started_at"]))
+    if any(not v for v in seen.values()):
+        return None
+    return max(len(v) for v in seen.values())
 
 
 def run_attempt(rid, run):
