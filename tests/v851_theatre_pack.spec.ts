@@ -175,8 +175,12 @@ test.describe('v851 theatre pack (live control app)', () => {
     await cards.first().click();
     await page.waitForTimeout(400);
     await expect(page.locator('#th-shelfov')).toBeHidden();
-    await gotoReadBeat(page);   // v918.4 — the loaded reel may park on footage/intake; the read line lives on READ beats
-    await expect(page.locator('.th-airead')).toHaveCount(1);
+    const loadedCap = await gotoReadBeat(page);   // v918.4 — the loaded reel may park on footage/intake; the read line lives on READ beats
+    expect(loadedCap, 'the session loaded from the shelf reached no READ beat').toMatch(/read #\d+/);
+    // #210 (clean theatre): the AI read line heads the read panel (closed by default), never the caption bar
+    const drawer = page.locator('#th-drawer');
+    if (await drawer.isHidden()) { await page.keyboard.press('i'); await page.waitForTimeout(300); }
+    await expect(page.locator('#th-drawer .th-airead')).toHaveCount(1);
   });
 
   test('cinema ⛶ fills the window and Esc exits', async ({ page }) => {
