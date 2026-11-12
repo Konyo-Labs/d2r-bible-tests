@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3899** | `(this commit)` | v3899 — No reel leaves unrecorded, each priest its own picture, one d2jsp vote rule, the likely reds run first |
+| **v3900** | `(this commit)` | v3900 — Dean measured and calibrated, the door kept, the watcher armed |
+| **v3899** | `d856baf9` | v3899 — No reel leaves unrecorded, each priest its own picture, one d2jsp vote rule, the likely reds run first |
 | **v3898** | `c1337fe2` | v3898 — hourly parts link into one game, CONNECTING is a named door, d2jsp sellers read, Shelf boxes fit |
 | **v3897** | `76f7e996` | v3897 — The ship reads its own rounds honestly - and four Windows locks open |
 | **v3896** | `95f638ed` | v3896 — the ship never races or writes its own tree, and the Uniques cards are drawn big |

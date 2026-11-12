@@ -1,5 +1,26 @@
 [
   {
+    "ver": "v3900",
+    "date": "2026-11-12",
+    "items": [
+      "A hand deploy finds its one Cloudflare account, or says why it deploys nothing (REG-3735)",
+      "A Publish watch stuck on a queued run ends when the live page already serves the version (REG-3736)",
+      "Relook probes after a launcher seal are counted apart, never a session cut in parts (#188, REG-3737)",
+      "The console fixed working homes are never old scratch nobody collects (REG-3738)",
+      "A loss the hunt documented closes out as documentation, every undocumented loss stays red (#217, REG-3739)",
+      "An update stopped mid-checkout lands on the next pull, its own new files are never in the way (REG-3740)",
+      "A PC importing its proofs reads UPDATING with the import count, a drain waiting on it is no wound (REG-3741)",
+      "A game that starts inside an hourly part says its part 1 on that card (#188, REG-3742)",
+      "The pre-flight seeds its worktree by copy, never a link, and a demos red names its cause (#200, REG-3743)",
+      "A Windows title bar with its text is trimmed from the game area (#185, REG-3744)",
+      "The D2 logo, first door of every session, is never dropped as warm-up blank (#188, REG-3745)",
+      "One nickname list in every search bar, cta and sunders included, none becomes a d2jsp search (REG-3746)",
+      "The Join Game lobby is read on a darker PC by its measured box and its centre fire logo (#185, REG-3747)",
+      "Battle net open arms the shadow watcher, a 2 s look for the game the moment it starts (#188, REG-3748)",
+      "The prover record says playing for his game only, an import or other yield is named apart (#207, REG-3749)"
+    ]
+  },
+  {
     "ver": "v3899",
     "date": "2026-11-11",
     "items": [
