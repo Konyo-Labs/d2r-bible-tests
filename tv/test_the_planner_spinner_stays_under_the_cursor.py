@@ -120,6 +120,11 @@ class ThePlannerSpinnerStaysUnderTheCursor(unittest.TestCase):
                     # REG-2937 - and the pane is left SCROLLED (a nudge when centring the field did not scroll it), so a
                     # repaint that sends it back to the top is a change this case can see
                     "var ed = document.querySelector('#vault-planner-host .cb-ed');"
+                    # #107 (REG-3812, windows-latest: 'top': 0 - narrower fonts fit the pane at 260 px, so nothing could
+                    # scroll) - the modal is shortened 20 px at a time until the pane overflows, never by a font's luck
+                    "var _lh = 260; while (ed && ed.scrollHeight - ed.clientHeight < 13 && _lh > 140) { _lh -= 20;"
+                    " document.getElementById('vault-planner-host').style.setProperty('--law-h', _lh + 'px');"
+                    " ed = document.querySelector('#vault-planner-host .cb-ed'); i.scrollIntoView({ block: 'center' }); }"
                     "if (ed && ed.scrollTop < 1) ed.scrollTop = Math.min(ed.scrollHeight - ed.clientHeight, 12);"
                     "OUT.ok = 1;")
         # REG-2936 (CI on ci/claude-v3835: one 22 px "moved sideways" at step 1 on bytes a re-run passed) - the BASELINE is

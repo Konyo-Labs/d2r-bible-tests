@@ -142,6 +142,16 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3812 - TWO BROWSER LAWS COULD NOT STAGE THEIR CASE ON WINDOWS FONTS (v3904, #107)
+GitHub windows-latest on v3903 and v3904 (ci/winlaws): test_the_character_builder_fits_at_every_width's round-2 case read
+"PREMISE: no stat label wraps at 1280" and test_the_planner_spinner_stays_under_the_cursor's sockets case read "PREMISE: the
+edit pane is not scrolled" ('top': 0) - Windows' narrower fonts wrap no label at 1280 and fit the edit pane inside the 260 px
+modal, so each case's own staging never happened; each premise refused honestly, which read RED untampered on every Windows
+PC. The staging no longer leans on a font: the builder's INDENT measure narrows one multi-word label until it wraps when none
+does (measured, then put back; the hanging-indent red-proof still catches a flush line on any font), and the planner case
+shortens the modal 20 px at a time (floor 140) until the pane overflows before it scrolls it. Green on the Mac (where neither
+staging fires); the Windows run is owed after v3903's ship (a push waits for a running ship).
+
 ### REG-3811 - THE MASK-ENCODER LAW RACED AGAIN AFTER REG-3800: THE BOARD FRAME RE-BOUND ITS LSR BETWEEN WAIT AND ENCODE (v3904)
 v3903's GitHub round, agent-suite (5), run 43283651937: test_TWO_stores_are_UNIONED_not_last_one_wins - "the js encoder
 refused: this page has no LSR" - the same words as REG-3800, on another case, after REG-3800's wait had seen the LSR bound.

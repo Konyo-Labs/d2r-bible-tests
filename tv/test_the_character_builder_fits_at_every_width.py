@@ -420,12 +420,22 @@ LIT = r"""(function(){ var os = document.querySelectorAll('#cb-add-list .cb-add-
   var id = q && q.getAttribute('aria-activedescendant'), act = -1; [].forEach.call(os, function(o, i){ if (o.id === id) act = i; });
   return JSON.stringify({ n: os.length, lit: lit, under: under, active: act }); })()"""
 #: #174 round 2 - every stat label that wraps: the left edge of its first line and of its second
-INDENT = r"""(function(){ var out = [];
+INDENT = r"""(function(){
+  function read(){ var out = [];
   [].forEach.call(document.querySelectorAll('#cb-win .cb-st-r:not([hidden]) .cb-sl'), function(l){
     var rg = document.createRange(); rg.selectNodeContents(l);
     var lines = {}; [].forEach.call(rg.getClientRects(), function(x){ if (x.width < 0.5) return; var k = Math.round(x.top); if (!(k in lines) || x.left < lines[k]) lines[k] = x.left; });
     var ks = Object.keys(lines).map(Number).sort(function(a, b){ return a - b; });
     if (ks.length > 1) out.push({ text: l.textContent.trim(), first: lines[ks[0]], next: lines[ks[1]] }); });
+  return out; }
+  var out = read();
+  /* #107 (REG-3812, windows-latest: "no stat label wraps at 1280") - narrower fonts wrap no label, so one multi-word label
+     is narrowed until it wraps, measured, and put back: the hanging indent is read on every font, never on luck */
+  if (!out.length) {
+    var l = [].filter.call(document.querySelectorAll('#cb-win .cb-st-r:not([hidden]) .cb-sl'), function(x){ return /\s/.test(x.textContent.trim()); })[0];
+    if (l) { l.style.maxWidth = Math.max(24, Math.floor(l.getBoundingClientRect().width * 0.45)) + 'px';
+             out = read(); out.forEach(function(r){ r.staged = 1; }); l.style.maxWidth = ''; }
+  }
   return JSON.stringify(out); })()"""
 
 
