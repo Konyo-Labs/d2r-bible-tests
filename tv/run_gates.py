@@ -13946,6 +13946,10 @@ GATES = [
          needs_app=False,
          why="v3899 (REG-3729) - the work ALT's new evidence ledger (1 page: 0 found, 6 read NOT FOUND) was called 'the "
              "v1779 shape: a ledger emptied after the reading happened' on every look; a not-found reading counts now"),
+    Gate("test_a_card_says_when_the_game_began",
+         [sys.executable, os.path.join(HERE, "test_a_card_says_when_the_game_began.py")], 120,
+         why="v3901 (#188, REG-3755) - the chronicle lane's door chain (the D2 logo -> Connecting -> character select) "
+             "was computed per reel and never shown; the Shelf card says when the game began at its own door"),
     Gate("test_a_reap_writes_its_intent_before_the_delete",
          [sys.executable, os.path.join(HERE, "test_a_reap_writes_its_intent_before_the_delete.py")], 60,
          needs_app=False,

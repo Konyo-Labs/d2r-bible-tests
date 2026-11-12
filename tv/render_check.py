@@ -5023,6 +5023,40 @@ def _seed_film(sand, hist, runs=FILM_RUNS, frames=FILM_FRAMES):
     return filmed, len(sids)
 
 
+def _seed_doors(sand, n=3):
+    """REG-3755 (#188) - write a SYNTHETIC chronicle-lane ledger into the sandbox: the newest `n` runs each get a door (the D2
+    logo 12 min after the run's first row, Connecting 9 s later, character select 31 s later). -> how many were written.
+    Never copies his ledger: the pixels must not depend on one machine's history, and the sandbox is removed at exit."""
+    first = {}
+    try:
+        with io.open(os.path.join(sand, "sessions.jsonl"), encoding="utf-8") as fh:
+            for ln in fh:
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                sid, ts = (r or {}).get("sessionId"), (r or {}).get("ts")
+                if sid and isinstance(ts, (int, float)) and ts > 0:
+                    first[str(sid)] = min(first.get(str(sid), ts), ts)
+    except (OSError, AttributeError):
+        return 0
+    reels = {}
+    for sid, ts in sorted(first.items(), key=lambda kv: -kv[1])[:n]:
+        st = int(ts) + 12 * 60000
+        reels["reel_" + sid] = {"chain": {"startTs": st, "logoTs": st, "titleTs": None, "connectingTs": st + 9000,
+                                          "charTs": st + 31000, "witnessed": True, "entered": True},
+                                "marks": [[st, "logo"], [st + 9000, "connecting"], [st + 31000, "char-select"]],
+                                "d2r": {"logo": 1, "connecting": 1, "char-select": 1}}
+    if not reels:
+        return 0
+    try:
+        with io.open(os.path.join(sand, ".chronicle_lines.json"), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps({"v": 1, "reels": reels, "hits": [], "stats": {}}))
+    except OSError:
+        return 0
+    return len(reels)
+
+
 def _seed_heart2_census(sand):
     """-> the path of a synthetic stored census in `sand`, or None when this tree has its own tv/.heart2.json."""
     if os.path.isfile(os.path.join(HERE, ".heart2.json")):
@@ -5173,6 +5207,13 @@ def _serve_console():
                   "— the shelf targets will measure an EMPTY world, which is UNKNOWN rather than clean",
                   flush=True)
     _filmed, _allruns = _seed_film(_sand, _hist)
+    # REG-3755 (#188) - SYNTHETIC DOORS, for the same reason the film and the tombstones above are synthetic: the shelf card's
+    # "game began ... at the D2 logo" line is drawn only for a reel the chronicle lane walked, so a world with no lane ledger
+    # photographs the card in the one state where the new line cannot appear. Written into the SANDBOX only.
+    _doors = _seed_doors(_sand)
+    if _doors:
+        print("   \u2139 render sandbox: %d synthetic game door(s) (the D2 logo 12 min into the run) for the newest runs, so "
+              "`shelf-cards` photographs the card's 'game began' line. His tree was not written." % _doors, flush=True)
     if _filmed:
         # ⚠ [[zero-needs-a-denominator]] — say the denominator out loud. "seeded 24" alone cannot
         # be told apart from "seeded 24 of 24", and the second would mean the copy list had failed.
@@ -5197,7 +5238,8 @@ def _serve_console():
                TV_CHRON_RESULT=os.path.join(_sand, "chron_last_result.json"),
                TV_CHRON_SWEPT=os.path.join(_sand, "chronicle_swept.json"),
                TV_CHRON_READS=os.path.join(_sand, "chron_reads.json"),
-               TV_SWEEP_LOCK=os.path.join(_sand, ".sweep.lock"))
+               TV_SWEEP_LOCK=os.path.join(_sand, ".sweep.lock"),
+               TV_CHRONICLE_LINES=os.path.join(_sand, ".chronicle_lines.json"))   # REG-3755 - the sandbox's own lane ledger
     # v3848 - A FRESH WORKTREE HAS NO STORED CENSUS (tv/.heart2.json is gitignored), so `heart-stored` photographed
     # "never measured here" - 11 nodes against a floor of 18 - and the v3847 push #1 went red on the tree, not the
     # code. Like the tombstones above: SYNTHETIC, in the sandbox only, and only when the tree has none of its own.

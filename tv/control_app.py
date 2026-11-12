@@ -25272,6 +25272,28 @@ def _shelf_games():
     return out
 
 
+DOOR_KEYS = ("startTs", "logoTs", "titleTs", "connectingTs", "charTs")
+
+
+def _session_doors():
+    """REG-3755 (#188) - where each reel ENTERED the game, from the chronicle lane's own ledger (d2r_screens.chain over the
+    reel's door marks: the D2 logo, the title or Connecting as its witness, character select). -> {sid: door} | None when the
+    ledger cannot be read - UNKNOWN, never an empty answer a caller could take for 'no reel showed its door'."""
+    try:
+        import chronicle_line as _chl
+        d = _chl.load_cached()
+    except Exception:
+        return None
+    if d is None:
+        return None
+    out = {}
+    for name, rs in ((d or {}).get("reels") or {}).items():
+        ch = rs.get("chain") if isinstance(rs, dict) else None
+        if isinstance(ch, dict) and isinstance(ch.get("startTs"), int) and str(name).startswith("reel_"):
+            out[str(name)[5:]] = {k: ch.get(k) for k in DOOR_KEYS}
+    return out
+
+
 def _game_sessions(sessions):
     """v3890 (#188) - the journal's sessions with the ones that never showed the game left out, the SAME way at every
     site that numbers them (the Shelf list and the timeline both index by position). -> (sessions, dropped)"""
@@ -51302,6 +51324,15 @@ class Handler(BaseHTTPRequestHandler):
                     _r["game"] = _g
                 elif isinstance(_r, dict):
                     _r.pop("game", None)
+            # REG-3755 (#188) - AFTER the row cache as well: the chronicle lane walks a reel AFTER its row is built and a
+            # sealed reel's directory never changes again, so a door kept in the cached row would never arrive
+            _doors = _session_doors() or {}     # None (the lane's ledger unreadable) draws no door: nothing is guessed
+            for _r in out:
+                _d = _doors.get(str((_r or {}).get("sessionId") or ""))
+                if _d:
+                    _r["door"] = _d
+                elif isinstance(_r, dict):
+                    _r.pop("door", None)
             return out
         except Exception as e:
             return {"error": str(e)}

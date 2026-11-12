@@ -2410,7 +2410,8 @@
   .shc-body { display: flex; flex-direction: column; gap: 7px; padding: 11px 13px 13px; }
   .shc-when { font: var(--fw-medium) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-snug); color: #b9c9be; }
   .sh-fleet-src { font: var(--fw-medium) var(--fs-2xs)/1.3 var(--mono); color: #8f8a78; margin: 2px 0 8px; }   /* v3899 (#213) */
-  .shc-game { display: block; margin-top: 3px; color: #d8c27a; white-space: nowrap; }   /* v3898 (#188) - "part k of m · one game", its own line */
+  .shc-game { display: block; margin-top: 3px; color: #d8c27a; white-space: nowrap; }
+  .shc-door { display: block; margin-top: 3px; color: #c9b38a; white-space: nowrap; }   /* REG-3755 (#188) - "game began 9:04 PM at the D2 logo", its own line */   /* v3898 (#188) - "part k of m · one game", its own line */
   .shc-when .shc-dur { color: #8a7e68; }
   /* ══ v2987 — THE RIVER AS FOUR LANES, named the way he names them ═══════════════════════
      Konyo, 2026-09-12: "i want it down a river lane. from top to bottom intake/WHATEVER IS REALLY
@@ -19632,6 +19633,25 @@ window._lockMark = function(isOpen, px, label){
     }
     return h;
   }
+  /* REG-3755 (#188) - HIS RULING 11-11: the session STARTS at the game's own door - the first D2 logo, witnessed by the title or
+     Connecting to Battle.net, then character select - on every route. The chronicle lane works that door out for each reel
+     (d2r_screens.chain) and nothing showed it: a reel that opened on a cloud launcher or Boosteroid's queue said only when the
+     REEL opened. The row now carries `door` {startTs, logoTs, titleTs, connectingTs, charTs} once the lane has walked the
+     reel; the card says when the game began. No door -> nothing is said (not walked yet, or no logo was filmed). */
+  function shDoorPart(dr, t0){
+    if (!dr || !(+dr.startTs > 0)) return '';
+    var hm = function(ts){ return new Date(+ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }); };
+    var what = dr.logoTs ? 'D2 logo' : (dr.titleTs ? 'D2 title' : 'Connecting');
+    var lag = (+t0 > 0) ? Math.round((+dr.startTs - +t0) / 60000) : null;
+    var tip = 'The game\'s own door, read from this reel\'s film: '
+      + (dr.logoTs ? 'the D2 logo ' + hm(dr.logoTs) + ', ' : '')
+      + (dr.titleTs ? 'the title ' + hm(dr.titleTs) + ', ' : '')
+      + (dr.connectingTs ? 'Connecting to Battle.net ' + hm(dr.connectingTs) + ', ' : '')
+      + (dr.charTs ? 'character select ' + hm(dr.charTs) : 'no character select filmed after it')
+      + (lag !== null && lag >= 1 ? '. The reel opened ' + lag + ' min before the game began.' : '.');
+    return '<span class="shc-door" title="' + esc(tip) + '">game began ' + esc(new Date(+dr.startTs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))
+      + ' at the ' + what + (lag !== null && lag >= 1 ? ' · ' + lag + ' min in' : '') + '</span>';
+  }
   function thShelf(force){
     try { _shFleetLoad(); } catch (eFl) {}   /* v3899 (#213) - every PC's published sessions for the header */
     var ov = $('th-shelfov'); if (!ov) return;
@@ -19952,6 +19972,7 @@ window._lockMark = function(isOpen, px, label){
             ? (durTxt ? '<span class="shc-dur">' + durTxt + '</span>' : '')
             : (whenTxt + (durTxt ? ' <span class="shc-dur">· ' + durTxt + '</span>' : ''));
       _shcWhen += shGamePart(sm.game, !!_shcWhen);   /* v3898 (#188) - one game in hourly parts */
+      _shcWhen += shDoorPart(sm.door, sm.t0);         /* REG-3755 (#188) - when the game began at its own door */
       return '<div class="sh-card' + (n === TH.sn ? ' cur' : '') + (sm.stub ? ' stub' : '') + (_chronN > 0 ? ' chronicle' : '') + (_pin ? ' pinned' : '') + '" data-pin="' + (_pin ? '1' : '0') + '" data-sid="' + esc(sm.sessionId || '') + '" data-n="' + n
         + '" data-stub="' + (sm.stub ? '1' : '0') + '" data-grail="' + _hasGrail + '" data-verdict="' + _verd + '" data-t0="' + (sm.t0 || 0)
         + '" data-t1="' + (sm.t1 || 0) + '" data-reads="' + (sm.reads || 0) + '" data-found="' + _foundN
