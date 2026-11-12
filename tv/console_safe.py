@@ -52,7 +52,53 @@ def enable(*streams):
             # Python < 3.7, or a stream that is not a TextIOWrapper (pytest capture, a pipe wrapper,
             # a StringIO under test). Nothing to do and nothing worth crashing over.
             ok = False
+    try:
+        hide_child_consoles()
+    except Exception:
+        pass
     return ok
+
+
+#: Windows' CREATE_NO_WINDOW: a console program started with it runs with no console window
+_NO_WINDOW = 0x08000000
+
+
+def hide_child_consoles(_nt=None, _console=None, _popen=None):
+    """REG-3826 (GrokBot #230, his OLD PC ALT 11-13 ~01:30: "black console windows keep popping up, one ended in a git.exe
+    Application Error" - "every background process windowless and hidden"). -> True when children start windowless
+
+    On Windows a process with NO console of its own (pythonw: the console, heart2, the laws it runs) that starts a console
+    program - git.exe, python.exe, cmd - makes Windows open a NEW, visible console window for it, unless the call passes
+    CREATE_NO_WINDOW. Most of the console's own calls do; the laws' git helpers (a gbump temp repo's commit) did not, and
+    those windows flashed over his desktop. So in such a process every child that names no creationflags starts with
+    CREATE_NO_WINDOW. A call that names its own flags (a deliberate new console) is left as it asked; a process that has a
+    console window keeps sharing it with its children; off Windows nothing changes. Cannot tell -> left as it was."""
+    import os as _o
+    nt = (_o.name == "nt") if _nt is None else bool(_nt)
+    if not nt:
+        return False
+    if _console is None:
+        try:
+            import ctypes
+            _console = bool(ctypes.windll.kernel32.GetConsoleWindow())
+        except Exception:
+            _console = True               # cannot tell: children keep what they had
+    if _console:
+        return False
+    if _popen is None:
+        import subprocess
+        _popen = subprocess.Popen
+    if getattr(_popen, "_tvd_no_window", False):
+        return True
+    _orig = _popen.__init__
+
+    def __init__(self, *a, **k):
+        if len(a) < 14 and not k.get("creationflags"):
+            k["creationflags"] = _NO_WINDOW
+        _orig(self, *a, **k)
+    _popen.__init__ = __init__
+    _popen._tvd_no_window = True
+    return True
 
 # ══ v3293 — THE AUDIT LIVES BESIDE THE FIX ═══════════════════════════════════════════════════
 # test_control has carried this rule for a long time and it WORKS — it refused three files in tv/

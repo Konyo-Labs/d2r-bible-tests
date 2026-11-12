@@ -14225,6 +14225,12 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_game_names_wear_the_game_face.py")], 60,
          needs_app=False,
          why="v3889 (#23, his theme pass: the in-game fonts on in-game text only, colours unchanged) - item, zone, terror-zone, monster, boss, runeword and set names wear --ff-game (the builder's D2 Exocet, then the display serif); the block sets the font and nothing else; the console's words keep the face they had (the Grok CLI caught the item card badge); the zone name is wrapped apart from its words; the game's font is never tracked in this public repo."),
+    Gate("test_a_background_process_starts_its_children_windowless",
+         [sys.executable, os.path.join(HERE, "test_a_background_process_starts_its_children_windowless.py")], 60,
+         needs_app=False,
+         why="REG-3826 (GrokBot #230, his OLD PC ALT 11-13: black console windows popping, a git.exe Application Error) - "
+             "a Windows process with no console (pythonw) starts every child that names no creationflags with "
+             "CREATE_NO_WINDOW, installed by console_safe.enable(); a call that asks for its own flags keeps them"),
     Gate("test_a_shadow_session_plays_whole_from_the_bucket",
          [sys.executable, os.path.join(HERE, "test_a_shadow_session_plays_whole_from_the_bucket.py")], 120,
          needs_app=False,

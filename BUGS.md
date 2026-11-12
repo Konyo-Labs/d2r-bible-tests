@@ -189,6 +189,18 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
 red-proofs PROVEN).
+### REG-3826 - BLACK CONSOLE WINDOWS POPPED OVER HIS OLD PC ALT: A CONSOLE-LESS PROCESS STARTED git WITH A WINDOW (v3905)
+GrokBot #230 (11-12 23:33Z), his words: "black console windows keep popping up, one ended in a git.exe Application Error";
+he wants every background process windowless. SAW: git.exe -C <a d2r-test- temp repo> commit -qm word (a law's gbump
+helper) beside the console's pythonw heart2 --import-parent proof import. On Windows a process with no console of its own
+(pythonw) that starts a console program gets a NEW visible console window unless the call passes CREATE_NO_WINDOW; the
+console's own calls mostly do, the laws' git helpers did not. console_safe.enable() - the first call of nearly every law
+and script (1,892 files) - now installs hide_child_consoles(): in a Windows process with no console window, every child
+that names no creationflags starts with CREATE_NO_WINDOW; a call naming its own flags keeps them; a process with a console
+keeps sharing it; cannot tell (ctypes refused) leaves children as they were. The git.exe Application Error is UNMEASURED
+(most likely a git child dying as its window closed). Law: test_a_background_process_starts_its_children_windowless (a
+stand-in Popen, +2 red-proofs).
+
 ### REG-3825 - A SHADOW SESSION PLAYED 3 KEY FRAMES: THE ONE THE BUCKET HOLDS NOW PLAYS WHOLE, FULL WINDOW, FROM THE LOGO (v3905, #208)
 His ask via GrokBot #230: "shadow mode must render full screen and ALL frames of that session locally, and show the game
 recording from when play starts". The shadow sessions list asks this console (GET /api/roster-cache?reels=<owner>, which
