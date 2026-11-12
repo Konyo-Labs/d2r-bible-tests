@@ -13951,6 +13951,11 @@ GATES = [
          needs_app=False,
          why="v3901 (REG-3765) - GrokBot at his MacBook's 1512: TV·D wrapped alone onto a second row (band 1504-1544 "
              "measured); the tighter tab step enters at 1600 now, read from the stylesheet"),
+    Gate("test_tz_cards_go_two_up_only_when_their_lines_fit",
+         [sys.executable, os.path.join(HERE, "test_tz_cards_go_two_up_only_when_their_lines_fit.py")], 60,
+         needs_app=False,
+         why="v3902 (REG-3769) - GrokBot at his 1512: the TZ cards cut '880 density ·…'; a 238px floor went two-up from 1480 "
+             "at a 137px text column - the slot's track floor is the card's fixed parts + 9.2 x --fs-md now"),
     Gate("test_a_card_names_another_pcs_run_in_one_line",
          [sys.executable, os.path.join(HERE, "test_a_card_names_another_pcs_run_in_one_line.py")], 60,
          needs_app=False,

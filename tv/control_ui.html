@@ -3884,6 +3884,14 @@
      minmax(min(238px, 100%), 1fr) so a slot narrower than one track wraps instead of overflowing. */
   .tz-zones { display: grid; gap: 9px; align-items: stretch;
     grid-template-columns: repeat(auto-fit, minmax(min(238px, 100%), 1fr)); }
+  /* REG-3769 (GrokBot 11-12 at his 1512: "880 density ·…") - TWO ZONES SIDE BY SIDE ONLY WHEN A CARD HOLDS ITS LINES. Swept
+     900-2600 in the render sandbox: 238px let a slot go two-up from 1480, at a 245px card whose text column is 137px, and every
+     density line and verdict was cut ("650 density ·…", "→ 96 terroriz…") 1480-1860 and again 2080-2500 (three across);
+     1000-1464 and 1880-2040 fit. MEASURED: the card's fixed parts (art 68 + padding + gap) are 108px, and its widest line is the
+     verdict "→ 96 terrorized" at --fs-md, 211px at 23px = 9.2 of --fs-md (the density line, 202px, is narrower). So a track is
+     never narrower than 108px + 9.2 x --fs-md (319px at his sizes): 1512 stacks like 1440, 1920 stays two-up at 324.5px. */
+  .hd-tz .tz-slot .tz-zones {
+    grid-template-columns: repeat(auto-fit, minmax(min(max(238px, calc(108px + 9.2 * var(--fs-md))), 100%), 1fr)); }
 
   /* v1578 — FLAGSHIP. The zone card carries the game's own art as its FACE, at a size that can
      actually be read from the couch: the console is watched on a TV, and a 30px thumbnail of a
