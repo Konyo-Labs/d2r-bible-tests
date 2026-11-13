@@ -69,12 +69,6 @@ def _install_quiet_children():
     pythonw-run law's git helper (a gbump temp repo's commit) got a NEW visible console. enable() is the first call of
     nearly every law and script, so it installs the SAME door - never a second copy of it. [[copy-drift]]"""
     import win_quiet
-    # the REAL operating system decides, never sys.platform: test_the_gates_load_on_windows patches sys.platform to win32
-    # for a moment to drive heart2's Windows copy path on a Mac, and a law imported inside that moment installed the door
-    # for the rest of the process - every later child then carried creationflags, which POSIX refuses (ValueError)
-    import os as _real_os
-    if _real_os.name != "nt":
-        return False, "not Windows - a child process opens no window here"
     return win_quiet.install()
 
 

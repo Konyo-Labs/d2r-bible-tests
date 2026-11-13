@@ -20,6 +20,7 @@ WHAT IT DOES, only on win32: every child gets CREATE_NO_WINDOW and a STARTUPINFO
 asked for a window on purpose (CREATE_NEW_CONSOLE, or DETACHED_PROCESS, both meaningful choices), which is respected.
 Anywhere else it does nothing and says so. It never changes arguments, pipes, env or cwd.
 """
+import os
 import subprocess
 import sys
 
@@ -50,7 +51,14 @@ def _quiet_kwargs(kw, mod):
 def install(mod=None, platform=None):
     """Make every child of this process windowless on Windows. -> (installed_now, why)."""
     mod = subprocess if mod is None else mod
-    platform = sys.platform if platform is None else platform
+    # REG-3826 (v3905 pre-flight c): with no platform handed in, the REAL operating system decides, never sys.platform.
+    # test_the_gates_load_on_windows patches sys.platform to "win32" for a moment to drive heart2's Windows copy path on a
+    # Mac; console_safe.enable() inside that moment installed this door for the rest of the process, and every later child
+    # on the Mac was refused (ValueError: the window flag is Windows-only). A caller that names a platform keeps it.
+    if platform is None:
+        platform = "win32" if os.name == "nt" else sys.platform
+        if platform == "win32" and os.name != "nt":
+            platform = "posix"
     if platform != "win32":
         return False, "not Windows - a child process opens no window here"
     base = mod.Popen
