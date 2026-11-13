@@ -597,20 +597,99 @@ def checks_running(env=None):
     return False
 
 
-def fresh_refresh(db, fetch, now=None, env=None):
-    """Re-ask only stale items. While checks run, or when that cannot be told, say so and fetch nothing."""
+#: #96 (his 11-06: "for price check it should be joined logic to the database so this is a communicating and whole system") -
+#: a price check that finds its item STALE refreshes it at the backfill's pace: one forum search a minute, never a burst.
+REFRESH_GAP_S = 60.0
+
+
+def fresh_refresh(db, fetch, now=None, env=None, only=None, pace=None, gap_s=REFRESH_GAP_S):
+    """Re-ask only stale items. While checks run, or when that cannot be told, say so and fetch nothing.
+
+    #96 - THE PRICE CHECK IS ITS CALLER. `only` (keys or names) limits the pass to the item a price check reads, so a stale
+    item is refreshed by the check that asks for it, never by a timer of its own. `pace` ({"at": seconds}, the caller's
+    own memory of its last refresh search) holds the pass to one fetch per `gap_s`: inside the gap nothing is fetched and
+    the answer says when the next read may go ("wait": seconds left). An item the DB does not hold is not refreshed here -
+    a first read is the price check's own search."""
     busy = checks_running(env)
     if busy is None or busy:
         return {"say": PAUSE, "fetched": []}
     now = time.time() if now is None else now
+    want = None
+    if only is not None:
+        want = set()
+        for x in only:
+            want.update(_keys(x))
+    if pace is not None:
+        try:
+            last = float(pace.get("at") or 0)
+        except (TypeError, ValueError, AttributeError):
+            last = 0.0
+        if not math.isfinite(last):
+            last = 0.0
+        left = gap_s - (now - last)
+        if left > 0:
+            stale_here = []
+            for _k, it in ((db or {}).get("items") or {}).items():
+                if want is not None and _k not in want:
+                    continue
+                if isinstance(it, dict) and it.get("item") and is_stale(db, _k, now, key=_k)[0]:
+                    stale_here.append(_k)
+            if stale_here:
+                return {"say": "refresh due - the next forum read may go in %d s (one search a minute)" % math.ceil(left),
+                        "fetched": [], "wait": math.ceil(left)}
     got = []
     for _k, it in ((db or {}).get("items") or {}).items():
+        if want is not None and _k not in want:
+            continue
         name = it.get("item") if isinstance(it, dict) else None
         if not name:
             continue
         stale, _why = is_stale(db, _k, now, key=_k)      # #96 - asked by the key it is stored under
         if not stale:
             continue
+        if pace is not None:
+            pace["at"] = now                             # #96 - stamped BEFORE the search: a read that raises still paces
         fetch(name)
         got.append(name)
+        if pace is not None:
+            break                                        # #96 - one search a pass when paced
     return {"say": None, "fetched": got}
+
+
+#: #96 - a tier priced from fewer weighted posts than this is THIN: the price check says UNKNOWN beside its lean
+THIN_POSTS = 3
+
+
+def db_first(db, item, now=None, key=None):
+    """#96 - what the DB already holds for an item, READ BEFORE the price check asks the forum. Read-only.
+
+    -> {"verdict": "known" | "thin" | "unknown", "fg", "lean", "tier", "conf", "n", "nEff", "posts", "stale", "why", "say"}
+    `fg` is a number only when known: an empty DB is UNKNOWN and a thin one (a tier under THIN_POSTS weighted posts) is
+    UNKNOWN with its lean beside it - never a confident 0, never a confident 3-post number. `n` counts only priced posts
+    (REG-3791: a post without a price is not a post)."""
+    out = {"verdict": "unknown", "fg": None, "lean": None, "tier": None, "conf": None, "n": 0, "nEff": 0.0,
+           "posts": 0, "stale": True, "why": "never read", "say": ""}
+    if not isinstance(db, dict) or db.get("schema") != SCHEMA:
+        out["why"] = "the price DB would not read"
+        out["say"] = "Database: UNKNOWN - the price DB would not read."
+        return out
+    now = time.time() if now is None else now
+    pr = price(db, item, now, key)
+    out["stale"], out["why"] = pr["stale"], pr["why"]
+    nrm, prf = pr["normal"], pr["perfect"]
+    out["posts"] = int(nrm["n"]) + int(prf["n"])
+    tier_name, tier = ("normal", nrm) if nrm["fg"] is not None else (("perfect", prf) if prf["fg"] is not None else (None, None))
+    name = str(item)
+    if tier is None:
+        out["say"] = "Database: UNKNOWN - no priced post is kept for %s." % name
+        return out
+    out.update({"tier": tier_name, "conf": tier["conf"], "n": int(tier["n"]), "nEff": tier["nEff"]})
+    if tier["n"] < THIN_POSTS:
+        out["verdict"], out["lean"] = "thin", tier["fg"]
+        out["say"] = ("Database: UNKNOWN - only %d priced %s for %s (leans %s fg, Wilson %s)."
+                      % (tier["n"], "post" if tier["n"] == 1 else "posts", name, tier["fg"], tier["conf"]))
+        return out
+    out["verdict"], out["fg"] = "known", tier["fg"]
+    out["say"] = ("Database: %s fg (%s), Wilson lower bound %s, from %d priced posts%s."
+                  % (tier["fg"], tier_name, tier["conf"], tier["n"], "" if not pr["stale"] else " - due a refresh"))
+    return out

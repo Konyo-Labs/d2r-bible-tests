@@ -258,6 +258,47 @@ def _d2jsp_db_view(item):
     return priced
 
 
+#: #96 - this console's memory of its last price-check refresh search: one a minute (d2jsp_price_db.REFRESH_GAP_S)
+_D2JSP_REFRESH_PACE = {"at": 0.0}
+_D2JSP_REFRESH_PACE_LOCK = threading.Lock()
+
+
+def _d2jsp_price_check_plan(item, now=None, env=None):
+    """#96 (his 11-06: "for price check it should be joined logic to the database so this is a communicating and whole
+    system") - A PRICE CHECK READS THE DATABASE FIRST, AND REFRESHES WHAT IT FINDS STALE. Read-only; the search and the
+    fold stay with the quote door. -> {"do": "live" | "refresh" | "stored", "dbFirst": d2jsp_price_db.db_first(...),
+    "why", and for "stored" the "answer" the door sends}.
+      * an item the DB does not hold (or a DB that will not read) is read live - a first read, as before;
+      * a held item that is STALE is refreshed by this check: d2jsp_price_db.fresh_refresh(only=[it], pace=...) chooses
+        it, one search a minute across every check (the backfill's pace) - never a timer of its own;
+      * a held item that is fresh, or stale inside the minute, is answered from the DB ("stored"), the wait said.
+    dbFirst rides on every answer: the DB price beside the live posts, its Wilson and post count, UNKNOWN when thin."""
+    import d2jsp_price_db as _PDB
+    now = time.time() if now is None else now
+    path = os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json")
+    with _D2JSP_DB_LOCK:
+        db = _PDB.load(path)
+    if db is None:
+        return {"do": "live", "dbFirst": _PDB.db_first(None, item, now), "why": "the price DB would not read - read live"}
+    _d2jsp_source()                                # v3881 - rows said by this PC's nickname
+    key = _d2jsp_canon(item)
+    first = _PDB.db_first(db, item, now, key=key)
+    held, _ra = _PDB._held(db, item, key)
+    if held is None:
+        return {"do": "live", "dbFirst": first, "why": "not in the price database yet - a first read"}
+    chosen = []
+    with _D2JSP_REFRESH_PACE_LOCK:
+        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=_D2JSP_REFRESH_PACE)
+    if chosen:
+        return {"do": "refresh", "dbFirst": first, "why": "%s - this price check refreshes it" % first["why"]}
+    say = r.get("say") or ("%s is fresh in the price database (%s) - not asked again" % (item, first["why"]))
+    answer = {"item": item, "fg": None, "n": 0, "reason": "stored", "say": say, "posts": [], "low": None, "high": None,
+              "readAt": "", "board": 268, "db": _d2jsp_db_view(item), "dbFirst": first}
+    if r.get("wait") is not None:
+        answer["wait"] = r["wait"]
+    return {"do": "stored", "dbFirst": first, "why": say, "answer": answer}
+
+
 def _fixture_root_for_state():
     """HERE, unless TV_HIST says this is a fixture's world — the v1867/v1869 rule, one call.
 
@@ -52217,6 +52258,21 @@ class Handler(BaseHTTPRequestHandler):
                                                        "say": "paused while checks run", "posts": [], "low": None,
                                                        "high": None, "readAt": "", "board": 268, "db": _stored}, _item))
                 return
+            # #96 - the DATABASE FIRST: a fresh item is answered from it, a stale one is refreshed by this check (one search
+            # a minute), an item it does not hold is read live; dbFirst rides on every answer. A request from anywhere but
+            # this console's own page goes the old way, to d2jsp_quote's own refusal.
+            _plan = {"do": "live", "dbFirst": None}
+            if _item and _d2jsp.console_may_post(self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
+                                                 self.headers.get("Sec-Fetch-Site")):
+                try:
+                    _plan = _d2jsp_price_check_plan(_item)
+                except Exception as _pe:
+                    _plan = {"do": "live", "dbFirst": {"verdict": "unknown", "fg": None,
+                                                       "say": "Database: UNKNOWN - it could not be read (%s)."
+                                                              % type(_pe).__name__}}
+            if _plan["do"] == "stored":
+                self._json(200, _quote_names_its_item(_plan["answer"], _item))
+                return
             _code, _out = _d2jsp.d2jsp_quote(
                 _item, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
                 sec_fetch_site=self.headers.get("Sec-Fetch-Site"))
@@ -52226,6 +52282,10 @@ class Handler(BaseHTTPRequestHandler):
                 if _opened:
                     _out["opened"] = True
             _out["db"] = _d2jsp_db_fold(_out)   # v3849 - every read post is kept, aged and weighed (the price DB)
+            if _plan.get("dbFirst") is not None:
+                _out["dbFirst"] = _plan["dbFirst"]   # #96 - what the DB held BEFORE this read, beside the live posts
+            if _plan["do"] == "refresh":
+                _out["refreshed"] = True
             self._json(_code, _out)
             return
         if path == "/api/d2jsp_price_db":
