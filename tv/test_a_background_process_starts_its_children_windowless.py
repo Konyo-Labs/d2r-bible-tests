@@ -34,7 +34,7 @@ class EnableInstallsTheOneDoor(unittest.TestCase):
 
     def test_it_is_the_same_door_never_a_copy(self):
         src = inspect.getsource(CS._install_quiet_children)
-        self.assertEqual(src.count("win_quiet.install()"), 1)
+        self.assertEqual(src.count("    return win_quiet.install()\n"), 1, "the door is not the one called")
         self.assertNotIn("creationflags", inspect.getsource(CS), "console_safe carries its own copy of the door's rule")
 
     def test_a_door_that_will_not_import_never_breaks_enable(self):
