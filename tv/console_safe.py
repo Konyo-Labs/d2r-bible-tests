@@ -53,52 +53,24 @@ def enable(*streams):
             # a StringIO under test). Nothing to do and nothing worth crashing over.
             ok = False
     try:
-        hide_child_consoles()
+        _install_quiet_children()
     except Exception:
         pass
     return ok
 
 
-#: Windows' CREATE_NO_WINDOW: a console program started with it runs with no console window
-_NO_WINDOW = 0x08000000
-
-
-def hide_child_consoles(_nt=None, _console=None, _popen=None):
+def _install_quiet_children():
     """REG-3826 (GrokBot #230, his OLD PC ALT 11-13 ~01:30: "black console windows keep popping up, one ended in a git.exe
-    Application Error" - "every background process windowless and hidden"). -> True when children start windowless
+    Application Error" - "every background process windowless and hidden"). -> win_quiet.install()'s answer
 
-    On Windows a process with NO console of its own (pythonw: the console, heart2, the laws it runs) that starts a console
-    program - git.exe, python.exe, cmd - makes Windows open a NEW, visible console window for it, unless the call passes
-    CREATE_NO_WINDOW. Most of the console's own calls do; the laws' git helpers (a gbump temp repo's commit) did not, and
-    those windows flashed over his desktop. So in such a process every child that names no creationflags starts with
-    CREATE_NO_WINDOW. A call that names its own flags (a deliberate new console) is left as it asked; a process that has a
-    console window keeps sharing it with its children; off Windows nothing changes. Cannot tell -> left as it was."""
-    import os as _o
-    nt = (_o.name == "nt") if _nt is None else bool(_nt)
-    if not nt:
-        return False
-    if _console is None:
-        try:
-            import ctypes
-            _console = bool(ctypes.windll.kernel32.GetConsoleWindow())
-        except Exception:
-            _console = True               # cannot tell: children keep what they had
-    if _console:
-        return False
-    if _popen is None:
-        import subprocess
-        _popen = subprocess.Popen
-    if getattr(_popen, "_tvd_no_window", False):
-        return True
-    _orig = _popen.__init__
+    The door already exists: tv/win_quiet.py gives every child of a Windows process CREATE_NO_WINDOW + SW_HIDE (a caller
+    asking for a new console on purpose keeps it), and the console, tv_diablo and run_gates install it. The windows came
+    from LAW processes - a law is its own python process, imports neither, so the door was never installed there, and a
+    pythonw-run law's git helper (a gbump temp repo's commit) got a NEW visible console. enable() is the first call of
+    nearly every law and script, so it installs the SAME door - never a second copy of it. [[copy-drift]]"""
+    import win_quiet
+    return win_quiet.install()
 
-    def __init__(self, *a, **k):
-        if len(a) < 14 and not k.get("creationflags"):
-            k["creationflags"] = _NO_WINDOW
-        _orig(self, *a, **k)
-    _popen.__init__ = __init__
-    _popen._tvd_no_window = True
-    return True
 
 # ══ v3293 — THE AUDIT LIVES BESIDE THE FIX ═══════════════════════════════════════════════════
 # test_control has carried this rule for a long time and it WORKS — it refused three files in tv/

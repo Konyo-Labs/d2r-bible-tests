@@ -1,79 +1,67 @@
 # -*- coding: utf-8 -*-
-"""REG-3826 (GrokBot #230 11-12 23:33Z, his OLD PC ALT 11-13 ~01:30 IST) - A PROCESS WITH NO CONSOLE STARTS ITS
-CHILDREN WITHOUT ONE.
+"""REG-3826 (GrokBot #230 11-12 23:33Z, his OLD PC ALT 11-13 ~01:30 IST) - EVERY LAW AND SCRIPT INSTALLS THE ONE DOOR THAT
+KEEPS A WINDOWS CHILD WINDOWLESS.
 
 His words via GrokBot: "black console windows keep popping up, one ended in a git.exe Application Error" - he wants "every
-background process windowless and hidden". GrokBot SAW git.exe -C <temp test repo> commit while the console's heart2
-proof import ran under pythonw. On Windows a process with no console of its own (pythonw) that starts a console program
-gets a NEW visible console window for it unless the call passes CREATE_NO_WINDOW. console_safe.enable() - the first call
-of nearly every law and script - now makes such a process start every child that names no creationflags windowless. A
-call that asks for its own flags keeps them; a process with a console keeps sharing it; off Windows nothing changes.
-
-Driven on a stand-in Popen class, so the rule is measured on any PC; the real Windows path is the same function.
+background process windowless and hidden". GrokBot SAW git.exe -C <a d2r-test- temp repo> commit while the console's
+heart2 proof import ran under pythonw. The door already exists - tv/win_quiet.py (REG-1307): every child of a Windows
+process starts with CREATE_NO_WINDOW + SW_HIDE, a deliberate new console is kept - and the console, tv_diablo and
+run_gates install it. A LAW is its own python process and imports none of them, so the door was never installed there.
+console_safe.enable() is the first call of nearly every law and script: it now installs the SAME door (never a second
+copy - a safety routine that exists twice is the copy that drifts). The door's own behaviour is
+test_no_child_opens_a_window_on_windows; this pins the join.
 """
 import inspect
 import os
 import sys
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import console_safe as CS  # noqa: E402
-
-NO_WINDOW = 0x08000000
-NEW_CONSOLE = 0x00000010
+import win_quiet as WQ  # noqa: E402
 
 
-def _fake():
-    class P(object):
-        def __init__(self, args, **k):
-            self.args, self.kw = args, k
-    return P
+class EnableInstallsTheOneDoor(unittest.TestCase):
 
+    def test_enable_installs_win_quiet(self):
+        calls = []
+        with mock.patch.object(WQ, "install", lambda *a, **k: calls.append(1) or (False, "fixture")):
+            CS.enable()
+        self.assertEqual(calls, [1], "enable() did not install the windowless-children door")
 
-class TheChildrenOfAConsolelessProcess(unittest.TestCase):
+    def test_it_is_the_same_door_never_a_copy(self):
+        src = inspect.getsource(CS._install_quiet_children)
+        self.assertEqual(src.count("win_quiet.install()"), 1)
+        self.assertNotIn("creationflags", inspect.getsource(CS), "console_safe carries its own copy of the door's rule")
 
-    def test_a_child_that_names_no_flags_starts_windowless(self):
-        P = _fake()
-        self.assertTrue(CS.hide_child_consoles(_nt=True, _console=False, _popen=P))
-        self.assertEqual(P(["git", "commit"]).kw.get("creationflags"), NO_WINDOW,
-                         "a console-less process still starts git with a window of its own")
-        self.assertEqual(P(["git"], creationflags=0).kw.get("creationflags"), NO_WINDOW, "flags=0 is no flags")
+    def test_a_door_that_will_not_import_never_breaks_enable(self):
+        with mock.patch.object(CS, "_install_quiet_children", side_effect=ImportError("no win_quiet")):
+            self.assertIn(CS.enable(), (True, False), "enable() raised because the door could not be installed")
 
-    def test_a_call_that_asks_for_its_own_flags_keeps_them(self):
-        P = _fake()
-        CS.hide_child_consoles(_nt=True, _console=False, _popen=P)
-        self.assertEqual(P(["cmd"], creationflags=NEW_CONSOLE).kw.get("creationflags"), NEW_CONSOLE)
+    def test_on_windows_the_installed_door_hides_a_childs_window(self):
+        """the join driven end to end on a Windows-shaped stand-in: enable()'s door makes a plain spawn windowless"""
+        class FakeSub(object):
+            class STARTUPINFO(object):
+                def __init__(self):
+                    self.dwFlags, self.wShowWindow = 0, 1
 
-    def test_a_process_with_a_console_and_every_other_os_change_nothing(self):
-        for nt, console in ((True, True), (False, False), (False, True)):
-            P = _fake()
-            self.assertFalse(CS.hide_child_consoles(_nt=nt, _console=console, _popen=P), (nt, console))
-            self.assertNotIn("creationflags", P(["git"]).kw, "children were changed where nothing pops: %r" % ((nt, console),))
-
-    def test_it_wraps_once(self):
-        P = _fake()
-        CS.hide_child_consoles(_nt=True, _console=False, _popen=P)
-        first = P.__init__
-        CS.hide_child_consoles(_nt=True, _console=False, _popen=P)
-        self.assertIs(P.__init__, first, "a second enable() wrapped Popen again")
-
-    def test_enable_installs_it(self):
-        src = inspect.getsource(CS.enable)
-        self.assertEqual(src.count("        hide_child_consoles()\n"), 1, "enable() no longer hides a background child's console")
+            class Popen(object):
+                def __init__(self, args, **kw):
+                    self.kw = kw
+        installed, _why = WQ.install(mod=FakeSub, platform="win32")
+        self.assertTrue(installed)
+        kw = FakeSub.Popen(["git", "commit"]).kw
+        self.assertTrue(int(kw.get("creationflags") or 0) & WQ.CREATE_NO_WINDOW, "a child of a law still gets a window")
 
 
 RED_PROOF = [
-    {"why": "REG-3826 - enable() stops hiding the children's consoles, so every git a law runs under pythonw flashes a window",
+    {"why": "REG-3826 - enable() stops installing the door, so a law's git under pythonw opens a black window again",
      "file": "tv/console_safe.py",
-     "find": "    try:\n        hide_child_consoles()\n    except Exception:\n        pass\n",
+     "find": "    try:\n        _install_quiet_children()\n    except Exception:\n        pass\n",
      "replace": "",
-     "matches": 1},
-    {"why": "REG-3826 - a child that names no flags keeps its window again",
-     "file": "tv/console_safe.py",
-     "find": "            k[\"creationflags\"] = _NO_WINDOW",
-     "replace": "            pass",
      "matches": 1},
 ]
 
