@@ -149,6 +149,10 @@ defect is a font-metric one - the widened Fire value drops alone only when it do
 (09-29); the Linux runner's narrower fonts fit it on one line at 1280, so nothing drops there. It surfaced now because
 REG-3812 changed this law's file and GitHub re-proved every tamper of it. Declared needs "macos" (the REG-2356 precedent):
 proven on his Mac by the pre-flight (the entry sits on a changed line), ELSEWHERE on Linux and Windows, never BLIND there.
+The box rehearsal then caught the knock-on: test_a_browser_law_is_proved_on_one_venue_at_least used the builder law as its
+real-tree example of a browser law GitHub proves; a law with a macOS-only tamper is proved on the Mac (proof_keys_mac's
+split is per law), so the example is now the mule-window law, the same kind with no such tamper. Cost, stated: the builder
+law's ~27-minute proof run moves to his Mac at the push whenever that law changes.
 
 ### REG-3827 - v3904's GITHUB ROUND RED: EVERY ROUTINE READ "NO PUSH PATHS AT ALL" AFTER REG-3807 (v3904)
 MEASURED 11-13 01:50 IST, agent-suite (3) on run 43329370041: test_control's

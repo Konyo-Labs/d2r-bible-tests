@@ -41,7 +41,9 @@ MAIN = "refs/heads/main %s refs/heads/main %s" % (SHA_A, SHA_B)
 BRANCH = "refs/heads/wip %s refs/heads/wip %s" % (SHA_A, SHA_B)
 DEL_MAIN = "(delete) %s refs/heads/main %s" % (ZERO, SHA_B)
 #: a registered law that starts a browser through its harness, and one that does not
-BROWSER, PLAIN = "test_the_character_builder_fits_at_every_width", "test_the_vault_find_ranks_matches"
+# REG-3832 - the builder law now has a tamper only his Mac's fonts can prove (needs "macos"), so the Mac proves it and it
+# is no longer the example of a browser law GitHub proves; the mule window law is the same kind with no such tamper
+BROWSER, PLAIN = "test_the_mule_window_fits_at_every_width", "test_the_vault_find_ranks_matches"
 GATE_OK = (True, "the deploy waits for the proof job (publish.yml)")
 
 
