@@ -45,7 +45,7 @@ class ThePriceDatabaseRefreshesOnlyWhereAPriceCheckAsks(unittest.TestCase):
 
     def test_the_price_check_is_the_refreshers_one_caller(self):
         plan = _fn(_read("control_app.py"), "def _d2jsp_price_check_plan(")
-        self.assertIn("_PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=", plan,
+        self.assertIn("_PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item],\n", plan,
                       "the price check no longer refreshes the stale item it reads - nothing would ever move a price")
 
     def test_nothing_else_refreshes_on_a_timer(self):
@@ -75,7 +75,8 @@ class ThePriceDatabaseRefreshesOnlyWhereAPriceCheckAsks(unittest.TestCase):
 RED_PROOF = [
     {"why": "Job E - the price check stops refreshing the item it reads (the refresher has no caller at all)",
      "file": "tv/control_app.py",
-     "find": "        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=_D2JSP_REFRESH_PACE)\n",
+     "find": "        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item],\n"
+                "                               pace=dict(_D2JSP_REFRESH_PACE) if dry else _D2JSP_REFRESH_PACE)\n",
      "replace": "        r = {\"say\": None, \"fetched\": []}\n",
      "matches": 1},
     {"why": "Job E - the retired lane's thread is started again",

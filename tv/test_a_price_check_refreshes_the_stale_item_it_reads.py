@@ -162,7 +162,8 @@ RED_PROOF = [
      "find": "        if left > 0:\n", "replace": "        if False:\n", "matches": 1},
     {"why": "#96 - the plan never refreshes a stale held item (fresh_refresh has no caller again)",
      "file": "control_app.py",
-     "find": "        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=_D2JSP_REFRESH_PACE)\n",
+     "find": "        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item],\n"
+                "                               pace=dict(_D2JSP_REFRESH_PACE) if dry else _D2JSP_REFRESH_PACE)\n",
      "replace": "        r = {\"say\": None, \"fetched\": []}\n", "matches": 1},
     {"why": "#96 - the quote door searches before it reads the DB",
      "file": "control_app.py",

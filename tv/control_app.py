@@ -263,7 +263,7 @@ _D2JSP_REFRESH_PACE = {"at": 0.0}
 _D2JSP_REFRESH_PACE_LOCK = threading.Lock()
 
 
-def _d2jsp_price_check_plan(item, now=None, env=None, live=False):
+def _d2jsp_price_check_plan(item, now=None, env=None, live=False, dry=False):
     """#96 (his 11-06: "for price check it should be joined logic to the database so this is a communicating and whole
     system") - A PRICE CHECK READS THE DATABASE FIRST, AND REFRESHES WHAT IT FINDS STALE. Read-only; the search and the
     fold stay with the quote door. -> {"do": "live" | "refresh" | "stored", "dbFirst": d2jsp_price_db.db_first(...),
@@ -278,6 +278,9 @@ def _d2jsp_price_check_plan(item, now=None, env=None, live=False):
     Job E item 2 (his yes to a "check live now" control) - `live` SKIPS the stored answer: the item is searched now, held
     or not, at the same pace (one search a minute across every check, _D2JSP_REFRESH_PACE); inside the minute it answers
     "stored" with the wait, and the stored price stands until then. The door folds the read like any other.
+    Job E item 4 (card #221) - `dry` is the page's first ask (?step=plan): the same plan, but it spends nothing - the pace is
+    read from a copy, never stamped - so "searching" can be said before the search, and the search itself (the second
+    ask) is planned and paced for real.
     dbFirst rides on every answer: the DB price beside the live posts, its Wilson and post count, UNKNOWN when thin."""
     import d2jsp_price_db as _PDB
     now = time.time() if now is None else now
@@ -291,12 +294,13 @@ def _d2jsp_price_check_plan(item, now=None, env=None, live=False):
     first = _PDB.db_first(db, item, now, key=key)
     held, _ra = _PDB._held(db, item, key)
     if live:
-        return _d2jsp_live_now_plan(item, now, first, held is not None)
+        return _d2jsp_live_now_plan(item, now, first, held is not None, dry=dry)
     if held is None:
         return {"do": "live", "dbFirst": first, "why": "not in the price database yet - a first read"}
     chosen = []
     with _D2JSP_REFRESH_PACE_LOCK:
-        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=_D2JSP_REFRESH_PACE)
+        r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item],
+                               pace=dict(_D2JSP_REFRESH_PACE) if dry else _D2JSP_REFRESH_PACE)
     if chosen:
         return {"do": "refresh", "dbFirst": first, "why": "%s - this price check refreshes it" % first["why"]}
     try:
@@ -313,7 +317,7 @@ def _d2jsp_price_check_plan(item, now=None, env=None, live=False):
     return {"do": "stored", "dbFirst": first, "why": say, "answer": answer}
 
 
-def _d2jsp_live_now_plan(item, now, first, held):
+def _d2jsp_live_now_plan(item, now, first, held, dry=False):
     """Job E item 2 - "check live now": search d2jsp for `item` now, skipping the stored answer, at the one-a-minute pace
     every price check shares. -> the plan the quote door acts on ("refresh" / "live", or "stored" with the wait)."""
     import d2jsp_price_db as _PDB
@@ -333,7 +337,8 @@ def _d2jsp_live_now_plan(item, now, first, held):
                       "high": None, "readAt": "", "board": 268, "db": _d2jsp_db_view(item), "dbFirst": first,
                       "wait": wait, "liveNow": True}
             return {"do": "stored", "dbFirst": first, "why": say, "answer": answer, "live": True}
-        _D2JSP_REFRESH_PACE["at"] = now          # stamped BEFORE the search, as fresh_refresh does: a read that raises still paces
+        if not dry:
+            _D2JSP_REFRESH_PACE["at"] = now      # stamped BEFORE the search, as fresh_refresh does: a read that raises still paces
     return {"do": "refresh" if held else "live", "dbFirst": first, "live": True,
             "why": "check live now - the stored answer is skipped and d2jsp is searched now"}
 
@@ -52261,6 +52266,10 @@ class Handler(BaseHTTPRequestHandler):
             _item = (parse_qs(urlparse(self.path).query).get("item") or [""])[0]
             # Job E item 2 - ?live=1 is his "check live now": the stored answer is skipped, the pace is kept
             _ask = {"live": True} if (parse_qs(urlparse(self.path).query).get("live") or [""])[0] == "1" else {}
+            # Job E item 4 (card #221) - ?step=plan is the page's first ask: the plan only, nothing searched, nothing paced
+            _dry = (parse_qs(urlparse(self.path).query).get("step") or [""])[0] == "plan"
+            if _dry:
+                _ask["dry"] = True
             if _PDB.checks_running() is not False:
                 # his 10-31 ruling stands - a LIVE read never competes with a push; REG-3249: the stored price does not
                 # wait, it is a local read
@@ -52288,6 +52297,14 @@ class Handler(BaseHTTPRequestHandler):
                                                               % type(_pe).__name__}}
             if _plan["do"] == "stored":
                 self._json(200, _quote_names_its_item(_plan["answer"], _item))
+                return
+            if _dry and _own_page:
+                # Job E item 4 - a forum search is due: say so BEFORE it runs, so the page can show "searching d2jsp";
+                # the page's second ask (no step) is the search, planned and paced for real
+                self._json(200, _quote_names_its_item({"item": _item, "fg": None, "n": 0, "reason": "searching",
+                                                       "plan": _plan["do"], "say": "searching d2jsp", "posts": [],
+                                                       "low": None, "high": None, "readAt": "", "board": 268,
+                                                       "dbFirst": _plan.get("dbFirst")}, _item))
                 return
             _code, _out = _d2jsp.d2jsp_quote(
                 _item, self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,

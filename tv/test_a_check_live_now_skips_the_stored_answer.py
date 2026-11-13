@@ -190,7 +190,7 @@ class ThePageOffersItBesideThePrice(unittest.TestCase):
 RED_PROOF = [
     {"why": "Job E - live is ignored: a fresh item is answered stored even when he asks live",
      "file": "tv/control_app.py",
-     "find": "    if live:\n        return _d2jsp_live_now_plan(item, now, first, held is not None)\n",
+     "find": "    if live:\n        return _d2jsp_live_now_plan(item, now, first, held is not None, dry=dry)\n",
      "replace": "",
      "matches": 1},
     {"why": "Job E - check live now skips the pace (two searches inside one minute)",

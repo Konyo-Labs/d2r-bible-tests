@@ -12667,6 +12667,30 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-price-search .d2jsp-k{font-family:var(--serif-display,Cinzel,serif);letter-spacing:.14em;text-transform:uppercase;color:#f0c060}
     #tab-d2jsp .d2jsp-price-search input{font-family:var(--mono);background:#120e08;color:#f6e7c2;border:1px solid rgba(233,208,122,.4);border-radius:6px;padding:6px 8px}
     #tab-d2jsp #d2jsp-price-out{grid-column:1 / -1}
+    /* Job E item 4 (card #221) - the price check's loading card: the Shelf/Vault drawer's gold frame, a band that sweeps, the
+       step it is on lit in gold-bright, done steps ticked, next steps dim. Defined tokens only; motion off when asked. */
+    #tab-d2jsp .d2jsp-loading{border:1px solid rgba(212,168,71,.28);border-radius:12px;background:rgba(13,10,6,.35);padding:10px 13px;margin:4px 0}
+    #tab-d2jsp .d2jsp-loading + .d2jsp-loading{margin-top:8px}
+    #tab-d2jsp .d2jsp-load-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-family:var(--serif-display,Cinzel,serif);letter-spacing:var(--ls-wide);color:var(--gold-bright)}
+    #tab-d2jsp .d2jsp-load-n{text-transform:uppercase}
+    #tab-d2jsp .d2jsp-load-now{font-family:var(--mono);letter-spacing:0;font-size:var(--fs-micro);color:var(--gold)}
+    #tab-d2jsp .d2jsp-load-band{position:relative;height:3px;margin:9px 0 8px;border-radius:2px;background:rgba(212,168,71,.16);overflow:hidden}
+    #tab-d2jsp .d2jsp-load-band i{position:absolute;top:0;bottom:0;left:0;width:34%;border-radius:2px;background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);animation:d2jsp-load-sweep 1.15s var(--ease-in-out) infinite}
+    @keyframes d2jsp-load-sweep{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
+    #tab-d2jsp .d2jsp-load-steps{list-style:none;display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;padding:0;font-size:var(--fs-micro);color:var(--text-dim)}
+    #tab-d2jsp .d2jsp-load-step::before{content:'\25CB';display:inline-block;width:1.3em;color:var(--gold-dim)}
+    #tab-d2jsp .d2jsp-load-step[data-state="done"]{color:var(--text-muted)}
+    #tab-d2jsp .d2jsp-load-step[data-state="done"]::before{content:'\2713';color:var(--gold)}
+    #tab-d2jsp .d2jsp-load-step[data-state="now"]{color:var(--gold-bright)}
+    #tab-d2jsp .d2jsp-load-step[data-state="now"]::before{content:'\25C9';color:var(--gold-bright);animation:d2jsp-load-pulse 1.15s var(--ease-in-out) infinite}
+    #tab-d2jsp .d2jsp-load-step[data-state="skip"]{color:var(--text-dim);text-decoration:line-through}
+    #tab-d2jsp .d2jsp-load-note{text-decoration:none;display:inline-block;margin-left:4px}
+    @keyframes d2jsp-load-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    #tab-d2jsp .d2jsp-load-say{margin:8px 0 0;font-size:var(--fs-micro);color:var(--text-muted)}
+    @media (prefers-reduced-motion: reduce){
+      #tab-d2jsp .d2jsp-load-band i{animation:none;left:33%}
+      #tab-d2jsp .d2jsp-load-step[data-state="now"]::before{animation:none}
+    }
     /* Job E item 2 - "Check live now" beside the price line (it floats right of the line that follows it) */
     #tab-d2jsp .d2jsp-live-b{float:right;margin:0 0 6px 12px;font-size:var(--fs-micro);padding:3px 10px}
 #tab-d2jsp .d2jsp-advanced-b{grid-column:1 / -1;justify-self:start}
@@ -15104,6 +15128,28 @@ function d2jspDbArrange(root) {
     return host;
   }
   /* v3844 - THE PRICE SEARCH: any typed item and roll, read through the same quote path as the cards */
+  /* Job E item 4 (card #221) - the price check's loading card, in the console's own look: a gold band that moves, the three
+     steps with the one it is on lit, and the search sentence. Drawn only after D2JSP_LOAD_DELAY_MS (a stored answer back
+     at once never flashes it); a read's answer rests on "folding the posts" for D2JSP_LOAD_FOLD_MS before it is painted. */
+  var D2JSP_LOAD_DELAY_MS = 260, D2JSP_LOAD_FOLD_MS = 420;
+  var D2JSP_LOAD_STEPS = [['stored', 'Reading the stored price'], ['search', 'Searching d2jsp'], ['fold', 'Folding the posts']];
+  function d2jspLoadHtml(item, st, say, live){
+    var at = -1;
+    for (var k = 0; k < D2JSP_LOAD_STEPS.length; k++) if (D2JSP_LOAD_STEPS[k][0] === st) at = k;
+    var lis = D2JSP_LOAD_STEPS.map(function (s, k) {
+      var state = (live && k === 0) ? 'skip' : (k < at ? 'done' : (k === at ? 'now' : 'next'));
+      return '<li class="d2jsp-load-step" data-d2jsp-load-step="' + s[0] + '" data-state="' + state + '"'
+        + (state === 'now' ? ' aria-current="step"' : '') + '>' + s[1]
+        + (state === 'skip' ? ' <span class="d2jsp-load-note">skipped - check live now</span>' : '') + '</li>';
+    }).join('');
+    var nowWord = at >= 0 ? D2JSP_LOAD_STEPS[at][1] : 'Reading';
+    return '<div class="d2jsp-loading" data-d2jsp-loading="' + esc(st) + '" role="status" aria-live="polite" aria-busy="true">'
+      + '<div class="d2jsp-load-h"><span class="d2jsp-load-n">' + esc(item) + '</span><span class="d2jsp-load-now">' + esc(nowWord) + '\u2026</span></div>'
+      + '<div class="d2jsp-load-band" aria-hidden="true"><i></i></div>'
+      + '<ol class="d2jsp-load-steps">' + lis + '</ol>'
+      + (say ? '<p class="d2jsp-load-say">' + esc(say) + '</p>' : '') + '</div>';
+  }
+  window._d2jspLoadHtml = d2jspLoadHtml;
   var searchGen = 0;
   /* Job E item 2 (his yes to a "check live now" control, #230 6849292433) - priceSearch(chunk) with one typed chunk is that
      control: ?live=1 skips the stored answer and d2jsp is searched now, at the same one-a-minute pace; the answer is
@@ -15122,17 +15168,42 @@ function d2jspDbArrange(root) {
       if (one && one.item) { one._chunk = chunks[ci]; items.push(one); }
     }
     if (!items.length) { out.textContent = 'Type an item, for example anni 20/20/10.'; return; }
-    var gen = ++searchGen, paths = live ? ['/api/d2jsp_quote?live=1&item=', '/d2r/api/d2jsp_quote?item=']
-                                        : ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='];
+    /* Job E item 4 (card #221, his "for the READING PRICE for D2JSP it should render this better and more animated and like
+       loading design style for it instead of it stale like it is now when clicking price check") - A CHECK SHOWS THE STEP
+       IT IS ON. A plain check first asks the door for its plan (?step=plan: the stored price is read, nothing searched):
+       a stored answer comes straight back and is painted; "searching" means a forum search is due, and the search is the
+       second ask. So the loading card says only what is true: reading the stored price -> searching d2jsp -> folding the
+       posts, then the answer or an honest UNKNOWN. It appears only after D2JSP_LOAD_DELAY_MS, so a stored answer that
+       comes back at once never flashes it. Check live now skips the first step. */
+    var searchPaths = live ? ['/api/d2jsp_quote?live=1&item=', '/d2r/api/d2jsp_quote?item=']
+                           : ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='];
+    var gen = ++searchGen, paths = live ? searchPaths : ['/api/d2jsp_quote?step=plan&item=', '/d2r/api/d2jsp_quote?item='];
     var liveHost = null;
     if (live && out.querySelectorAll) {
       var _secs = out.querySelectorAll('section[data-d2jsp-search-item]');
       for (var si = 0; si < _secs.length; si++) if (_secs[si].getAttribute('data-d2jsp-search-item') === items[0].item) liveHost = _secs[si];
     }
-    (liveHost || out).textContent = 'Reading d2jsp posts dated 2026 or later for ' + items.map(function (p) { return p.item; }).join(', ') + '.';
+    var readSay = 'Reading d2jsp posts dated 2026 or later for ' + items.map(function (p) { return p.item; }).join(', ') + '.';
     var htmls = [], left = items.length, _out0 = out;
+    var steps = items.map(function () { return live ? 'search' : 'stored'; }), loadShown = false;
+    function paintLoad(){
+      if (gen !== searchGen || typeof d2jspLoadHtml !== 'function') return;
+      var h = '';
+      for (var k = 0; k < items.length; k++) {
+        h += (steps[k] === 'done' && htmls[k]) ? htmls[k] : d2jspLoadHtml(items[k].item, steps[k], items.length > 1 ? '' : readSay, live);
+      }
+      (liveHost || _out0).innerHTML = h;
+    }
+    function setStep(idx, st, now){
+      steps[idx] = st;
+      if (!loadShown && now) loadShown = true;
+      if (loadShown) paintLoad();
+    }
+    var loadTimer = (typeof setTimeout === 'function' && typeof D2JSP_LOAD_DELAY_MS === 'number')
+      ? setTimeout(function(){ if (gen === searchGen && left > 0) { loadShown = true; paintLoad(); } }, D2JSP_LOAD_DELAY_MS)
+      : null;
     items.forEach(function (parsed, idx) {
-    var i = 0, out = liveHost || _out0;     /* Job E item 2 - a live re-read paints its own section only */
+    var i = 0, out = liveHost || _out0, myPaths = paths;     /* Job E item 2 - a live re-read paints its own section only */
     function show(j){
       if (gen !== searchGen) return;     /* only the newest search paints */
       var sim = d2jspSimilarPrice(j, parsed.roll, parsed.item);
@@ -15170,22 +15241,41 @@ function d2jspDbArrange(root) {
     }
     function done(j){
       if (gen !== searchGen) return;
+      steps[idx] = 'done';
       show(j);
-      if (liveHost) return;                 /* Job E item 2 - one item re-read live: its own section, the rest stay */
+      if (liveHost) { left = 0; return; }   /* Job E item 2 - one item re-read live: its own section, the rest stay */
       htmls[idx] = '<section data-d2jsp-search-item="' + esc(parsed.item) + '">' + out.innerHTML + '</section>';
-      if (--left) return;
+      if (--left) { if (loadShown) paintLoad(); return; }   /* Job E item 4 - the rest keep their loading rows */
+      if (loadTimer !== null && typeof clearTimeout === 'function') clearTimeout(loadTimer);
       if (items.length > 1) out.innerHTML = htmls.join('');   /* v3891 (#192) - one card (one section) each */
       if (typeof priceSearchExit === 'function') priceSearchExit(out);
     }
+    /* Job E item 4 - a search's answer is shown on the "folding the posts" step for a beat, then painted; a card that
+       never showed the loading state paints at once */
+    function answered(j){
+      if (gen !== searchGen) return;
+      if (loadShown && typeof setTimeout === 'function' && typeof D2JSP_LOAD_FOLD_MS === 'number' && j && j.reason === 'read') {
+        setStep(idx, 'fold');
+        setTimeout(function(){ done(j); }, D2JSP_LOAD_FOLD_MS);
+        return;
+      }
+      done(j);
+    }
     function step(){
-      if (i >= paths.length) { done({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
-      fetch(paths[i++] + encodeURIComponent(parsed.item)).then(function(r){ return r.json(); }).then(function(j){
+      if (i >= myPaths.length) { done({ fg: null, n: 0, readAt: null, reason: 'unanswered' }); return; }
+      fetch(myPaths[i++] + encodeURIComponent(parsed.item)).then(function(r){ return r.json(); }).then(function(j){
+        if (j && j.reason === 'searching') {       /* Job E item 4 - the plan says a forum search is due: ask it now */
+          myPaths = searchPaths; i = 0;
+          setStep(idx, 'search', true);
+          step();
+          return;
+        }
         /* v3861 (#230 6644125606) - 'paused' is an ANSWER: the console said why it did not read. It used to fall through to
            the site path (404 on the console) and print "No price reader answered" while the console had answered. */
         /* REG-3356 (the Grok CLI on v3877, #231 6704665595) - EVERY REASON THE CONSOLE GIVES IS ITS ANSWER: 'unread' (the forum
            request failed twice, or a search was held back - REG-3326/REG-3331) fell through to the site path, a 404 on the
            console, and painted "No price reader answered" with no database - so neither the stored price nor the why showed */
-        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { done(j); return; }
+        if (j && typeof j.reason === 'string' && j.reason && j.reason !== 'unanswered') { answered(j); return; }
         step();
       }).catch(function(){ step(); });
     }
