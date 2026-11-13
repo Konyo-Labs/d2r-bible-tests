@@ -11850,8 +11850,10 @@ def _win_tint_caption():
 # [[feedback-fixtures-never-touch-live-data]]
 # REG-2463 — and the orphan fold: a harness's loose frames are its fixture, and folding them on a timer would
 # change the footage a render or a demo is reading while it reads it.
+# Job E - "tvd-price-refresh" (#96's 20-minute price re-read) is no longer here because the lane no longer exists: it was
+# RETIRED by his 11-13 ruling ("it doesnt need to redo things for now.. it can do it in the future"). A price check
+# refreshes the one item it reads, on his click (_d2jsp_price_check_plan); nothing searches the forum on a timer.
 _HARNESS_ONLY_SKIP = ("tvd-eagle-watch", "tvd-version-drift", "tvd-retention",
-                      "tvd-price-refresh",   # #96 - a harness never searches the forum on a timer
                       "tvd-retro-triage", "tvd-orphan-fold", "tvd-river-warm", "tvd-disk-sign")
 
 #: v3297 — lanes the roster SKIPPED at boot (TV_STUB harness), kept module-readable so a doctor
@@ -12028,9 +12030,9 @@ def start_background_watchers(why):
         # REG-2463 (#168) — his ruling 2026-10-21, "FOLD + LANE": loose frames of a session that died before it
         # sealed fold into a reel of their own on every PC. Moves frames only; asks what is in flight first.
         ("tvd-orphan-fold", _orphan_fold_loop),
-        # #96 / #88 - his 11-06 "so slowly after time the prices just slowly calibrate themselves": one due price-database
-        # item a pass, read through the desk's own quote; never while checks run or while he plays.
-        ("tvd-price-refresh", _price_refresh_loop),
+        # Job E - the #96/#88 price refresh lane, tvd-price-refresh (one due item every 20 min), is RETIRED by his 11-13
+        # ruling ("yea you can"; "it doesnt need to redo things for now.. it can do it in the future"). No background
+        # re-read is built: a price check refreshes the item it reads, on his click, one search a minute.
         # v2072 — say it out loud when the process is behind the disk. ANNOUNCES ONLY unless
         # TV_AUTO_RELAUNCH=1, and even then refuses while the agent is alive: a restart mid-film
         # orphans the frames of the session it kills.
@@ -33652,13 +33654,15 @@ def _orphan_fold_loop():
             pass
 
 
-#: #96 / #88 - the price refresh lane's first look after boot, and its period (d2jsp_refresh.FIRST_S / EVERY_S)
-_PRICE_REFRESH_FIRST_S = 900.0
-_PRICE_REFRESH_EVERY_S = 1200.0
+#: Job E - _PRICE_REFRESH_FIRST_S / _PRICE_REFRESH_EVERY_S and _price_refresh_loop (the "tvd-price-refresh" lane, v3878 #96/#88)
+#: are RETIRED by his 11-13 ruling: "yea you can", and on a background re-read "it doesnt need to redo things for now.. it can
+#: do it in the future". Nothing re-reads d2jsp on a timer - and #56's once-a-day check read rode that lane, so it is retired
+#: with it. A price check refreshes the item it reads (_d2jsp_price_check_plan); the fleet row says that read.
 
 
 def _d2jsp_check_path():
-    """#56 - this PC's last real d2jsp read (d2jsp_refresh.check_note), beside its price database."""
+    """#56 - this PC's last real d2jsp read (d2jsp_refresh.check_note), beside its price database. Job E: written by the
+    price check's own search (the quote door) - the refresh lane that wrote it once a day is retired (his 11-13 ruling)."""
     import d2jsp_refresh as _dr
     return os.path.join(_fixture_root_for_state(), _dr.CHECK_NAME)
 
@@ -33672,37 +33676,6 @@ def _d2jsp_check_for_wire():
     except Exception as e:
         return {"ok": None, "at": None, "ageS": None, "item": None, "reason": None,
                 "why": "this PC's d2jsp check could not be read (%s)" % type(e).__name__}
-
-
-def _price_refresh_loop():
-    """#96 / #88 (his 11-06: "so slowly after time the prices just slowly calibrate themselves") - THE PRICE DATABASE
-    REFRESHES ITSELF. d2jsp_price_db.fresh_refresh was written in v3849 and nothing ever called it: a price moved only when
-    he clicked "Price it". One due item a pass (d2jsp_refresh.run_once - the stalest first), through the desk's own quote
-    and this console's one DB writer (_d2jsp_db_fold); never while checks run or while the prover would stand aside (he
-    plays, a sweep reads, a push grades). This loop keeps the cadence, stamps its beat and leaves its trace."""
-    _first = True
-    while True:
-        try:
-            # two plain sleeps, the tooltip loop's shape: BLUEPRINT's lane table reads the cadence off each constant
-            if _first:
-                time.sleep(_PRICE_REFRESH_FIRST_S)
-            else:
-                time.sleep(_PRICE_REFRESH_EVERY_S)
-            _first = False
-            _lane_tick('tvd-price-refresh', _PRICE_REFRESH_EVERY_S)
-            import d2jsp_refresh as _dr
-            import d2jsp_chrome as _dq
-            _me = "127.0.0.1:%d" % CONTROL_PORT
-            r = _dr.run_once(os.path.join(_fixture_root_for_state(), "d2jsp_price_db.json"),
-                             quote=lambda name: _dq.d2jsp_quote(name, "http://" + _me, _me, CONTROL_PORT,
-                                                                sec_fetch_site="same-origin")[1],
-                             fold=_d2jsp_db_fold, stand_aside=_sp_yield_here,
-                             check_path=_d2jsp_check_path())     # #56 - every read recorded; one a day at least
-            import lane_trace as _lt
-            _lt.note('tvd-price-refresh', worked=r.get("worked"), owed=r.get("owed"), asked=r.get("asked"),
-                     reason=r.get("reason"), why=str(r.get("why") or "")[:200])
-        except Exception:
-            pass
 
 
 def _prune_loop():
@@ -52262,8 +52235,10 @@ class Handler(BaseHTTPRequestHandler):
             # a minute), an item it does not hold is read live; dbFirst rides on every answer. A request from anywhere but
             # this console's own page goes the old way, to d2jsp_quote's own refusal.
             _plan = {"do": "live", "dbFirst": None}
+            _own_page = False
             if _item and _d2jsp.console_may_post(self.headers.get("Origin"), self.headers.get("Host"), CONTROL_PORT,
                                                  self.headers.get("Sec-Fetch-Site")):
+                _own_page = True
                 try:
                     _plan = _d2jsp_price_check_plan(_item)
                 except Exception as _pe:
@@ -52286,6 +52261,14 @@ class Handler(BaseHTTPRequestHandler):
                 _out["dbFirst"] = _plan["dbFirst"]   # #96 - what the DB held BEFORE this read, beside the live posts
             if _plan["do"] == "refresh":
                 _out["refreshed"] = True
+            if _own_page:
+                # #56 / Job E - the fleet row's "d2jsp reads" is THIS search now: the once-a-day check read rode the
+                # retired price refresh lane (his 11-13 ruling), so a real price check is what proves the sign-in reads
+                try:
+                    import d2jsp_refresh as _dr
+                    _dr.check_note(_d2jsp_check_path(), _item, _out.get("reason"), time.time())
+                except Exception:
+                    pass
             self._json(_code, _out)
             return
         if path == "/api/d2jsp_price_db":

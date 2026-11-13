@@ -96,7 +96,9 @@ class AProofGivesWayToGithubsImport(unittest.TestCase):
         self.assertTrue(CA._sp_prove_yield_here(), "GitHub's import is running and the proof was not told to give way")
 
     def test_the_price_refresh_does_not_wait_on_an_import(self):
-        """the console's shared judge is unchanged: the d2jsp price refresh asks it, and an import is no reason to wait"""
+        """the console's shared judge is unchanged: an import is no reason for it to wait. (Job E: the d2jsp price refresh
+        LANE that asked this judge is retired by his 11-13 ruling; the judge itself and its other askers stay, so the
+        assertion stands as it was.)"""
         self._importing(True)
         self.assertFalse(CA._sp_yield_here())
 

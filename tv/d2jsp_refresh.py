@@ -1,38 +1,21 @@
 # -*- coding: utf-8 -*-
-"""#96 / #88 - THE PRICE DATABASE REFRESHES ITSELF, ONE STALE ITEM AT A TIME.
+"""#56 - THIS PC'S LAST REAL d2jsp READ, FOR ITS FLEET ROW. (Job E: the price refresh lane that lived here is RETIRED.)
 
-His words (11-06): "make sure the price is properly being wilson scored and averaged properly based on the posts and data
-from d2jsp and price checks so slowly after time the prices just slowly calliberate themselves to average out base don
-perfect tier or normal tier", and earlier (#88, 11-06 10:15): "price check just brings up the price of that item that was
-already researched and verified". The model was there (d2jsp_price_db, v3849: age decay, Wilson, normal/perfect apart) and
-fresh_refresh was written - and NOTHING ever called it: a price moved only when he clicked "Price it".
-
-This is the lane that calls it, paced so it can never be felt:
-  * ONE item a pass, the stalest (never read first, then the oldest read), every EVERY_S - a few an hour at most;
-  * never while checks run (d2jsp_price_db.checks_running - his 10-31 ruling) and never while he plays, a chronicle sweep
-    reads or a push grades (the prover's own stand-aside judge, handed in);
-  * the read is the desk's own quote (d2jsp_chrome.d2jsp_quote - one forum search at a time, 15 s apart, REG-3331) and
-    it is folded by the console's one DB writer (_d2jsp_db_fold), so a refresh and a click write the same way;
-  * a sign-in that is off answers need-login and the pass says so - nothing is opened, nothing is posted.
-Every pass returns what it did and what it owes, for the lane's trace and the doctor's row. Never raises.
+RETIRED by his 11-13 ruling on #96 (Job E, Claude's #230 6849292433): "yea you can" retire the 20-minute timer lane
+`tvd-price-refresh`, and on a background re-read, "it doesnt need to redo things for now.. it can do it in the future".
+What this module used to hold, and where it went:
+  * run_once / stale_items / FIRST_S / EVERY_S / LANE - the v3878 lane that re-asked d2jsp for one due price-database item
+    every 20 minutes (control_app._price_refresh_loop). GONE, with its thread, its lane-table rows (auto_scope,
+    loop_corroborate, shelf_driver), its harness stand-down and its BLUEPRINT row. No background re-read is built.
+    A price check refreshes the ONE item it reads, on his click, one search a minute (control_app._d2jsp_price_check_plan
+    -> d2jsp_price_db.fresh_refresh(only=, pace=)), and only when that item's read is past 90 days (REFRESH_DAYS).
+  * #56's once-a-day check read (CHECK_ITEM / CHECK_EVERY_S / check_due - "a day with nothing due asks Shako once") rode
+    that lane, so it is retired with it: nothing asks the forum on its own.
+What stays: the record of the last real read (.d2jsp_check.json: when, which item, what came back), now written by the
+price check's own search (the /api/d2jsp_quote door), and what a Fleet row carries from it - "d2jsp reads · 3 h ago",
+"signed out", "did not read (unread)", or UNKNOWN when this PC never searched. Never raises.
 [[heart-first]] [[unknown-stays-unknown]]
 """
-import math
-import time
-
-import d2jsp_price_db as P
-
-LANE = "tvd-price-refresh"
-#: the first pass after boot, then one item every EVERY_S (3 an hour): a day re-reads 72 items, never a burst
-FIRST_S = 900.0
-EVERY_S = 1200.0
-
-#: #56 (his 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did") - A REAL d2jsp READ ON EVERY PC, ONCE A DAY,
-#: ITS OUTCOME ON THAT PC'S FLEET ROW. Every pass that asks the forum records what came back; a day with nothing due asks
-#: CHECK_ITEM once, so a PC whose database is all fresh still proves its sign-in works. It honours every stand-aside a
-#: refresh does (checks running, he plays, a sweep reads, a push grades). Nothing is posted; a signed-out PC says so.
-CHECK_EVERY_S = 86400.0
-CHECK_ITEM = "Shako"
 CHECK_NAME = ".d2jsp_check.json"
 
 
@@ -45,14 +28,6 @@ def check_load(path):
     except Exception:
         return None
     return rec if isinstance(rec, dict) else None
-
-
-def check_due(rec, now):
-    """True when this PC has not asked the forum for CHECK_EVERY_S (or never has)."""
-    at = (rec or {}).get("at")
-    if not isinstance(at, (int, float)) or isinstance(at, bool):
-        return True
-    return now - at / 1000.0 >= CHECK_EVERY_S
 
 
 def check_note(path, item, reason, now):
@@ -84,82 +59,3 @@ def check_for_wire(rec, now):
         else "the last price search for %s did not read (%s)" % (rec.get("item"), reason or "no answer"))
     return {"ok": ok, "at": int(rec["at"]), "ageS": int(age), "item": str(rec.get("item") or "")[:40], "reason": reason,
             "why": why}
-
-
-def stale_items(db, now):
-    """-> [(key, name, readAt)] every item the DB holds that is due again (is_stale), the stalest first. Pure."""
-    out = []
-    for k, it in sorted(((db or {}).get("items") or {}).items()):
-        if not isinstance(it, dict) or not it.get("item"):
-            continue
-        try:
-            due, _why = P.is_stale(db, k, now, key=k)
-        except (TypeError, ValueError):
-            due = True      # its read time will not parse: one bad row must not stop the lane - a fresh read repairs it
-        if due:
-            try:
-                ra = float(it.get("readAt") or 0)      # never read: 0, the stalest
-            except (TypeError, ValueError):
-                ra = None                              # a read time that will not parse is UNKNOWN, never a made-up 0
-            # the second eye on v3879 (Grok CLI), reproduced: a readAt of "nan" parsed to nan, and nan is not a total order -
-            # one such row left the list UNSORTED (an item read at 500 asked before one read at 100); "inf" and a negative
-            # time sorted as real. A read time that is not a finite moment at or after 0 is UNKNOWN, asked first.
-            if ra is not None and not (math.isfinite(ra) and ra >= 0):
-                ra = None
-            out.append((k, str(it["item"]), ra))
-    out.sort(key=lambda r: (r[2] is not None, r[2] or 0.0, r[0]))     # an unknown read time is asked first
-    return out
-
-
-def run_once(db_path, quote, fold, stand_aside, now=None, checks=None, check_path=None):
-    """One pass. -> {"worked", "owed", "asked", "reason", "why"}; worked True only when the forum was asked.
-    #56 - with `check_path`, every read is recorded there, and a pass with nothing due asks CHECK_ITEM once a day.
-
-    `quote(name)` -> the desk's reading; `fold(reading)` -> the DB's answer; `stand_aside()` -> True while he plays (or a
-    sweep reads, or a push grades); `checks()` -> d2jsp_price_db.checks_running (True/False/None). Never raises."""
-    now = time.time() if now is None else now
-    out = {"worked": False, "owed": None, "asked": None, "reason": None, "why": ""}
-    try:
-        busy = (checks or P.checks_running)()
-        if busy is None or busy:
-            out["why"] = P.PAUSE if busy else "whether checks are running could not be told - nothing is asked (UNKNOWN)"
-            return out
-        try:
-            if stand_aside():
-                out["why"] = "he is playing (or a sweep reads, or a push grades) - nothing is asked beside it"
-                return out
-        except Exception as e:
-            out["why"] = "whether he is playing could not be told (%s) - nothing is asked" % type(e).__name__
-            return out
-        db = P.load(db_path)
-        if db is None:
-            out["why"] = "the price database would not read - nothing is asked over it (UNKNOWN)"
-            return out
-        due = stale_items(db, now)
-        out["owed"] = len(due)
-        if due:
-            _k, name, _ra = due[0]
-        elif check_path and check_due(check_load(check_path), now):
-            name = CHECK_ITEM                    # #56 - a day with nothing due still proves the sign-in reads
-            out["check"] = True
-        else:
-            out["why"] = "every item in the price database is fresh"
-            return out
-        out["asked"] = name
-        reading = quote(name)
-        out["worked"] = True
-        out["reason"] = reading.get("reason") if isinstance(reading, dict) else None
-        if check_path:
-            check_note(check_path, name, out["reason"], now)
-        if out["reason"] == "need-login":
-            out["why"] = "asked %s - the console's d2jsp sign-in is off, so the refresh waits for it (nothing opened)" % name
-            return out
-        got = fold(reading) if isinstance(reading, dict) else None
-        if isinstance(got, dict) and got.get("unknown"):
-            out["why"] = "asked %s - %s" % (name, got["unknown"])
-        else:
-            out["why"] = "asked %s (%s) - %d more due" % (name, out["reason"] or "no answer", max(0, len(due) - 1))
-        return out
-    except Exception as e:
-        out["why"] = "the pass raised %s - nothing more was asked" % type(e).__name__
-        return out

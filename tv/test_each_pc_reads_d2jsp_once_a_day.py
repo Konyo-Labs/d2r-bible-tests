@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-"""#56 - EVERY PC ASKS D2JSP FOR A REAL PRICE AT LEAST ONCE A DAY, AND ITS FLEET ROW SAYS WHETHER IT READ.
+"""#56 - EVERY PC'S FLEET ROW SAYS WHETHER ITS LAST REAL d2jsp SEARCH READ. (The once-a-day read is RETIRED - Job E.)
 
 His 11-05 worry: "d2jsp works on Dean's PC? the MacBook never did". A lamp says whether a sign-in exists; only a real
-search says d2jsp answers. v3878's refresh lane (d2jsp_refresh.run_once) already asks the forum for one stale item a pass on
-every PC; now every such read is recorded on that PC (.d2jsp_check.json: when, which item, what came back), a day with
-nothing due asks CHECK_ITEM once, and the record rides the PC's beacon ("d2jsp") to every Fleet row: "d2jsp reads · 3 h
-ago", "signed out", "did not read (unread)", or UNKNOWN when it never asked (or the build is older). Every stand-aside a
-refresh honours holds (checks running, he plays, a sweep reads, a push grades); nothing is posted.
+search says d2jsp answers. v3880 recorded every read of the refresh lane (d2jsp_refresh.run_once) on that PC
+(.d2jsp_check.json: when, which item, what came back), and a day with nothing due asked CHECK_ITEM once.
+Job E (Claude's #230 6849292433) - that lane is RETIRED by his 11-13 ruling ("yea you can"; "it doesnt need to redo things
+for now.. it can do it in the future"), and the once-a-day read rode it, so it is retired with it: NOTHING asks the forum
+on its own. The record stays and is now written by the price check's own search (the /api/d2jsp_quote door, after a real
+forum read - never for a stored, paused or refused answer), and it still rides the PC's beacon ("d2jsp") to every Fleet
+row: "d2jsp reads · 3 h ago", "signed out", "did not read (unread)", or UNKNOWN when it never searched (or the build is
+older). Nothing is posted. The file keeps its old name so its registered gate stays found.
 RED_PROOF below.
 """
 import io
@@ -35,92 +38,70 @@ NOW = 1794050000.0
 DAY = 86400.0
 
 
-class _World(object):
-    """a price database on disk, a quote that records what it was asked, and the check's own file"""
-
-    def __init__(self, reason="read"):
-        self.d = tempfile.mkdtemp(prefix="tvd_d2jsp_check_")
-        self.db = os.path.join(self.d, "d2jsp_price_db.json")
-        self.check = os.path.join(self.d, DR.CHECK_NAME)
-        DR.P.save(self.db, DR.P.empty())          # the database's own empty shape (its schema stamped)
-        self.asked, self.reason = [], reason
-
-    def quote(self, name):
-        self.asked.append(name)
-        return {"reason": self.reason, "item": name}
-
-    def run(self, now=NOW, plays=False, checks=False, stale=()):
-        with mock.patch.object(DR, "stale_items", lambda db, now: [(n.lower(), n, None) for n in stale]):
-            return DR.run_once(self.db, self.quote, fold=lambda r: {}, stand_aside=lambda: plays,
-                               now=now, checks=lambda: checks, check_path=self.check)
-
-    def close(self):
-        shutil.rmtree(self.d, True)
+NOTE = os.path.join("tv", "control_app.py")
 
 
-class EachPcReadsD2jspOnceADay(unittest.TestCase):
+def _door():
+    with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
+        src = fh.read()
+    a = src.index('        if path == "/api/d2jsp_quote":')
+    return src, src[a:src.index('        if path == "/api/d2jsp_price_db":', a)]
+
+
+class EachPcSaysItsLastRealRead(unittest.TestCase):
 
     def setUp(self):
-        self.w = _World()
-        self.addCleanup(self.w.close)
+        self.d = tempfile.mkdtemp(prefix="tvd_d2jsp_check_")
+        self.addCleanup(shutil.rmtree, self.d, True)
+        self.check = os.path.join(self.d, DR.CHECK_NAME)
 
-    def test_a_fresh_database_still_asks_once_a_day(self):
-        """* THE POINT: a PC with nothing due still proves d2jsp answers - once a day, never more"""
-        r = self.w.run()
-        self.assertEqual(self.w.asked, [DR.CHECK_ITEM], r)
-        self.assertTrue(r.get("check"))
-        rec = DR.check_load(self.w.check)
-        self.assertEqual((rec["ok"], rec["item"], rec["reason"], rec["at"]), (True, DR.CHECK_ITEM, "read", int(NOW * 1000)))
-        self.w.run(now=NOW + 2 * 3600)
-        self.assertEqual(self.w.asked, [DR.CHECK_ITEM], "a fresh check was asked again within the day")
-        self.w.run(now=NOW + DAY + 60)
-        self.assertEqual(self.w.asked, [DR.CHECK_ITEM, DR.CHECK_ITEM], "a day passed and nothing was asked")
+    def test_nothing_asks_d2jsp_on_its_own_any_more(self):
+        """* Job E - was test_a_fresh_database_still_asks_once_a_day: the once-a-day read is RETIRED with its lane"""
+        for gone in ("run_once", "CHECK_ITEM", "CHECK_EVERY_S", "check_due"):
+            self.assertFalse(hasattr(DR, gone), "d2jsp_refresh.%s is back - something asks d2jsp on its own again" % gone)
+        self.assertIn("once-a-day check read", DR.__doc__ or "", "the module no longer says the daily read is retired")
 
-    def test_a_due_item_is_the_days_read(self):
-        self.w.run(stale=["Griffon's Eye"])
-        self.assertEqual(self.w.asked, ["Griffon's Eye"], "the check asked its own item over a due one")
-        self.assertEqual(DR.check_load(self.w.check)["item"], "Griffon's Eye")
-        self.w.run(now=NOW + 3600)
-        self.assertEqual(len(self.w.asked), 1, "the read of a due item did not count as the day's check")
+    def test_a_price_checks_search_is_the_record(self):
+        """was test_a_due_item_is_the_days_read: the item the price check searched is the row's item"""
+        rec = DR.check_note(self.check, "Griffon's Eye", "read", NOW)
+        self.assertEqual((rec["ok"], rec["item"], rec["at"]), (True, "Griffon's Eye", int(NOW * 1000)))
+        self.assertEqual(DR.check_load(self.check)["item"], "Griffon's Eye")
 
     def test_a_signed_out_pc_says_so(self):
-        self.w.reason = "need-login"
-        self.w.run()
-        wire = DR.check_for_wire(DR.check_load(self.w.check), NOW + 600)
+        DR.check_note(self.check, "Shako", "need-login", NOW)
+        wire = DR.check_for_wire(DR.check_load(self.check), NOW + 600)
         self.assertIs(wire["ok"], False)
         self.assertEqual((wire["reason"], wire["ageS"]), ("need-login", 600))
         self.assertIn("sign in through its D2JSP lamp", wire["why"])
 
-    def test_every_stand_aside_holds(self):
-        for name, kw in (("he plays", {"plays": True}), ("checks run", {"checks": True}), ("checks UNKNOWN", {"checks": None})):
-            with self.subTest(case=name):
-                w = _World()
-                try:
-                    w.run(**kw)
-                    self.assertEqual(w.asked, [], "%s and the check asked d2jsp anyway" % name)
-                    self.assertIsNone(DR.check_load(w.check), "%s wrote a check that never happened" % name)
-                finally:
-                    w.close()
+    def test_only_a_real_search_from_his_own_page_is_recorded(self):
+        """was test_every_stand_aside_holds (the lane's stand-asides went with it): the door writes the record only after
+        a real forum read for this console's own page - a paused or stored answer returns before it, so neither is a
+        read that never happened"""
+        _src, door = _door()
+        note = door.index("_dr.check_note(_d2jsp_check_path(), _item, _out.get(\"reason\"), time.time())")
+        self.assertLess(door.index("_d2jsp.d2jsp_quote("), note, "the record is written before any search was made")
+        self.assertLess(door.index('"reason": "paused"'), note)
+        self.assertLess(door.index('if _plan["do"] == "stored":'), note)
+        self.assertIn("            if _own_page:\n", door[:note], "a refused foreign request would be recorded as a read")
 
     def test_never_asked_is_unknown_never_a_pass(self):
         wire = DR.check_for_wire(None, NOW)
         self.assertIsNone(wire["ok"])
         self.assertIn("has not asked d2jsp", wire["why"])
-        bad = os.path.join(self.w.d, "bad.json")
+        bad = os.path.join(self.d, "bad.json")
         with io.open(bad, "w", encoding="utf-8") as fh:
             fh.write("{not json")
         self.assertIsNone(DR.check_for_wire(DR.check_load(bad), NOW)["ok"])
 
     def test_the_beacon_carries_it(self):
         import control_app as CA
-        self.w.run()
-        with mock.patch.object(CA, "_d2jsp_check_path", lambda: self.w.check):
+        DR.check_note(self.check, "Shako", "read", NOW)
+        with mock.patch.object(CA, "_d2jsp_check_path", lambda: self.check):
             wire = CA._d2jsp_check_for_wire()
         self.assertIs(wire["ok"], True)
-        with io.open(os.path.join(HERE, "control_app.py"), encoding="utf-8") as fh:
-            src = fh.read()
+        src, _door_src = _door()
         self.assertIn('            "d2jsp": _d2jsp_check_for_wire(),', src, "the beacon does not carry the check")
-        self.assertIn("check_path=_d2jsp_check_path())", src, "the refresh lane does not record its reads")
 
 
 def _post_beacon(body):
@@ -202,25 +183,25 @@ class TheRowSaysIt(unittest.TestCase):
 
 
 RED_PROOF = [
-    {"why": "#56 - a PC whose database is fresh never proves d2jsp answers",
+    {"why": "Job E - the retired once-a-day read comes back (a timer asks d2jsp Shako again)",
      "file": "d2jsp_refresh.py",
-     "find": "        elif check_path and check_due(check_load(check_path), now):",
-     "replace": "        elif False:",
+     "find": "CHECK_NAME = \".d2jsp_check.json\"\n",
+     "replace": "CHECK_NAME = \".d2jsp_check.json\"\nCHECK_ITEM = \"Shako\"\n",
      "matches": 1},
-    {"why": "#56 - the reads are never recorded (the row cannot say whether d2jsp answered)",
-     "file": "d2jsp_refresh.py",
-     "find": "        if check_path:\n            check_note(check_path, name, out[\"reason\"], now)",
-     "replace": "        if False:\n            check_note(check_path, name, out[\"reason\"], now)",
+    {"why": "#56 / Job E - the price check's reads are never recorded (the row cannot say whether d2jsp answered)",
+     "file": "control_app.py",
+     "find": "                    _dr.check_note(_d2jsp_check_path(), _item, _out.get(\"reason\"), time.time())\n",
+     "replace": "                    pass\n",
+     "matches": 1},
+    {"why": "#56 / Job E - a foreign (refused) request is recorded as this PC's read",
+     "file": "control_app.py",
+     "find": "            if _own_page:\n                # #56 / Job E",
+     "replace": "            if True:\n                # #56 / Job E",
      "matches": 1},
     {"why": "#56 - a signed-out read is recorded as a pass",
      "file": "d2jsp_refresh.py",
      "find": "           \"ok\": reason == \"read\"}",
      "replace": "           \"ok\": True}",
-     "matches": 1},
-    {"why": "#56 - the check asks d2jsp every pass, not once a day",
-     "file": "d2jsp_refresh.py",
-     "find": "    return now - at / 1000.0 >= CHECK_EVERY_S",
-     "replace": "    return True",
      "matches": 1},
     {"why": "#56 - the worker drops the check, so every row reads an older build",
      "file": "functions/api/console.js",

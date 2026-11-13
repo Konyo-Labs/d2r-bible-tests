@@ -594,11 +594,11 @@
   },
   "d2jsp_refresh.py": {
     "entryPoints": [
-      "stale_items",
-      "run_once"
+      "check_note",
+      "check_for_wire"
     ],
-    "gotcha": "One item a pass, never a burst: it waits while checks run (checks_running) and while he plays, a sweep reads or a push grades (the prover's stand-aside judge). A read time that will not parse is UNKNOWN and asked first; one bad row never stops the lane.",
-    "purpose": "#96/#88 (REG-3348): the price DB refreshes itself - every EVERY_S it asks the d2jsp desk's own quote for the stalest due item and folds it through the console's one DB writer, so prices move without a click.",
+    "gotcha": "Its timer lane (run_once / stale_items, tvd-price-refresh every 20 min) and #56's once-a-day check read are RETIRED by his 11-13 ruling (Job E): nothing asks d2jsp on its own. The record is written only by the price check's own search (the /api/d2jsp_quote door, after a real forum read for this console's page); a PC that never searched is UNKNOWN, never a pass.",
+    "purpose": "#56: this PC's last real d2jsp read (.d2jsp_check.json) and what its Fleet row carries from it. Job E: the #96/#88 price refresh lane that lived here is RETIRED by his 11-13 ruling - a price check refreshes the item it reads, on his click.",
     "territory": "d2jsp"
   },
   "film_frame.py": {

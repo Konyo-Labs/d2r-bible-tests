@@ -59,9 +59,8 @@ SURFACES = ("_ledger_backup_loop", "_vault_autoread_loop",
             # #193 — it leaves a real trace every pass: whether it read the river, and why not
             "_river_warm_loop",
             # #151 — it leaves a real trace every pass: whether it measured the disk, and why not
-            "_disk_sign_loop",
-            # v3878 #96/#88 (REG-3348) — it leaves a real trace every pass: what it asked, what it owes, and why it waited
-            "_price_refresh_loop")
+            "_disk_sign_loop")
+#: Job E - _price_refresh_loop (v3878 #96/#88) left SURFACES: it is RETIRED by his 11-13 ruling - no loop, nothing to corroborate
 
 #: vessel -> (lane the tick is stamped under, glob for its trace, declared period in seconds)
 #: ⚠ THE LANE NAME IS NOT THE VESSEL NAME. `_ledger_backup_loop` stamps under
@@ -102,10 +101,8 @@ LOOPS = {
     # after boot (orphan_fold.EVERY_S / FIRST_S).
     "_orphan_fold_loop": ("tvd-orphan-fold",
                           _lt.path_of("tvd-orphan-fold"), 1800.0),
-    # #96 / #88 - the price refresh writes its trace on every pass (no throttle): 1200 s, a first look 900 s after boot
-    # (d2jsp_refresh.EVERY_S / FIRST_S).
-    "_price_refresh_loop": ("tvd-price-refresh",
-                            _lt.path_of("tvd-price-refresh"), 1200.0),
+    # Job E - the #96/#88 price refresh (_price_refresh_loop, "tvd-price-refresh", 1200 s) is RETIRED by his 11-13 ruling
+    # ("it doesnt need to redo things for now.. it can do it in the future"): no beat to corroborate.
     # #193 — the river warm lane writes its trace on every pass (no throttle): 300 s, a first look 60 s after boot
     # (RIVER_WARM_EVERY_S / RIVER_WARM_FIRST_S).
     "_river_warm_loop": ("tvd-river-warm",

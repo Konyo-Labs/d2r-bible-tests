@@ -396,7 +396,7 @@ LANES = {
 #:                         only its own receipt; no reel, no frame, no ledger is on its work-list
 #:     tvd-orphan-fold     REG-2463 - folds LOOSE frames (no reel yet) into new reels; its work-list is
 #:                         orphan_fold.plan's clusters, and no shelved reel waits on it
-#:     tvd-price-refresh   #96 - re-asks d2jsp for one due price-database item; it touches no reel and no frame
+#:     (tvd-price-refresh  #96's price re-read - RETIRED by his 11-13 ruling (Job E); no lane, so not listed)
 #:     tvd-river-warm      #193 - READS the river (the read-only route) so the Fleet has one; it moves no reel
 #:     tvd-disk-sign       #151 - MEASURES what holds the disk for the sign under the ONLINE light; it moves nothing
 #: [[unknown-stays-unknown]] [[zero-needs-a-denominator]]
@@ -409,7 +409,7 @@ LANES = {
 NOT_SHELF_LANES = ("tvd-shadow-watch", "tvd-stash-watch", "tvd-rolling-prune",
                    "tvd-ledger-backup", "tvd-space-warden", "tvd-version-drift",
                    "tvd-eagle-watch", "tvd-runaway-watch", "tvd-tooltip-oracle", "tvd-orphan-fold",
-                   "tvd-price-refresh", "tvd-river-warm", "tvd-disk-sign")
+                   "tvd-river-warm", "tvd-disk-sign")
 
 
 def declared_covers_the_map(owed_by=None, lanes=None):
