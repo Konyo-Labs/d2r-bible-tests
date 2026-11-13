@@ -1700,7 +1700,11 @@ RED_PROOF = [
         "find": ".cb-st-r{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 6px;",
         "replace": ".cb-st-r{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:baseline;gap:0 6px;",
         "matches": 1,
-        "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
+        # REG-3832 (his Mac, 11-13, v3904's main push refused: [21] BLIND at 1280x800 on a quiet Mac too) - MEASURED on a
+        # scratch copy with this tamper: the law goes red at EVERY sweep width 960-1180 (2-20 rows drop) and NOT at 1280 -
+        # the builder's layout moved since the 09-29 measurement below, so the one width it was proved at is the one it is
+        # blind at. 1080 sits in the middle of the band it is caught in.
+        "widths": ["1080x800"],   # #42 measured 2026-09-29 at 1280x800; re-measured 2026-11-13: red at 960-1180, green at 1280
         # REG-3832 (v3904's GitHub round, run 43339514824 shard 21) - BLIND on the Linux runner: its narrower fonts fit the
         # widened Fire value on one line at 1280, so the flex-wrap tamper drops nothing there. The defect is a font-metric
         # one, measured red on his Mac's fonts; it is proven where those fonts are and filed ELSEWHERE on Linux/Windows.

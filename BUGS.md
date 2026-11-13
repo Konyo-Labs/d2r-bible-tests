@@ -154,6 +154,10 @@ real-tree example of a browser law GitHub proves; a law with a macOS-only tamper
 split is per law), so the example is now the mule-window law, the same kind with no such tamper. Cost, stated: the builder
 law's ~27-minute proof run moves to his Mac at the push whenever that law changes.
 
+SECOND HALF (11-13, v3904's main push refused on a quiet Mac: [21] BLIND there too): MEASURED on a scratch copy with the
+tamper, the law is red at every sweep width 960-1180 and NOT at 1280 - the proof's own declared width ("1280x800", measured
+09-29) is the one width the builder's later layout made it blind at. It is proved at 1080x800 now, inside the band.
+
 ### REG-3827 - v3904's GITHUB ROUND RED: EVERY ROUTINE READ "NO PUSH PATHS AT ALL" AFTER REG-3807 (v3904)
 MEASURED 11-13 01:50 IST, agent-suite (3) on run 43329370041: test_control's
 test_each_routine_watches_its_own_script_and_its_own_workflow - "routine-g-audit.yml has no push paths at all". REG-3807
