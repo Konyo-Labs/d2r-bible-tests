@@ -13594,6 +13594,15 @@ function d2jspReadLine(q) {
   var _sk = Number(q.skipped) > 0 ? (' ' + Number(q.skipped) + (Number(q.skipped) === 1 ? ' line skipped.' : ' lines skipped.')) : '';
   return head + ': this read saw ' + n + ' ' + (n === 1 ? 'price' : 'prices') + spread + when + ' - weighed into the price below.' + _sk;
 }
+/* #96 (his 11-06: "for price check it should be joined logic to the database so this is a communicating and whole system")
+   - WHAT THE DATABASE HELD BEFORE THIS CHECK, beside the live posts: its price, Wilson lower bound and priced-post count
+   (d2jsp_price_db.db_first). A thin or empty database says UNKNOWN - never a confident 0. No dbFirst: nothing drawn. */
+function d2jspDbFirstLine(q) {
+  var f = q && q.dbFirst;
+  if (!f || typeof f !== 'object') return '';
+  if (f.verdict === 'known' && Number(f.fg) > 0) return String(f.say || ('Database: ' + f.fg + ' fg, Wilson lower bound ' + f.conf + ', from ' + f.n + ' priced posts.'));
+  return String(f.say || 'Database: UNKNOWN.');
+}
 function d2jspSearchLine(q, sim, parsed) {
   var _dbP = !!(q && q.reason === 'read' && Number(q.fg) > 0 && q.db && !q.db.unknown
     && ((q.db.normal && q.db.normal.fg != null) || (q.db.perfect && q.db.perfect.fg != null)));
@@ -14400,7 +14409,7 @@ function d2jspDbArrange(root) {
     return out;
   }
   function priceText(n){
-    if (quoted[n]) { var note = d2jspPriceNote(quoted[n], d2jspBoard()); return d2jspPriceLine(quoted[n]) + (note ? (' ' + note) : ''); }
+    if (quoted[n]) { var note = d2jspPriceNote(quoted[n], d2jspBoard()), dbf = d2jspDbFirstLine(quoted[n]); return d2jspPriceLine(quoted[n]) + (note ? (' ' + note) : '') + (dbf ? (' ' + dbf) : ''); }   /* #96 - the DB beside the live line */
     if (reading) return 'Reading the public price.';
     return 'Public price unknown.';
   }
@@ -15131,7 +15140,9 @@ function d2jspDbArrange(root) {
       var _cards = d2jspTierCardsHtml((j && typeof j.resolved === 'string' && j.resolved) || parsed.item, j && j.db,
                                       _evRows.length ? _evRows : null);   /* #97 */
       var _split = _cards.indexOf('data-d2jsp-tier-posts') >= 0;
+      var _dbFirst = (typeof d2jspDbFirstLine === 'function') ? d2jspDbFirstLine(j) : '';   /* #96 - the DB's price beside the live posts */
       out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>'
+        + (_dbFirst ? '<div class="d2jsp-say" data-d2jsp-db-first>' + esc(_dbFirst) + '</div>' : '')
         + (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '') + _cards
         + (_ev && !_split ? d2jspEvidenceHtml(_evSim, j) : '');
       var backend = document.getElementById('d2jsp-price-backend');
