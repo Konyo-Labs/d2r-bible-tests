@@ -131,7 +131,10 @@ def ingest(db, reading, src, now=None, key=None):
             new += 1
         elif row["author"] is None and author_of(old_row):
             row["author"] = author_of(old_row)       # REG-3790 - a re-read that did not see the seller keeps the known one
+        if old_row is not None and str(old_row.get("sameAs") or "").strip().isdigit():
+            row["sameAs"] = str(old_row["sameAs"]).strip()   # #180 - a declared same listing survives a re-read
         it["posts"][pk] = row
+    declare_same_topics({"items": {k: it}})          # #180 - a fold that brings both halves of a repost declares it
     return new
 
 
@@ -211,6 +214,16 @@ def _age_weight(p, now, share=None):
 
 
 _TOPIC = re.compile(r"[?&;]t=(\d+)")
+
+#: #180 (REG-3792's open half) - TOPICS MEASURED TO BE ONE LISTING, {topic: the topic it repeats}. A declared sameAs lived
+#: only on a stored row: nothing in the console ever wrote one (mark_same_listing had no caller), and a re-read rewrote the
+#: row without it. So the measured duplicates are kept HERE and declared by mark_same_listing on every DB that is LOADED
+#: (load) or FOLDED (ingest), on every PC - the row says sameAs, vote_shares makes it one vote, both topics stay on record.
+#: Only a topic measured here is joined: unknown sellers in other topics are never guessed the same.
+#:   110566436 -> 110552180: Enigma "perfect", GrokBot's look on the three non-ladder topics (#230, 11-12): t=110566436
+#:   repeats t=110552180's two lines word for word ("Perfect Wire Fleece 15/0 Nigma 775/1329 - 2000fg", "Perfect Whymhide
+#:   Nigma 0/0 775/1233 - 1,850fg") - one ask, listed twice; it weighed 1.5 votes (11-11 16:07).
+SAME_TOPICS = {"110566436": "110552180"}
 
 
 def topic_of(link):
@@ -528,8 +541,22 @@ def mark_same_listing(db, item, topic, of_topic, key=None):
     return n
 
 
+def declare_same_topics(db):
+    """#180 - mark every measured repost (SAME_TOPICS) on every item that holds both topics. -> rows newly marked."""
+    n = 0
+    for k, it in list(((db or {}).get("items") or {}).items()):
+        if not isinstance(it, dict):
+            continue
+        held = {topic_of(p.get("link")) for p in (it.get("posts") or {}).values() if isinstance(p, dict)}
+        for t, of in SAME_TOPICS.items():
+            if t in held and of in held:
+                n += mark_same_listing(db, k, t, of, key=k)
+    return n
+
+
 def load(path):
-    """-> db, or None when the file exists and cannot be read (UNKNOWN - never silently an empty DB)."""
+    """-> db, or None when the file exists and cannot be read (UNKNOWN - never silently an empty DB).
+    #180 - every measured repost is declared on the way in (declare_same_topics), so every reader prices it once."""
     if not os.path.exists(path):
         return empty()
     try:
@@ -537,7 +564,10 @@ def load(path):
             db = json.load(f)
     except (OSError, ValueError):
         return None
-    return db if isinstance(db, dict) and db.get("schema") == SCHEMA else None
+    if not (isinstance(db, dict) and db.get("schema") == SCHEMA):
+        return None
+    declare_same_topics(db)
+    return db
 
 
 def save(path, db):
