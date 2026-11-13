@@ -33,6 +33,7 @@ import d2jsp_price_db as P  # noqa: E402
 
 NOW = time.mktime(time.strptime("2026-11-13", "%Y-%m-%d"))
 DAY = 86400.0
+# Job E (his 11-13 ruling) - an item is stale only past 90 days after its read (was 3): the stale rows are read 95 / 99 days ago
 
 
 def _db(items):
@@ -57,7 +58,7 @@ class _Free(unittest.TestCase):
 class FreshRefreshIsThePriceChecksOwn(_Free):
 
     def test_only_the_item_asked_is_refreshed(self):
-        db = _db([("Shako", 5, 1), ("Gull", 9, 2)])
+        db = _db([("Shako", 95, 1), ("Gull", 99, 2)])
         got = []
         r = P.fresh_refresh(db, got.append, NOW, only=["shako"])
         self.assertEqual(got, ["Shako"], "a price check for Shako refreshed every stale item in the DB")
@@ -69,7 +70,7 @@ class FreshRefreshIsThePriceChecksOwn(_Free):
         self.assertEqual(got, [], "a fresh item was asked again")
 
     def test_one_search_a_minute(self):
-        db = _db([("Shako", 5, 1), ("Gull", 9, 2)])
+        db = _db([("Shako", 95, 1), ("Gull", 99, 2)])
         pace, got = {"at": 0.0}, []
         P.fresh_refresh(db, got.append, NOW, only=["Shako"], pace=pace)
         self.assertEqual(pace["at"], NOW, "the refresh did not stamp its pace")
@@ -81,18 +82,18 @@ class FreshRefreshIsThePriceChecksOwn(_Free):
 
     def test_a_paced_pass_fetches_one(self):
         got = []
-        P.fresh_refresh(_db([("Shako", 5, 1), ("Gull", 9, 2)]), got.append, NOW, pace={"at": 0.0})
+        P.fresh_refresh(_db([("Shako", 95, 1), ("Gull", 99, 2)]), got.append, NOW, pace={"at": 0.0})
         self.assertEqual(len(got), 1, "a paced pass searched more than once")
 
     def test_an_item_the_db_lacks_is_not_refreshed_here(self):
         got = []
-        P.fresh_refresh(_db([("Shako", 5, 1)]), got.append, NOW, only=["Gull"])
+        P.fresh_refresh(_db([("Shako", 95, 1)]), got.append, NOW, only=["Gull"])
         self.assertEqual(got, [])
 
     def test_checks_running_fetches_nothing(self):
         P.checks_running = lambda env=None: True
         got = []
-        r = P.fresh_refresh(_db([("Shako", 5, 1)]), got.append, NOW, only=["Shako"], pace={"at": 0.0})
+        r = P.fresh_refresh(_db([("Shako", 95, 1)]), got.append, NOW, only=["Shako"], pace={"at": 0.0})
         self.assertEqual((got, r["say"]), ([], P.PAUSE))
 
 
@@ -104,7 +105,7 @@ class ThePriceCheckPlansFromTheDatabase(_Free):
         self.CA = CA
         self.d = tempfile.mkdtemp(prefix="price-plan-")
         self.addCleanup(shutil.rmtree, self.d, True)
-        P.save(os.path.join(self.d, "d2jsp_price_db.json"), _db([("Gull", 9, 2), ("Arachnid Mesh", 1, 1)]))
+        P.save(os.path.join(self.d, "d2jsp_price_db.json"), _db([("Gull", 99, 2), ("Arachnid Mesh", 1, 1)]))
         old = os.environ.get("TV_HIST")
         os.environ["TV_HIST"] = self.d
         self.addCleanup(lambda: os.environ.pop("TV_HIST", None) if old is None else os.environ.__setitem__("TV_HIST", old))

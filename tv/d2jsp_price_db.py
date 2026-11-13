@@ -9,9 +9,11 @@ every PC (src), and prices an item from them:
   * WILSON - the confidence is the Wilson lower bound of "posts that agree with the price" (within AGREE of it) over
     the effective post count, so 3 agreeing posts say less than 30.
   * PERFECT TIER - posts that say perf/perfect are priced on their own and never lift the normal price.
-  * FRESH REFRESH - stale(...) says when an item must be asked again: never read, read longer ago than REFRESH_DAYS,
-    or its newest post is older than STALE_POST_DAYS. fresh_refresh asks those. While a gate or heart2 run holds
-    the tree it says "paused while checks run" and does not fetch. Unknown is not free.
+  * FRESH REFRESH - stale(...) says when an item must be asked again: never read, or read longer ago than REFRESH_DAYS
+    (90 - his 11-13 ruling, "even for like 3 months.. price database going back to 2025 so those prices should be correct
+    and good to use"; an old post is still a good price, the age decay already weighs it). fresh_refresh asks those,
+    only for the item a price check reads. While a gate or heart2 run holds the tree it says "paused while checks run"
+    and does not fetch. Unknown is not free.
   * FLEET-READY - schema 1 is a plain JSON of items -> posts keyed by link with src and seenAt, and merge(a, b) is a
     commutative union (newest seenAt wins per post), so PCs can trade their DBs without losing or doubling a post.
 No number is invented: an item with no weighted post prices as None (UNKNOWN), never 0.
@@ -20,8 +22,11 @@ import json, math, os, re, tempfile, time
 
 SCHEMA = 1
 HALF_LIFE_DAYS = 30.0
-REFRESH_DAYS = 3.0
-STALE_POST_DAYS = 45.0
+#: Job E (his 11-13 ruling on #96: "even for like 3 months.. price database going back to 2025 so those prices should be
+#: correct and good to use") - a price check answers from the stored price while its last read is under 90 days old;
+#: only an item past 90 days is searched on click (one search a minute). Was 3 days, and a 45-day newest-post rule
+#: (STALE_POST_DAYS) made every quiet item stale - both retired by the same ruling: an old post is still a good price.
+REFRESH_DAYS = 90.0
 AGREE = 0.25          # a post agrees with the price when it is within 25 % of it
 Z = 1.96
 
@@ -394,7 +399,6 @@ def explain(db, item, now=None, key=None):
         "halfLifeDays": HALF_LIFE_DAYS,
         "agree": AGREE,
         "refreshDays": REFRESH_DAYS,
-        "stalePostDays": STALE_POST_DAYS,
         "z": Z,
     }
 
@@ -425,10 +429,8 @@ def is_stale(db, item, now=None, key=None):
         return True, "never read"
     if now - read_at > REFRESH_DAYS * 86400:
         return True, "read more than %g days ago" % REFRESH_DAYS
-    days = [_day_ts(p["day"]) for p in held.values()]
-    days = [d for d in days if d is not None]
-    if not days or now - max(days) > STALE_POST_DAYS * 86400:
-        return True, "no post in the last %g days" % STALE_POST_DAYS
+    # Job E (his 11-13 ruling) - the age of the newest POST no longer makes an item stale: a quiet item read last week
+    # is answered from the database, never searched again on every click.
     return False, "fresh"
 
 

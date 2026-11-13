@@ -272,6 +272,9 @@ def _d2jsp_price_check_plan(item, now=None, env=None):
       * a held item that is STALE is refreshed by this check: d2jsp_price_db.fresh_refresh(only=[it], pace=...) chooses
         it, one search a minute across every check (the backfill's pace) - never a timer of its own;
       * a held item that is fresh, or stale inside the minute, is answered from the DB ("stored"), the wait said.
+    Job E (his 11-13 ruling: "even for like 3 months.. price database going back to 2025 so those prices should be correct
+    and good to use") - FRESH is a read under d2jsp_price_db.REFRESH_DAYS = 90 days old (was 3); only an item past 90 days
+    is searched on click. The stored answer says how old its read is, so he sees why the forum was not asked.
     dbFirst rides on every answer: the DB price beside the live posts, its Wilson and post count, UNKNOWN when thin."""
     import d2jsp_price_db as _PDB
     now = time.time() if now is None else now
@@ -291,7 +294,13 @@ def _d2jsp_price_check_plan(item, now=None, env=None):
         r = _PDB.fresh_refresh(db, chosen.append, now, env=env, only=[key, item], pace=_D2JSP_REFRESH_PACE)
     if chosen:
         return {"do": "refresh", "dbFirst": first, "why": "%s - this price check refreshes it" % first["why"]}
-    say = r.get("say") or ("%s is fresh in the price database (%s) - not asked again" % (item, first["why"]))
+    try:
+        _age_d = max(0, int((now - float(_ra or 0)) // 86400)) if _ra else None
+    except (TypeError, ValueError):
+        _age_d = None
+    _age = ("read %d %s ago" % (_age_d, "day" if _age_d == 1 else "days")) if _age_d is not None else "read time UNKNOWN"
+    say = r.get("say") or ("%s is answered from the price database (%s) - d2jsp is searched again only after %g days"
+                           % (item, _age, _PDB.REFRESH_DAYS))
     answer = {"item": item, "fg": None, "n": 0, "reason": "stored", "say": say, "posts": [], "low": None, "high": None,
               "readAt": "", "board": 268, "db": _d2jsp_db_view(item), "dbFirst": first}
     if r.get("wait") is not None:

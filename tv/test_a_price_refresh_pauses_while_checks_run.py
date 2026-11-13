@@ -47,7 +47,7 @@ class PriceRefreshPauses(unittest.TestCase):
         self.now = time.mktime(time.strptime("2026-10-31", "%Y-%m-%d"))
         self.db = P.empty()
         self._put("Shako", 1, self.now)
-        self._put("Annihilus", 2, self.now - 4 * DAY)
+        self._put("Annihilus", 2, self.now - 95 * DAY)   # Job E (his 11-13 ruling) - stale only past 90 days (was 3)
         self.seen = []
 
     def _put(self, item, n, at):

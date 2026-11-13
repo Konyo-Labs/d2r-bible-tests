@@ -67,14 +67,20 @@ class ThePriceDB(unittest.TestCase):
         self.assertIsNone(p["normal"]["fg"])
         self.assertEqual(p["why"], "never read")
 
-    def test_it_asks_again_when_the_read_or_the_posts_are_old(self):
+    def test_it_asks_again_only_when_the_read_is_old(self):
+        """Job E (his 11-13 ruling on #96: "even for like 3 months.. price database going back to 2025 so those prices should
+        be correct and good to use") - fresh for 90 days after its read (was 3), and an old newest POST no longer makes
+        an item stale (the 45-day rule is retired by the same ruling)."""
         db = P.empty()
         P.ingest(db, _reading([_post(100, 1, 1)]), "mac", NOW)
         self.assertEqual(P.is_stale(db, "Shako", NOW), (False, "fresh"))
-        self.assertTrue(P.is_stale(db, "Shako", NOW + 4 * DAY)[0])
+        self.assertEqual(P.is_stale(db, "Shako", NOW + 4 * DAY), (False, "fresh"), "a 4-day-old read is stale again (3 days)")
+        self.assertEqual(P.is_stale(db, "Shako", NOW + 89 * DAY), (False, "fresh"))
+        self.assertTrue(P.is_stale(db, "Shako", NOW + 91 * DAY)[0], "a read past 90 days still calls itself fresh")
         old = P.empty()
         P.ingest(old, _reading([_post(100, 60, 1)]), "mac", NOW)
-        self.assertTrue(P.is_stale(old, "Shako", NOW)[0], "a DB whose newest post is 60 days old called itself fresh")
+        self.assertEqual(P.is_stale(old, "Shako", NOW), (False, "fresh"),
+                         "a DB read today whose newest post is 60 days old is searched again (the retired 45-day rule)")
 
     def test_two_pcs_merge_into_one_db_either_way(self):
         a, b = P.empty(), P.empty()
