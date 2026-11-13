@@ -12694,6 +12694,22 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     /* Job E item 2 - "Check live now" beside the price line (it floats right of the line that follows it) */
     #tab-d2jsp .d2jsp-live-b{float:right;margin:0 0 6px 12px;font-size:var(--fs-micro);padding:3px 10px}
 #tab-d2jsp .d2jsp-advanced-b{grid-column:1 / -1;justify-self:start}
+/* Job E item 5 (card #222) - Advanced is a drawer header in the Shelf backdoor's style (control_ui .sh-backdoor: the gold
+   hairline frame, the serif gold-bright title, a quiet hint). Its STATE is aria-expanded alone: the chevron turns, the
+   words swap (Show advanced / Hide advanced) and, open, the header squares its foot and the panel joins beneath it (the
+   grid's 8px gap is closed). Defined tokens only; no cursor of its own (the page's pointer stands). */
+#tab-d2jsp #d2jsp-price-advanced{justify-self:stretch;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;text-align:left;margin:0;padding:9px 13px;border:1px solid rgba(212,168,71,.28);border-radius:12px;background:rgba(13,10,6,.35);color:var(--gold-bright);font-family:var(--serif-display);letter-spacing:var(--ls-wide);transform:none}
+#tab-d2jsp #d2jsp-price-advanced:hover{border-color:rgba(240,192,96,.55)}
+#tab-d2jsp #d2jsp-price-advanced:focus-visible{outline:1px solid var(--gold-bright);outline-offset:2px}
+#tab-d2jsp .d2jsp-adv-chev{display:inline-block;width:1em;color:var(--gold);transition:transform .18s var(--ease-out)}
+#tab-d2jsp #d2jsp-price-advanced[aria-expanded="true"] .d2jsp-adv-chev{transform:rotate(90deg)}
+#tab-d2jsp .d2jsp-adv-word{font-weight:var(--fw-semibold);text-transform:uppercase;font-size:var(--fs-meta)}
+#tab-d2jsp #d2jsp-price-advanced .d2jsp-adv-hide,#tab-d2jsp #d2jsp-price-advanced[aria-expanded="true"] .d2jsp-adv-show{display:none}
+#tab-d2jsp #d2jsp-price-advanced[aria-expanded="true"] .d2jsp-adv-hide{display:inline}
+#tab-d2jsp .d2jsp-adv-hint{font-family:var(--mono);font-size:var(--fs-micro);color:var(--gold-dim);letter-spacing:0}
+#tab-d2jsp #d2jsp-price-advanced[aria-expanded="true"]{border-radius:12px 12px 0 0;border-bottom-color:rgba(212,168,71,.2)}
+#tab-d2jsp #d2jsp-price-advanced[aria-expanded="true"] + .d2jsp-backend{margin-top:-8px;border-color:rgba(212,168,71,.28);border-top:0;border-radius:0 0 12px 12px;background:rgba(13,10,6,.35)}
+@media (prefers-reduced-motion: reduce){#tab-d2jsp .d2jsp-adv-chev{transition:none}}
 /* v3881 (REG-3390) - the price database: its own scroll panel, a sticky Find + Sort bar, one line per item */
 #tab-d2jsp .d2jsp-db-scroll{max-height:min(62vh,560px);overflow:auto;overscroll-behavior:contain;border:1px solid rgba(212,168,71,.22);border-radius:10px;padding:0 10px 8px;margin:6px 0}
 #tab-d2jsp .d2jsp-db-bar{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;background:var(--bg-elev1);border-bottom:1px solid rgba(212,168,71,.18)}
@@ -12772,7 +12788,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
         <label class="d2jsp-k" for="d2jsp-price-q">Price search</label>
         <input id="d2jsp-price-q" type="search" placeholder="anni 20/20/10, 40/15 shako, jmod" aria-label="Price search: an item and its roll, as traders write it" autocomplete="off" spellcheck="false">
         <button type="submit" class="vault-btn vault-btn-primary" id="d2jsp-price-go">Price it</button>
-        <button type="button" class="vault-btn d2jsp-advanced-b" id="d2jsp-price-advanced" aria-controls="d2jsp-price-backend" aria-expanded="false">Advanced</button>
+        <!-- Job E item 5 (card #222, his "when clicking advanced for d2jsp it collapses and decollapses but it doesnt properly show this like when opened or closed") - the door is a drawer header in the Shelf backdoor's style: a chevron that turns, words that change (both spans are here; aria-expanded picks one, so every path that opens or shuts it says so) and, open, the panel joined beneath it -->
+        <button type="button" class="vault-btn d2jsp-advanced-b" id="d2jsp-price-advanced" aria-controls="d2jsp-price-backend" aria-expanded="false"><span class="d2jsp-adv-chev" aria-hidden="true">▸</span><b class="d2jsp-adv-word"><span class="d2jsp-adv-show">Show advanced</span><span class="d2jsp-adv-hide">Hide advanced</span></b><span class="d2jsp-adv-hint">Database price · Wilson score · the posts behind it</span></button>
         <div id="d2jsp-price-backend" class="d2jsp-backend" hidden>
           <p class="d2jsp-say" data-d2jsp-backend>Price an item, then open Advanced. The database price, the Wilson score, and the posts that price was weighed from are shown here. Nothing is posted.</p>
           <p><button type="button" class="vault-btn" id="d2jsp-price-db-show">Show the database</button></p>
@@ -15391,6 +15408,9 @@ function d2jspDbArrange(root) {
       priceSearch(_lv.getAttribute('data-d2jsp-live-now') || '');
       return true;
     }
+    /* Job E item 5 - a press on the Advanced header's chevron, words or hint is a press on the header */
+    var _adv = (t && t.closest) ? t.closest('#d2jsp-price-advanced') : null;
+    if (_adv) t = _adv;
     if (!t || !t.id) return false;
     if (t.id === 'd2jsp-price-db-show') {
       if (ev.preventDefault) ev.preventDefault();
