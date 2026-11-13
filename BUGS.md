@@ -142,6 +142,14 @@ MEASURED 11-11 on v3898's GitHub round (agent-suite (4)): "no version since v384
 MEASURED 11-12 (v3899 run h): all 1,639 laws green, then the console demos RED with the tail "Node.js v24.13.0" - the fresh worktree had no node_modules ('Cannot find module playwright'); tv/seed_worktree.py fixed it in seconds and the demos ran 16/16, but the whole 35-min pre-flight had to run again. The pre-flight asked neither seeder. And the two seeders disagreed: seed_worktree.py COPIES ("never links" - a node_modules link into main is the v3525 shape that deleted main's real one) while preship.mac_ready's auto-fix SYMLINKED ~/d2r_bible_tests/node_modules in - one safety routine written two ways. Now: preship.maybe_seed_node_modules calls seed_worktree.seed (a staged copy from the worktree's own main checkout, his ON AIR floor kept, a non-worktree refused) and mac_ready uses it; preflight.run_demos seeds a worktree before the demos; a demos red names its error line, and a missing playwright says "this checkout has no node_modules ... python3 tv/seed_worktree.py <tree>" - never only node's version banner. The ship's and the hook's advice now name the seeder. Law: test_a_worktree_without_playwright_is_not_ready (a real git worktree seeded by COPY, never a link; a non-worktree refused; the pre-flight's tail on tonight's crash; the seed sits before the demos). Seen RED: heart2 --prove 9 of 9 PROVEN; the 79 laws that read preflight / preship / seed_worktree / the hook exit 0.
 
 ### REG-3785 - THE PRE-FLIGHT PROVED NONE OF v3901'S 1,426 CHANGED LAWS AND ITS GREEN LINE SAID THEY WERE PROVEN (v3902, #200 card #218)
+### REG-3832 - v3904's SECOND ROUND RED: A FONT-METRIC TAMPER WAS BLIND ON THE LINUX RUNNER (v3904)
+MEASURED 11-13 02:4x, proof-keys shard 21 of run 43339514824: test_the_character_builder_fits_at_every_width[21] (#29(a), the
+stat row turned back into a wrapping flex line) "stayed GREEN through its own defeat" at its declared 1280x800. The tamper's
+defect is a font-metric one - the widened Fire value drops alone only when it does not fit, measured red on his Mac's fonts
+(09-29); the Linux runner's narrower fonts fit it on one line at 1280, so nothing drops there. It surfaced now because
+REG-3812 changed this law's file and GitHub re-proved every tamper of it. Declared needs "macos" (the REG-2356 precedent):
+proven on his Mac by the pre-flight (the entry sits on a changed line), ELSEWHERE on Linux and Windows, never BLIND there.
+
 ### REG-3827 - v3904's GITHUB ROUND RED: EVERY ROUTINE READ "NO PUSH PATHS AT ALL" AFTER REG-3807 (v3904)
 MEASURED 11-13 01:50 IST, agent-suite (3) on run 43329370041: test_control's
 test_each_routine_watches_its_own_script_and_its_own_workflow - "routine-g-audit.yml has no push paths at all". REG-3807

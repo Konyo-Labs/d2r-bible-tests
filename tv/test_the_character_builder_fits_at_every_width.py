@@ -1701,6 +1701,10 @@ RED_PROOF = [
         "replace": ".cb-st-r{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:baseline;gap:0 6px;",
         "matches": 1,
         "widths": ["1280x800"],   # #42 measured 2026-09-29: the tampered law is red at 1280x800 alone
+        # REG-3832 (v3904's GitHub round, run 43339514824 shard 21) - BLIND on the Linux runner: its narrower fonts fit the
+        # widened Fire value on one line at 1280, so the flex-wrap tamper drops nothing there. The defect is a font-metric
+        # one, measured red on his Mac's fonts; it is proven where those fonts are and filed ELSEWHERE on Linux/Windows.
+        "needs": "macos",
     },
     # ⚠ RETIRED 2026-09-28 (v3522 push gate, 22:29): the proof that stood HERE - "a value's RANGE chip and cap may not
     # wrap under its number", which set .cb-sv to flex-wrap:nowrap - was removed because the law stayed GREEN at every

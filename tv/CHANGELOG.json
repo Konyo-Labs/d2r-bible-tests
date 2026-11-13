@@ -22,7 +22,8 @@
       "REG-3820 - the blueprint law compares two renders the way its check does, a store size moving read as stale code",
       "REG-3821 - the unique art law asserts both ends of the row path it reads, a missing closer read most of the page",
       "REG-3822 - the shared scratch sweep accepts only our own stems, a short or foreign one could delete dirs not ours",
-      "REG-3827 - the routine law reads push paths past a branches-ignore list, every routine read none after REG-3807"
+      "REG-3827 - the routine law reads push paths past a branches-ignore list, every routine read none after REG-3807",
+      "REG-3832 - the builder law font tamper is proven on Mac fonts, it was blind on the Linux runner at 1280"
     ]
   },
   {
