@@ -623,6 +623,14 @@
       "s": 1.437,
       "src": "measured"
     },
+    "vault-forget-crossfamily": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "vault-forget-wilson": {
+      "s": 1.437,
+      "src": "median"
+    },
     "test_a_sweep_with_no_readable_lane_does_not_start": {
       "s": 1.114,
       "src": "measured"
@@ -6874,6 +6882,26 @@
     "test_game_names_wear_the_game_face": {
       "s": 1.437,
       "src": "measured"
+    },
+    "test_a_background_process_starts_its_children_windowless": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_shadow_session_plays_whole_from_the_bucket": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_shadow_reel_is_kept_under_the_cap": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_shadow_reel_upload_sends_the_newest_three_whole": {
+      "s": 1.437,
+      "src": "median"
+    },
+    "test_a_door_unprovable_by_design_never_shuts_its_group": {
+      "s": 1.437,
+      "src": "median"
     },
     "test_a_price_row_names_its_seller": {
       "s": 1.437,
