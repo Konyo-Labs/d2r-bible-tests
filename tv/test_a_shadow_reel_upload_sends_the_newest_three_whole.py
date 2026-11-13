@@ -141,13 +141,13 @@ class TheUploadPlan(unittest.TestCase):
             return {"ok": True, "manifest": {"bytes": 99}}
 
         made = lambda s, dst: shutil.copyfile(s, dst) or True
-        before = set(n for n in os.listdir(tempfile.gettempdir()) if n.startswith(SR.SCRATCH_PREFIX))
+        before = set(n for n in os.listdir(tempfile.gettempdir()) if n.startswith("tvd-reelup-"))
         r = SR.upload(item, self.hist, post, "Dean", now_ms=lambda: T0, make=made)
         self.assertTrue(r["ok"], r)
         self.assertEqual(r["sent"], 4, "frames the bucket already held were sent again")
         self.assertEqual(sent[0], "begin")
         self.assertEqual(sent[-1], "seal")
-        after = set(n for n in os.listdir(tempfile.gettempdir()) if n.startswith(SR.SCRATCH_PREFIX))
+        after = set(n for n in os.listdir(tempfile.gettempdir()) if n.startswith("tvd-reelup-"))
         self.assertEqual(after - before, set(), "the upload's scratch folder outlived it")
         sent.clear()
         r = SR.upload(item, self.hist, lambda b: (sent.append(b["op"]) or {"ok": False, "why": "cap"}), "Dean",

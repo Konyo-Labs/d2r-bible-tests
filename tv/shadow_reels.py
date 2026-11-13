@@ -229,10 +229,6 @@ def batches(paths, limit=BATCH_BYTES, size=os.path.getsize):
 
 
 # ── the I/O: re-encode into our own scratch, post through the signed door, one session at a time ─────────────────────
-def scratch():
-    return tempfile.mkdtemp(prefix=SCRATCH_PREFIX)
-
-
 def derive(src_dir, names, dst_dir, make=None):
     """-> [(name, derived path)] for every frame that re-encoded; a frame that would not is left out (and named)"""
     if make is None:
@@ -253,7 +249,7 @@ def upload(item, hist, post, owner, now_ms=None, make=None):
 
     post(body) -> the door's reply (signed by the caller). Never raises; the scratch folder is removed either way."""
     now = (lambda: int(time.time() * 1000)) if now_ms is None else now_ms
-    d = scratch()
+    d = tempfile.mkdtemp(prefix=SCRATCH_PREFIX)        # removed in this function's finally, whatever happens
     try:
         src = os.path.join(hist, "reel_" + item["session"])
         got, failed = derive(src, item["frames"], d, make)

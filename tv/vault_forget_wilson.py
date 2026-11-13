@@ -48,7 +48,8 @@ class _Box(object):
 
     def __init__(self, ca):
         self.ca = ca
-        self.root = tempfile.mkdtemp(prefix="vault_forget_wilson_")
+        self._td = tempfile.TemporaryDirectory(prefix="vault_forget_wilson_")   # cleaned by its own object
+        self.root = self._td.name
         self.hist = os.path.join(self.root, "hist")
         os.makedirs(os.path.join(self.hist, "reel_" + SESSION))
         with open(os.path.join(self.hist, "reel_" + SESSION, FRAME), "wb") as fh:
@@ -70,7 +71,7 @@ class _Box(object):
         ca.VAULT_LEDGER_PATH, ca._VAULT_SWEPT_PATH, ca.HIST_DIR = self._real
         for p in (self.ledger, self.swept):
             ca._UNREADABLE.discard(p)
-        shutil.rmtree(self.root, ignore_errors=True)
+        self._td.cleanup()
         return False
 
     def write(self, obj=None, raw=None):
