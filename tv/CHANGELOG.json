@@ -1,5 +1,27 @@
 [
   {
+    "ver": "v3905",
+    "date": "2026-11-13",
+    "items": [
+      "REG-3817 - a queued join whose survey found no panel has its re-read spent, so a low-memory PC river flows",
+      "REG-3818 - a door unprovable by design never shuts its group padlock, the Vault reads its open doors",
+      "REG-3819 - dropping the vault ledger refuses while a row has no witness frame on disk, 24 of 184 rows on the Mac",
+      "REG-3819 - session and frame names must match the recorder shapes, a symlink or a device name is no evidence",
+      "REG-3819 - every row is walked, nested rows and citations outside witnesses too, a repeated key reads UNKNOWN",
+      "REG-3819 - forget says what its own saves did, a refused save is never reported as a clear",
+      "REG-3819 - the vault forget lock is provable, 15 sabotage attacks and 6 designed by the Grok CLI, 21 of 21 refused",
+      "REG-3823 - each PC sends its sessions to a private R2 bucket, newest 16 per PC, never past 9 GB (#208)",
+      "REG-3823 - the bucket evicts the oldest sealed session of any PC first and refuses when nothing older is left (#208)",
+      "REG-3824 - a PC sends its newest 3 sessions whole and the rest as summary reels, from the first D2 logo (#208)",
+      "REG-3824 - nothing before play starts is uploaded, launcher and account pages stay on the PC (#208)",
+      "REG-3824 - the upload lane waits while a reel is being written, and its doctor row says a refusal (#208)",
+      "REG-3825 - a shadow session the bucket holds plays whole, full window, from where play starts (#208)",
+      "REG-3825 - this console fetches bucket frames for the page and keeps at most 1536 MB of them (#208)",
+      "REG-3825 - the shadow list keeps its rows when the bucket check fails, and says UNKNOWN on each (#208)",
+      "REG-3826 - a Windows process with no console starts its children windowless, no black git windows"
+    ]
+  },
+  {
     "ver": "v3904",
     "date": "2026-11-12",
     "items": [

@@ -1,9 +1,9 @@
 {
   "platform": "windows",
-  "ver": "v3904",
+  "ver": "v3905",
   "product": "TV DIABLO",
   "name": "TV DIABLO Windows",
-  "note": "v3904: Windows proofs clean, the in-game face on monster names, d2jsp sellers on the price table",
+  "note": "v3905: his sessions in a private bucket, played whole from the logo, the vault forget lock proves itself",
   "launcher": "start_tvd_win.ps1",
   "installer": "install-tvd.ps1",
   "capture": "capture_win.ps1",
