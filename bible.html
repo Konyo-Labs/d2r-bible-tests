@@ -12667,6 +12667,8 @@ html[data-active-tab="vault"] #shortcut-hint{z-index:20} /* v3771 hint under vau
     #tab-d2jsp .d2jsp-price-search .d2jsp-k{font-family:var(--serif-display,Cinzel,serif);letter-spacing:.14em;text-transform:uppercase;color:#f0c060}
     #tab-d2jsp .d2jsp-price-search input{font-family:var(--mono);background:#120e08;color:#f6e7c2;border:1px solid rgba(233,208,122,.4);border-radius:6px;padding:6px 8px}
     #tab-d2jsp #d2jsp-price-out{grid-column:1 / -1}
+    /* Job E item 2 - "Check live now" beside the price line (it floats right of the line that follows it) */
+    #tab-d2jsp .d2jsp-live-b{float:right;margin:0 0 6px 12px;font-size:var(--fs-micro);padding:3px 10px}
 #tab-d2jsp .d2jsp-advanced-b{grid-column:1 / -1;justify-self:start}
 /* v3881 (REG-3390) - the price database: its own scroll panel, a sticky Find + Sort bar, one line per item */
 #tab-d2jsp .d2jsp-db-scroll{max-height:min(62vh,560px);overflow:auto;overscroll-behavior:contain;border:1px solid rgba(212,168,71,.22);border-radius:10px;padding:0 10px 8px;margin:6px 0}
@@ -13607,6 +13609,7 @@ function d2jspSearchLine(q, sim, parsed) {
   var _dbP = !!(q && q.reason === 'read' && Number(q.fg) > 0 && q.db && !q.db.unknown
     && ((q.db.normal && q.db.normal.fg != null) || (q.db.perfect && q.db.perfect.fg != null)));
   var line = _dbP ? d2jspReadLine(q) : d2jspPriceLine(q);
+  if (q && q.liveNow && q.reason === 'read') line = 'Checked live just now. ' + line;   /* Job E item 2 */
   if (q && q.reason === 'read' && parsed && parsed.roll) {
     line += sim && sim.fg != null
       ? (' Posts like ' + parsed.roll.join('/') + ': about ' + sim.fg + ' fg from ' + sim.like + ' ' + (sim.like === 1 ? 'post' : 'posts') + '.')
@@ -15102,23 +15105,34 @@ function d2jspDbArrange(root) {
   }
   /* v3844 - THE PRICE SEARCH: any typed item and roll, read through the same quote path as the cards */
   var searchGen = 0;
+  /* Job E item 2 (his yes to a "check live now" control, #230 6849292433) - priceSearch(chunk) with one typed chunk is that
+     control: ?live=1 skips the stored answer and d2jsp is searched now, at the same one-a-minute pace; the answer is
+     folded and painted like any read. With several results on screen only that item's section is repainted. */
   function priceSearch(){
     var el = document.getElementById('d2jsp-price-q'), out = document.getElementById('d2jsp-price-out');
     if (!el || !out) return;
-    var chunks = (typeof d2jspSearchChunks === 'function')
+    var liveChunk = arguments.length ? arguments[0] : '';
+    var live = (typeof liveChunk === 'string' && liveChunk) ? liveChunk : '';
+    var chunks = live ? [live] : (typeof d2jspSearchChunks === 'function')
       ? d2jspSearchChunks(el.value)
       : String(el.value || '').split(',').map(function (s) { return s.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
     var items = [];
     for (var ci = 0; ci < chunks.length; ci++) {
       var one = d2jspParseSearch(chunks[ci]);
-      if (one && one.item) items.push(one);
+      if (one && one.item) { one._chunk = chunks[ci]; items.push(one); }
     }
     if (!items.length) { out.textContent = 'Type an item, for example anni 20/20/10.'; return; }
-    var gen = ++searchGen, paths = ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='];
-    out.textContent = 'Reading d2jsp posts dated 2026 or later for ' + items.map(function (p) { return p.item; }).join(', ') + '.';
-    var htmls = [], left = items.length;
+    var gen = ++searchGen, paths = live ? ['/api/d2jsp_quote?live=1&item=', '/d2r/api/d2jsp_quote?item=']
+                                        : ['/api/d2jsp_quote?item=', '/d2r/api/d2jsp_quote?item='];
+    var liveHost = null;
+    if (live && out.querySelectorAll) {
+      var _secs = out.querySelectorAll('section[data-d2jsp-search-item]');
+      for (var si = 0; si < _secs.length; si++) if (_secs[si].getAttribute('data-d2jsp-search-item') === items[0].item) liveHost = _secs[si];
+    }
+    (liveHost || out).textContent = 'Reading d2jsp posts dated 2026 or later for ' + items.map(function (p) { return p.item; }).join(', ') + '.';
+    var htmls = [], left = items.length, _out0 = out;
     items.forEach(function (parsed, idx) {
-    var i = 0;
+    var i = 0, out = liveHost || _out0;     /* Job E item 2 - a live re-read paints its own section only */
     function show(j){
       if (gen !== searchGen) return;     /* only the newest search paints */
       var sim = d2jspSimilarPrice(j, parsed.roll, parsed.item);
@@ -15141,6 +15155,12 @@ function d2jspDbArrange(root) {
                                       _evRows.length ? _evRows : null);   /* #97 */
       var _split = _cards.indexOf('data-d2jsp-tier-posts') >= 0;
       var _dbFirst = (typeof d2jspDbFirstLine === 'function') ? d2jspDbFirstLine(j) : '';   /* #96 - the DB's price beside the live posts */
+      /* Job E item 2 - "Check live now" rides just ahead of the price line and floats to its right (beside the price); a
+         paused console would only pause again, so it is not offered there */
+      if (j && j.reason !== 'paused') {
+        _first += '<button type="button" class="vault-btn d2jsp-live-b" data-d2jsp-live-now="' + esc(parsed._chunk || parsed.item)
+          + '" title="Skip the stored price and search d2jsp now (one search a minute)">Check live now</button>';
+      }
       out.innerHTML = _first + '<div>' + esc(d2jspSearchLine(j, sim, parsed)) + '</div>'
         + (_dbFirst ? '<div class="d2jsp-say" data-d2jsp-db-first>' + esc(_dbFirst) + '</div>' : '')
         + (_split ? d2jspEvidenceHtml(_evSim, j, { headOnly: true }) : '') + _cards
@@ -15151,6 +15171,7 @@ function d2jspDbArrange(root) {
     function done(j){
       if (gen !== searchGen) return;
       show(j);
+      if (liveHost) return;                 /* Job E item 2 - one item re-read live: its own section, the rest stay */
       htmls[idx] = '<section data-d2jsp-search-item="' + esc(parsed.item) + '">' + out.innerHTML + '</section>';
       if (--left) return;
       if (items.length > 1) out.innerHTML = htmls.join('');   /* v3891 (#192) - one card (one section) each */
@@ -15273,6 +15294,13 @@ function d2jspDbArrange(root) {
   /* v3854: the Advanced and Show-database buttons ride the desk's ONE delegated click listener (it calls this) */
   window._d2jspPriceClick = function(ev){
     var t = ev.target;
+    /* Job E item 2 - "Check live now" beside a price: that item, searched now (one search a minute) */
+    var _lv = (t && t.closest) ? t.closest('[data-d2jsp-live-now]') : null;
+    if (_lv) {
+      if (ev.preventDefault) ev.preventDefault();
+      priceSearch(_lv.getAttribute('data-d2jsp-live-now') || '');
+      return true;
+    }
     if (!t || !t.id) return false;
     if (t.id === 'd2jsp-price-db-show') {
       if (ev.preventDefault) ev.preventDefault();

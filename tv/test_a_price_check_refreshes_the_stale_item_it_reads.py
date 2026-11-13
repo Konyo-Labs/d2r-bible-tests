@@ -145,7 +145,7 @@ class TheQuoteDoorAsksThePlanFirst(unittest.TestCase):
             src = fh.read()
         i = src.index('if path == "/api/d2jsp_quote":')
         block = src[i:src.index('if path == "/api/d2jsp_price_db":', i)]
-        plan = block.index("_plan = _d2jsp_price_check_plan(_item)")
+        plan = block.index("_plan = _d2jsp_price_check_plan(_item, **_ask)")   # Job E - _ask carries check live now
         search = block.index("_d2jsp.d2jsp_quote(")
         self.assertLess(plan, search, "the price check searches the forum before it reads the DB")
         stored = block[block.index('if _plan["do"] == "stored":'):search]
