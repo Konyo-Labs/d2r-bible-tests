@@ -116,7 +116,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 def _node(cfg):
     env = dict(os.environ, SRV_CFG=json.dumps(dict(cfg, code=_code())))
-    r = subprocess.run([NODE, "-e", HARNESS], capture_output=True, text=True, encoding="utf-8", errors="replace",
+    r = subprocess.run([NODE, "-"], input=HARNESS, capture_output=True, text=True, encoding="utf-8", errors="replace",
                        env=env, timeout=120)
     if r.returncode != 0:
         raise AssertionError("the player harness failed rc=%s\n%s" % (r.returncode, r.stderr[-2000:]))

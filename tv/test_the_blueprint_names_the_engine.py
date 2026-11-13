@@ -200,7 +200,10 @@ class TestTheBlueprintNamesTheEngine(unittest.TestCase):
         check refuses a tree nobody changed."""
         import blueprint as B
         a, b = B.render(), B.render()
-        strip = lambda t: "\n".join(l for l in t.splitlines()
+        # REG-3820's sibling (swept here from v3904's fix, v3905 pre-flight c): the LIVE blocks measure his disk (a store's size,
+        # .orphan_cpu_sample.json rewritten by every doctor pass while laws run in parallel), so two renders differ there by
+        # design. The question is the one --check asks, through blueprint.code_only - the ONE stripper - never its own copy
+        strip = lambda t: "\n".join(l for l in B.code_only(t).splitlines()
                                     if not l.startswith("GENERATED") and "generated " not in l)
         self.assertEqual(strip(a), strip(b),
                          "render() is not deterministic — a clock or an unsorted dict is leaking "

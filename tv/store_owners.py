@@ -163,6 +163,9 @@ STORES = {
         "owner": "vault_retro",
         "holds": "what the vault sweep accumulated per reel",
         "readers": {
+            "vault_forget_wilson": "v3905 (REG-3819) - NAMES this store to build its sabotage harness's box: every write\n"
+                             "                              goes into a TemporaryDirectory copy (_Box), never his file - the\n"
+                             "                              forget door is attacked there, and only there",
             "corroborate":   "2026-09-28 (Ledger P0) — the per-item tier joint ('a tier stands on the looks the gate\n"
                              "                              counts') opens the witness ledger (TV_VAULT_LEDGER or this file)\n"
                              "                              READ-ONLY and hands it to vault_evidence.tier_census and\n"
@@ -219,6 +222,9 @@ STORES = {
         "owner": "frame_authority",
         "holds": "the seal store — which sessions the vault sweep has sealed, and what it extracted",
         "readers": {
+            "vault_forget_wilson": "v3905 (REG-3819) - NAMES this store to build its sabotage harness's box: every write\n"
+                             "                              goes into a TemporaryDirectory copy (_Box), never his file - the\n"
+                             "                              forget door is attacked there, and only there",
             "reel_custody":  "READS it through end_routes.sources() to name the station a reel stands at in its\n"
                              "                              custody record, and names the file in its station labels.\n"
                              "                              Read-only (REG-1544): writes, moves and deletes nothing",

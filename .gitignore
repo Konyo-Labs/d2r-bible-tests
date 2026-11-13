@@ -105,6 +105,11 @@ tv/roster_book.json.tmp
 # machine, made by tv/roster_sign.py on the first signed publish. The .tmp is the
 # atomic-write partner (path + ".tmp" in load_or_create).
 tv/.roster_key.json
+# #208 (REG-3836, caught by test_every_decision_file_is_ignored in v3905's pre-flight c) - the reel upload lane's receipt
+# (control_app._profile_json_save writes path + ".tmp") and the shadow player's local reel cache
+tv/.shadow_reels_state.json
+tv/.shadow_reels_state.json.tmp
+tv/roster_reels_cache/
 tv/.roster_key.json.tmp
 # v3864 (card 57) - when his Mac last published the task board (per-PC pacing, never shipped)
 tv/.task_board_state.json

@@ -188,7 +188,8 @@ MEASURED 11-13: "two renders of the same tree differ outside the timestamp" - 56
 (REG-3774), which every doctor pass rewrites, while the pre-flight's laws ran in parallel. The case had its own stripper
 (the stamp only), so the LIVE blocks had to hold still; --check strips with blueprint.code_only, "the ONE stripper".
 The case now asks code_only too: the same question --check asks. Law: test_the_blueprint_cannot_go_stale (2 of 2
-red-proofs PROVEN).
+red-proofs PROVEN). SWEPT in v3905 (its pre-flight c): test_the_blueprint_names_the_engine's determinism case had the same
+private stripper and the same flake (8360 B vs 8318 B on .orphan_cpu_sample.json); it asks blueprint.code_only now.
 ### REG-3826 - BLACK CONSOLE WINDOWS POPPED OVER HIS OLD PC ALT: A LAW'S git STARTED WITH A WINDOW (v3905)
 GrokBot #230 (11-12 23:33Z), his words: "black console windows keep popping up, one ended in a git.exe Application Error";
 he wants every background process windowless. SAW: git.exe -C <a d2r-test- temp repo> commit -qm word (a law's gbump

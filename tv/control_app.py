@@ -5711,9 +5711,14 @@ def _shadow_reels_once(now_s=None, _get=None, _post=None, hist=None):
                                                                      else reply)[:120])
     try:
         import chronicle_line as _cl
-        _lines = (_cl.load_cached() or {}).get("reels") or {}
+        _led = _cl.load_cached()
     except Exception:
-        _lines = {}
+        _led = None
+    # the chronicle lane's door marks say where play starts; a ledger that will not read is UNKNOWN, never "no marks" -
+    # nothing is planned on a guess about where a session begins
+    if not isinstance(_led, dict):
+        return _done("the chronicle lane's door marks would not read - UNKNOWN, nothing planned", state.get("owed"))
+    _lines = _led.get("reels") or {}
     items = _sr.plan(local, server, marks_of=lambda s: (_lines.get("reel_" + s) or {}).get("marks"))
     if items is None:
         return _done("the plan could not be made - UNKNOWN")
@@ -6540,7 +6545,8 @@ def _roster_get_bytes(url, timeout=30):
 
 
 def _reels_cache_prune(cdir, keep_session, cap=None):
-    """the cache at most `cap` bytes: whole sessions leave, least recently read first, never keep_session. -> bytes freed"""
+    """the cache at most `cap` bytes: whole sessions leave, least recently read first, never keep_session. -> bytes freed,
+    or None when the cache would not list (UNKNOWN - nothing was removed, never a measured 0)"""
     cap = SHADOW_REEL_CACHE_BYTES if cap is None else cap
     sessions, total = [], 0
     try:
@@ -6558,7 +6564,7 @@ def _reels_cache_prune(cdir, keep_session, cap=None):
                 sessions.append((seen, d, size, ses))
                 total += size
     except OSError:
-        return 0
+        return None
     freed = 0
     for seen, d, size, ses in sorted(sessions):
         if total <= cap:

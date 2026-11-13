@@ -2572,6 +2572,11 @@ COVERED_BY = {
 }
 # Engines with NO invariant, each with the reason — a blank here would read as covered.
 NO_JOINT_YET = {
+    # #208 (v3905) - the reel upload lane: one source today, said so rather than claimed covered.
+    "shadow reels reach the bucket":
+        "the row reads the reel lane's own receipt (.shadow_reels_state.json: worked, owed, its last words) - one witness. "
+        "An independent second source is the site's own reel index for this PC (/api/roster?reels=), whose sessions should "
+        "hold every one the lane says it sent; no joint compares them yet.",
     # REG-3761 (v3901) - the rolling reel's footage: one source today, said so rather than claimed covered.
     "rolling reel filmed":
         "the row reads the recorder's own footage state (tv_diablo's health: footagePause and footageRefused) - one "

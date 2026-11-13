@@ -12375,6 +12375,8 @@ WATCHES = {
     "this process runs the code on disk": (),
     "nothing we started is a corpse": (),
     "our scratch is collected": (),
+    # #208 - declared, not omitted: the reel lane's receipt renders on no screen of its own (the WATCH button reads the bucket)
+    "shadow reels reach the bucket": (),
     # ⚠ v3190 — FILED WITH ITS CHECK, WHICH IS THE POINT OF THIS MAP. `check_stash_bank` shipped
     # into CHECKS with the vault_bank reader and was never declared here, so it read ABSENT in the
     # organ table for a version — a claim nobody made, indistinguishable from a check nobody
