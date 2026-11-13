@@ -12817,6 +12817,9 @@ function d2jspQuotedForBoard(q, board) {
   var on = Number(q.board);
   if (!(on > 0) || on !== Number(board)) return null;
   var fg = Number(q.fg);
+  /* #96 - a 'stored' answer (the price database held a fresh reading, the forum was not asked) posts the database's own
+     NORMAL price when it is known; thin, unknown or perfect-only stays null and he types his own */
+  if (!(fg > 0) && q.reason === 'stored' && q.dbFirst && q.dbFirst.verdict === 'known' && q.dbFirst.tier === 'normal') fg = Number(q.dbFirst.fg);
   return (fg > 0) ? fg : null;
 }
 /* the sentence under a reading that is not this post's price: why the post waits for his number */
@@ -13156,6 +13159,9 @@ function d2jspPriceLine(q) {
   /* v3861 (#230 6644125606, his Shako click at 00:43) - the console pauses price reads while its checks run (his 10-31
      ruling: reads never compete with a push); it now says so instead of reading as a reader that never answered. */
   if (q.reason === 'paused') return 'Price not read yet - this machine is running its checks (' + (q.say || 'paused while checks run') + '). It reads as soon as they finish.';
+  /* #96 (his 11-06: "price check ... joined logic to the database") - a fresh item is answered from the price database and
+     the forum is not asked again; a stale one inside the one-search-a-minute pace says when it reads */
+  if (q.reason === 'stored') return 'Not read from the forum this time - ' + (q.say || 'the price database holds a fresh reading') + '.';
   if (q.reason === 'unanswered') return 'Public price unknown. No price reader answered this page.';
   /* REG-3326 (#94 - his Shako check 11-06 22:46: "returned no fg number" while the forum was never read). 'unread' means
      the forum request itself failed (MEASURED: intermittent - the same search read 7 posts, 20 fg, minutes later), so it
@@ -14611,7 +14617,7 @@ function d2jspDbArrange(root) {
       }
       var path = paths[i++];
       fetch(path + encodeURIComponent(name)).then(function(r){ return r.json(); }).then(function(j){
-        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused')) { finish(j); return; }
+        if (j && (j.reason === 'no prices' || j.reason === 'read' || j.reason === 'need-login' || j.reason === 'paused' || j.reason === 'stored')) { finish(j); return; }   /* #96 - 'stored' is an answer */
         step();
       }).catch(function(){ step(); });
     }
