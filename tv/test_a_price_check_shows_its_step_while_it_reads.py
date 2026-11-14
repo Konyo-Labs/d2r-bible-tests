@@ -36,6 +36,7 @@ try:
 except Exception:
     pass
 import d2jsp_price_db as P  # noqa: E402
+import js_strip  # noqa: E402  the laws' one comment stripper
 
 NODE = shutil.which("node")
 NOW = time.mktime(time.strptime("2026-11-13", "%Y-%m-%d"))
@@ -214,7 +215,7 @@ class ItIsDrawnInTheConsolesOwnLook(unittest.TestCase):
     def test_no_cursor_and_only_defined_tokens(self):
         page, css = self._rules()
         self.assertNotIn("cursor", css, "the loading card sets a cursor - the console pointer is the page's own")
-        code = re.sub(r"/\*[\s\S]*?\*/", " ", page)
+        code = js_strip.strip_js_comments(page)
         used = sorted(set(re.findall(r"var\(\s*(--[a-zA-Z0-9-]+)", css)))
         self.assertTrue(used, "PREMISE: the card uses the console's tokens")
         undefined = [t for t in used if not re.search(re.escape(t) + r"\s*:", code)]

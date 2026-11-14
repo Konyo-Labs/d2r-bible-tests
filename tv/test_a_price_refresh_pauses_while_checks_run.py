@@ -199,8 +199,8 @@ RED_PROOF = [
      "matches": 1},
     {"why": "the quote door fetches while checks run",
      "file": "control_app.py",
-     "find": "(parse_qs(urlparse(self.path).query).get(\"item\") or [\"\"])[0]\n            if _PDB.checks_running() is not False:\n",
-     "replace": "(parse_qs(urlparse(self.path).query).get(\"item\") or [\"\"])[0]\n            if False:\n",
+     "find": "                _ask[\"dry\"] = True\n            if _PDB.checks_running() is not False:\n",
+     "replace": "                _ask[\"dry\"] = True\n            if False:\n",
      "matches": 1},
 ]
 

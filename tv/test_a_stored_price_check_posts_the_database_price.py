@@ -51,7 +51,8 @@ class AStoredCheckPostsTheDatabasePrice(unittest.TestCase):
     def test_the_trade_list_takes_stored_as_an_answer(self):
         page = _page()
         a = page.index("  function ask(name, done, force){")
-        self.assertIn("j.reason === 'stored'", page[a:a + 1600], "a stored answer falls through to the site path")
+        z = page.index("  function refreshQuotes(force){", a)   # ask() ends where its sibling begins - no length guess
+        self.assertIn("j.reason === 'stored'", page[a:z], "a stored answer falls through to the site path")
         self.assertIn("if (q.reason === 'stored') return", page, "a stored answer has no line of its own")
 
 

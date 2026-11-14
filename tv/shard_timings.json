@@ -7490,6 +7490,42 @@
     "test_own_ci_never_queues_a_ship_or_publish": {
       "s": 1.437,
       "src": "measured"
+    },
+    "test_a_check_live_now_skips_the_stored_answer": {
+      "s": 5.081,
+      "src": "measured"
+    },
+    "test_a_d2jsp_advanced_says_open_or_shut": {
+      "s": 4.963,
+      "src": "measured"
+    },
+    "test_a_price_check_reads_the_database_first": {
+      "s": 0.188,
+      "src": "measured"
+    },
+    "test_a_price_check_refreshes_the_stale_item_it_reads": {
+      "s": 0.124,
+      "src": "measured"
+    },
+    "test_a_price_check_shows_its_step_while_it_reads": {
+      "s": 8.936,
+      "src": "measured"
+    },
+    "test_a_repeated_enigma_topic_is_one_vote": {
+      "s": 0.059,
+      "src": "measured"
+    },
+    "test_a_retired_price_refresh_lane_stays_retired": {
+      "s": 0.36,
+      "src": "measured"
+    },
+    "test_a_stored_price_answers_for_ninety_days": {
+      "s": 0.094,
+      "src": "measured"
+    },
+    "test_a_stored_price_check_posts_the_database_price": {
+      "s": 0.196,
+      "src": "measured"
     }
   }
 }

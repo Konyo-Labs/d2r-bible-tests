@@ -15148,7 +15148,8 @@ function d2jspDbArrange(root) {
   /* Job E item 4 (card #221) - the price check's loading card, in the console's own look: a gold band that moves, the three
      steps with the one it is on lit, and the search sentence. Drawn only after D2JSP_LOAD_DELAY_MS (a stored answer back
      at once never flashes it); a read's answer rests on "folding the posts" for D2JSP_LOAD_FOLD_MS before it is painted. */
-  var D2JSP_LOAD_DELAY_MS = 260, D2JSP_LOAD_FOLD_MS = 420;
+  var D2JSP_LOAD_DELAY_MS = 260;
+  var D2JSP_LOAD_FOLD_MS = 420;   /* its own var - a name second in a comma list reads as declared nowhere (v1577) */
   var D2JSP_LOAD_STEPS = [['stored', 'Reading the stored price'], ['search', 'Searching d2jsp'], ['fold', 'Folding the posts']];
   function d2jspLoadHtml(item, st, say, live){
     var at = -1;
@@ -15263,7 +15264,7 @@ function d2jspDbArrange(root) {
       if (liveHost) { left = 0; return; }   /* Job E item 2 - one item re-read live: its own section, the rest stay */
       htmls[idx] = '<section data-d2jsp-search-item="' + esc(parsed.item) + '">' + out.innerHTML + '</section>';
       if (--left) { if (loadShown) paintLoad(); return; }   /* Job E item 4 - the rest keep their loading rows */
-      if (loadTimer !== null && typeof clearTimeout === 'function') clearTimeout(loadTimer);
+      if (loadTimer !== null) clearTimeout(loadTimer);   /* a timer was set, so the timer API is here */
       if (items.length > 1) out.innerHTML = htmls.join('');   /* v3891 (#192) - one card (one section) each */
       if (typeof priceSearchExit === 'function') priceSearchExit(out);
     }

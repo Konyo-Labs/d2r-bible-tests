@@ -27,6 +27,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+import js_strip  # noqa: E402  the laws' one comment stripper (test_one_comment_stripper_for_the_laws)
 try:
     from console_safe import enable as _enable
     _enable()
@@ -43,7 +44,7 @@ def _read(rel):
 
 
 def _css(page):
-    return re.sub(r"/\*[\s\S]*?\*/", " ", page)
+    return js_strip.strip_js_comments(page)
 
 
 def _rule(css, sel):
