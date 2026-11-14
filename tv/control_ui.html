@@ -4956,7 +4956,11 @@
   .shi-body { min-width: 0; }
   .shi-lab { font: var(--fw-bold) var(--fs-2xs)/1 var(--mono); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--gold-dim); }
   .shi-val { font: var(--fw-bold) var(--fs-sm)/var(--lh-tight) var(--mono); color: #e8dcc0; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .shi-sub { font: var(--fw-medium) var(--fs-2xs)/var(--lh-tight) var(--mono); letter-spacing: var(--ls-tight); color: #8a7e68; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* v3906 (REG-3853, #224, GrokBot #230 6851436283) - AT 901 THE SUB LINES WERE CUT: BEST RUN read "5 chronicle…" and STREAK
+     "467+ runs l…" (whole at 1440 and 1512). The sub line is the card's detail, so it WRAPS (its value line stays one line,
+     REG-3768), and under 1100px the strip lays its tiles 190px and up, so they wrap to a second row instead of squeezing. */
+  .shi-sub { font: var(--fw-medium) var(--fs-2xs)/var(--lh-tight) var(--mono); letter-spacing: var(--ls-tight); color: #8a7e68; margin-top: 2px; white-space: normal; overflow-wrap: anywhere; }
+  @media (max-width: 1100px) { .sh-hi { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } }
   /* ══ D24 · LIVE "RECORDING NOW" CARD — top of the shelf, shown only on-air (mint reel accent + ● REC pulse) ══ */
   .sh-live { border: 1px solid rgba(143,230,160,.42); border-radius: 12px; padding: var(--hd-pad-y) var(--hd-pad-x); margin: 0 0 14px;
     background: linear-gradient(180deg, rgba(30,60,42,.28), rgba(0,0,0,.35)); box-shadow: 0 0 20px rgba(143,230,160,.1); }
@@ -36652,10 +36656,18 @@ var TZ_MONSTER = {"Ancient Tunnels": "d2fam_zombie.gif", "Arachnid Lair": "d2fam
   }
   /* a full-screen overlay whose card is a child: its own close may sit outside that card (the mule window's
      header "close (Esc)") - that is the x to pin, never a second made one */
+  /* v3906 (REG-3852, #223, GrokBot #230 6866422963) - A MADE x LEAVES WHEN THE OVERLAY'S OWN CLOSE COMES BACK. The Shelf
+     inside the Theatre hides ✕ CLOSE, so the tick made an x for the Theatre; when CLOSE came back the tick found it and
+     pinned it, and nothing removed the made one - a 28 px x stayed pinned over CLOSE's last letter ("✕ CLOS ×") until the
+     page reloaded. The overlay's own x wins and every made x of that card (and of its overlay) goes. */
+  function ovxDropMade(el) {
+    var ms = el.querySelectorAll(':scope > .ovx-made');
+    for (var i = 0; i < ms.length; i++) ms[i].remove();
+  }
   function xOfOverlay(ov, card) {
     var x = xOf(card);
-    if (x && !x.classList.contains('ovx-made')) return x;
-    if (ov !== card) { var o = xOf(ov); if (o && !o.classList.contains('ovx-made')) { if (x) x.remove(); return o; } }
+    if (x && !x.classList.contains('ovx-made')) { ovxDropMade(card); if (ov !== card) ovxDropMade(ov); return x; }
+    if (ov !== card) { var o = xOf(ov); if (o && !o.classList.contains('ovx-made')) { if (x) x.remove(); ovxDropMade(ov); return o; } }
     return x;
   }
   function ovxClose(ov) {

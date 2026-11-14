@@ -14249,6 +14249,24 @@ GATES = [
              "newest 16 sessions, evicts the oldest sealed session of any PC before the bucket passes 9 GB, refuses when "
              "nothing older is left, drops a demoted session's extra frames, and treats an unreadable index or an unbound "
              "bucket as UNKNOWN; every write rides the PC's registered roster key"),
+    Gate("test_a_made_x_leaves_when_close_comes_back",
+         [sys.executable, os.path.join(HERE, "test_a_made_x_leaves_when_close_comes_back.py")], 120,
+         needs_app=False,
+         why="REG-3852 (v3906, #223, GrokBot #230 6866422963) - the Theatre's '\u2715 CLOS \u00d7': the overlay contract made its "
+             "own x while the Shelf hid CLOSE and never removed it when CLOSE came back; the overlay's own close wins and every "
+             "made x of that card goes (driven in headless Chrome on the shipped contract at 1512 / 1440 / 901)"),
+    Gate("test_a_shelf_tile_line_is_whole_at_901",
+         [sys.executable, os.path.join(HERE, "test_a_shelf_tile_line_is_whole_at_901.py")], 120,
+         needs_app=False,
+         why="REG-3853 (v3906, #224, GrokBot #230 6851436283) - at 901 the Shelf's BEST RUN and STREAK sub lines were cut "
+             "('5 chronicle\u2026', '467+ runs l\u2026'); the sub line wraps and under 1100px the tiles wrap to a second row "
+             "(headless Chrome on the shipped rules at 1512 / 1440 / 901)"),
+    Gate("test_a_refused_reel_stores_nothing",
+         [sys.executable, os.path.join(HERE, "test_a_refused_reel_stores_nothing.py")], 120,
+         needs_app=False,
+         why="REG-3854 (v3906, #208 follow-up) - a refused reel stores nothing: every refusal of the site's reel door (past "
+             "the cap, older than the 16 a PC keeps, an UNKNOWN index, a frames batch with a bad frame) is decided before "
+             "the first write or delete, so the bucket and its indexes stay as they were; an accepted begin still evicts"),
     Gate("test_a_shadow_reel_upload_sends_the_newest_three_whole",
          [sys.executable, os.path.join(HERE, "test_a_shadow_reel_upload_sends_the_newest_three_whole.py")], 120,
          needs_app=False,

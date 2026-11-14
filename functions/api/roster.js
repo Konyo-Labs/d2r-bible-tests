@@ -1303,29 +1303,32 @@ export async function reelPost(env, bytes, sig, body) {
   if (body.op === "begin") {
     const why = reelBeginWhy(body);
     if (why) return reelRefuse(why);
+    // v3906 (REG-3854) - A REFUSED REEL STORES NOTHING. Every refusal of a begin is decided BEFORE the first write or delete:
+    // until v3905 a demotion's dropped frames and this PC's 17th session were deleted before the "older than the 16" and
+    // "would not list" refusals (the index was never rewritten, so it named frames the bucket no longer held), and the cap
+    // refusal wrote the refused session into the index and evicted other PCs' sessions it then did not use. Plan first,
+    // then act: a refusal leaves the bucket byte for byte as it was.
     const prev = idx.sessions[session] || null;
     const have = {};
+    const dropped = [];
     let kept = 0;
     if (prev && prev.have) {
-      const dropped = [];
       for (const n of Object.keys(prev.have)) {
         if (body.frames.indexOf(n) !== -1) { have[n] = prev.have[n]; kept += prev.have[n]; } else dropped.push(n);
       }
-      for (let i = 0; i < dropped.length; i += 500) {
-        await r2.delete(dropped.slice(i, i + 500).map((n) => "reel/" + dir + "/" + session + "/" + n));
-      }
     }
-    idx.sessions[session] = { mode: body.mode, want: body.frames.slice(), have: have, bytes: kept, logo: body.logo || null,
-                              start: body.start || null, t: now, sealed: false };
+    const entry = { mode: body.mode, want: body.frames.slice(), have: have, bytes: kept, logo: body.logo || null,
+                    start: body.start || null, t: now, sealed: false };
+    const planned = Object.assign({}, idx.sessions);
+    planned[session] = entry;
     // this PC: the newest REEL_SESSIONS_PER_SLOT sessions, by the session's own clock
-    const evicted = [];
-    const mine = Object.keys(idx.sessions).sort((a, b) => (reelSessionMs(b) || 0) - (reelSessionMs(a) || 0));
+    const slotDrops = [];
+    const mine = Object.keys(planned).sort((a, b) => (reelSessionMs(b) || 0) - (reelSessionMs(a) || 0));
     for (const s of mine.slice(REEL_SESSIONS_PER_SLOT)) {
-      if (s === session) return reelRefuse("this session is older than the " + REEL_SESSIONS_PER_SLOT + " this PC keeps");
-      await reelDropSession(r2, dir, s, idx.sessions[s]);
-      delete idx.sessions[s];
-      evicted.push(dir + "/" + s);
+      if (s === session) return reelRefuse("this session is older than the " + REEL_SESSIONS_PER_SLOT + " this PC keeps - nothing written");
+      slotDrops.push(s);
     }
+    for (const s of slotDrops) delete planned[s];
     // the bucket: the estimate must fit under the cap, oldest sealed sessions of any slot go first
     const dirs = await reelSlotDirs(r2);
     if (dirs === null) return reelRefuse("the bucket would not list - UNKNOWN, nothing written");
@@ -1334,7 +1337,7 @@ export async function reelPost(env, bytes, sig, body) {
     let total = 0;
     const idxOf = {};
     for (const d of dirs) {
-      const x = d === dir ? idx : await reelIndexGet(r2, d);
+      const x = d === dir ? { sessions: planned } : await reelIndexGet(r2, d);
       if (x === null) return reelRefuse("the reel index of " + d + " would not read - UNKNOWN, nothing written");
       idxOf[d] = x;
       for (const s of Object.keys(x.sessions)) {
@@ -1345,18 +1348,32 @@ export async function reelPost(env, bytes, sig, body) {
     }
     const need = body.estBytes - kept;
     all.sort((a, b) => a[0] - b[0]);
+    const bucketDrops = [];
     while (total + need > REEL_CAP_BYTES && all.length) {
       const [, d, s] = all.shift();
-      total -= await reelDropSession(r2, d, s, idxOf[d].sessions[s]);
+      total -= (idxOf[d].sessions[s] && idxOf[d].sessions[s].bytes) || 0;
+      bucketDrops.push([d, s]);
+    }
+    if (total + need > REEL_CAP_BYTES) {
+      return reelRefuse("the bucket is at its " + REEL_CAP_BYTES + "-byte cap and nothing older is left to evict - nothing written, nothing evicted",
+                        { evicted: [] });
+    }
+    // accepted: only now does anything change
+    for (let i = 0; i < dropped.length; i += 500) {
+      await r2.delete(dropped.slice(i, i + 500).map((n) => "reel/" + dir + "/" + session + "/" + n));
+    }
+    const evicted = [];
+    for (const s of slotDrops) {
+      await reelDropSession(r2, dir, s, idx.sessions[s]);
+      evicted.push(dir + "/" + s);
+    }
+    for (const [d, s] of bucketDrops) {
+      await reelDropSession(r2, d, s, idxOf[d].sessions[s]);
       delete idxOf[d].sessions[s];
       evicted.push(d + "/" + s);
       if (d !== dir) await reelIndexPut(r2, d, idxOf[d]);
     }
-    if (total + need > REEL_CAP_BYTES) {
-      await reelIndexPut(r2, dir, idx);
-      return reelRefuse("the bucket is at its " + REEL_CAP_BYTES + "-byte cap and nothing older is left to evict",
-                        { evicted: evicted });
-    }
+    idx.sessions = planned;
     await reelIndexPut(r2, dir, idx);
     return pJson({ ok: true, owner: owner, session: session, have: Object.keys(have),
                    want: body.frames.filter((n) => !(n in have)), evicted: evicted, totalBytes: total });
@@ -1365,13 +1382,19 @@ export async function reelPost(env, bytes, sig, body) {
   if (!entry) return reelRefuse("this session was never begun");
   if (body.op === "frames") {
     if (!Array.isArray(body.frames) || !body.frames.length) return reelRefuse("no frames were sent");
-    const stored = [];
+    // v3906 (REG-3854) - every frame of the batch is checked before the first is stored: a batch refused at its third frame
+    // used to leave its first two in the bucket, uncounted by the index and so invisible to the cap.
+    const raws = [];
     for (const f of body.frames) {
-      if (!f || entry.want.indexOf(f.name) === -1) return reelRefuse("a frame was sent that the begin did not name");
+      if (!f || entry.want.indexOf(f.name) === -1) return reelRefuse("a frame was sent that the begin did not name - nothing stored");
       const raw = bytesOfB64(f.b64);
-      if (!raw || !raw.length) return reelRefuse("a frame's bytes are not base64");
-      if (raw.length > REEL_FRAME_MAX) return reelRefuse("a frame is larger than " + REEL_FRAME_MAX + " bytes");
-      if (raw[0] !== 0xff || raw[1] !== 0xd8) return reelRefuse("a frame is not a JPEG");
+      if (!raw || !raw.length) return reelRefuse("a frame's bytes are not base64 - nothing stored");
+      if (raw.length > REEL_FRAME_MAX) return reelRefuse("a frame is larger than " + REEL_FRAME_MAX + " bytes - nothing stored");
+      if (raw[0] !== 0xff || raw[1] !== 0xd8) return reelRefuse("a frame is not a JPEG - nothing stored");
+      raws.push([f, raw]);
+    }
+    const stored = [];
+    for (const [f, raw] of raws) {
       await r2.put("reel/" + dir + "/" + session + "/" + f.name, raw, { httpMetadata: { contentType: "image/jpeg" } });
       entry.bytes += raw.length - (entry.have[f.name] || 0);
       entry.have[f.name] = raw.length;

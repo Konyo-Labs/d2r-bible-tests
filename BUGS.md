@@ -7,6 +7,33 @@
 > only link between a bug and the ship that fixed it. Every duplicated heading now carries its
 > date, so the pair can be told apart at a glance. New entries continue from REG-088.
 
+### REG-3854 - A REFUSED REEL STILL WROTE: THE CAP REFUSAL STORED ITS SESSION, OTHER REFUSALS DELETED FIRST (v3906, #208)
+Claude's v3906 plan named it ("a refused reel stores nothing"); his Mac's tree with that work died before it reached GitHub, so
+GrokBot (coder seat, 11-14) rebuilt it from the code. MEASURED on v3905's functions/api/roster.js in the cap law's own node
+harness (fake KV + R2, real roster keys): (1) a begin past the 9 GB cap wrote the refused session into this PC's index and
+evicted other PCs' oldest sealed sessions it then did not use; (2) a re-begin "older than the 16 this PC keeps" deleted the
+frames its demotion dropped before refusing, and the unrewritten index still named them; (3) a begin whose other-PC index
+would not read (UNKNOWN) had already deleted this PC's 17th session, which the index still listed; (4) a frames batch refused
+at a bad frame kept the good frames before it, uncounted by the index and so invisible to the cap. Now begin PLANS (keep,
+slot drops, bucket evictions) and refuses before the first write or delete; frames checks the whole batch before it stores
+any. A refusal leaves the bucket byte for byte as it was. Law: test_a_refused_reel_stores_nothing (4 refusals + the
+accepted control; 5 red-proofs PROVEN on the box), and test_a_shadow_reel_is_kept_under_the_cap stays green (4 of 4 PROVEN).
+### REG-3853 - AT 901 THE SHELF'S BEST RUN AND STREAK LINES WERE CUT (v3906, #224)
+GrokBot #230 6851436283 (v3904, his console): at 901 BEST RUN's sub read "5 chronicle…" and STREAK's "467+ runs l…";
+both whole at 1440 and 1512. The sub line was one ellipsised line (.shi-sub nowrap) and the strip kept five 158px tiles on
+one row however narrow the window. Now the sub line wraps (overflow-wrap: anywhere) and under 1100px the tiles are 190px
+and up, so they wrap to a second row; the value line stays one line (REG-3768). Law: test_a_shelf_tile_line_is_whole_at_901
+(headless Chrome on the shipped rules at 1512/1440/901, +1 red-proof PROVEN). Red on v3905 at 901 exactly as he saw it,
+and BEST COVERAGE's label was cut there too.
+### REG-3852 - THE THEATRE READ "✕ CLOS ×": A MADE x STAYED PINNED OVER CLOSE (v3906, #223)
+GrokBot #230 6866422963 (v3905, his console, 1512/1440/901): Theatre straight shows "✕ CLOSE" whole; open the Shelf inside
+the Theatre, then a reel from it, and a separate 28px x (ovx-made) sits inside CLOSE's right end over its last letter, and
+survives closing and reopening the Theatre on the same page. Cause (Claude's ASK 6865422998, not refuted): the Shelf hides
+CLOSE, so the overlay contract's tick made its own x for the Theatre; when CLOSE came back the tick pinned CLOSE and never
+removed the made one. Now the overlay's own close wins and every made x of that card (and of its overlay) goes - in both
+copies of the contract (control_ui.html and bible.html, kept identical). Law: test_a_made_x_leaves_when_close_comes_back
+(headless Chrome on the shipped contract block at 1512/1440/901, +2 red-proofs PROVEN).
+
 ### REG-3963 - THE SIX TRAVINCAL COUNCIL PRIESTS WORE ONE SHARED PICTURE (v3899 #91b, GrokBot, his 11-11 "give each priest its own picture")
 Ismail Vilehand, Toorc Icefist, Geleb Flamefinger, Bremm Sparkfist, Wyand Voidbringer and Maffer Dragonhand all draw
 councilmember_graphic.png (diablo2.io's one Council Member picture; diablo.fandom/diablo-archive show one shared gif too), and

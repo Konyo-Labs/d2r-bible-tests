@@ -94686,10 +94686,18 @@ button:not(:disabled):hover { box-shadow: 0 0 8px rgba(255,170,80,.30); }
   }
   /* a full-screen overlay whose card is a child: its own close may sit outside that card (the mule window's
      header "close (Esc)") - that is the x to pin, never a second made one */
+  /* v3906 (REG-3852, #223, GrokBot #230 6866422963) - A MADE x LEAVES WHEN THE OVERLAY'S OWN CLOSE COMES BACK. The Shelf
+     inside the Theatre hides ✕ CLOSE, so the tick made an x for the Theatre; when CLOSE came back the tick found it and
+     pinned it, and nothing removed the made one - a 28 px x stayed pinned over CLOSE's last letter ("✕ CLOS ×") until the
+     page reloaded. The overlay's own x wins and every made x of that card (and of its overlay) goes. */
+  function ovxDropMade(el) {
+    var ms = el.querySelectorAll(':scope > .ovx-made');
+    for (var i = 0; i < ms.length; i++) ms[i].remove();
+  }
   function xOfOverlay(ov, card) {
     var x = xOf(card);
-    if (x && !x.classList.contains('ovx-made')) return x;
-    if (ov !== card) { var o = xOf(ov); if (o && !o.classList.contains('ovx-made')) { if (x) x.remove(); return o; } }
+    if (x && !x.classList.contains('ovx-made')) { ovxDropMade(card); if (ov !== card) ovxDropMade(ov); return x; }
+    if (ov !== card) { var o = xOf(ov); if (o && !o.classList.contains('ovx-made')) { if (x) x.remove(); ovxDropMade(ov); return o; } }
     return x;
   }
   function ovxClose(ov) {
