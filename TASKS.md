@@ -1904,7 +1904,8 @@ was reading it. Two more (CF-6, CF-9) were found while grounding the first seven
 
 | version | commit | commit subject |
 |---|---|---|
-| **v3905** | `(this commit)` | v3905 — his sessions in a private bucket, played whole from the logo, the vault forget lock proves itself |
+| **v3906** | `(this commit)` | v3906 — the Theatre CLOSE is whole after the Shelf, Shelf tiles whole at 901, a refused reel stores nothing |
+| **v3905** | `8c2fda2a` | v3905 — his sessions in a private bucket, played whole from the logo, the vault forget lock proves itself |
 | **v3904** | `3d407ded` | v3904 — Windows proofs clean, the in-game face on monster names, d2jsp sellers on the price table |
 | **v3903** | `9046194e` | v3903 — clean Theatre, the site task board whole, seven Windows laws and the Fleet boot window |
 | **v3902** | `2e874e23` | v3902 — the board says where each version is, the Council priests wear their own sprites, a flake is judged per shard |

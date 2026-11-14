@@ -1,5 +1,14 @@
 [
   {
+    "ver": "v3906",
+    "date": "2026-11-14",
+    "items": [
+      "REG-3852 - the Theatre made x leaves when CLOSE comes back, no more CLOS with a second x (#223)",
+      "REG-3853 - the Shelf tiles wrap at 901, BEST RUN and STREAK lines are whole (#224)",
+      "REG-3854 - a refused reel stores nothing, every refusal is decided before the first write or delete (#208)"
+    ]
+  },
+  {
     "ver": "v3905",
     "date": "2026-11-13",
     "items": [
