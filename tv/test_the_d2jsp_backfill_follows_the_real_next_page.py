@@ -22,6 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 os.environ.pop("D2JSP_BACKFILL_LOG", None)
+from console_safe import enable as _console_safe_enable  # noqa: E402 - a cp1255 console must survive its own report
+_console_safe_enable()
 import d2jsp_backfill as B  # noqa: E402
 import d2jsp_backfill_run as R  # noqa: E402
 import d2jsp_price_db as P  # noqa: E402
