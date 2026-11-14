@@ -13733,6 +13733,12 @@ GATES = [
          [sys.executable, os.path.join(HERE, "test_the_d2jsp_backfill_resumes_offline.py")], 60,
          needs_app=False,
          why="board2 #151 REG-3620 - the d2jsp backfill resumes offline from its saved offset, paces at 1 search/min, and never starts a live scrape without a fetch handed in"),
+    Gate("test_the_d2jsp_backfill_follows_the_real_next_page",
+         [sys.executable, os.path.join(HERE, "test_the_d2jsp_backfill_follows_the_real_next_page.py")], 60,
+         needs_app=False,
+         why="#151 (GrokBot grok/ lane, his 13 Nov 'yea go for it') - the d2jsp backfill follows the forum pager's own Next "
+             "href; a page that answers an earlier one is asked again and never ends the item; a real last page still ends "
+             "it; a nickname entry searches its own words and folds under the item's one canonical key"),
     Gate("test_the_d2jsp_backfill_imports_once_with_its_sellers",
          [sys.executable, os.path.join(HERE, "test_the_d2jsp_backfill_imports_once_with_its_sellers.py")], 60,
          needs_app=False,
